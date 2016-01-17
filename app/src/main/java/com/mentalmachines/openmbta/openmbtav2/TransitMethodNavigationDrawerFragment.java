@@ -230,10 +230,10 @@ public class TransitMethodNavigationDrawerFragment extends Fragment {
 	    switch (position) {
 	    case 0:
 	    	Fragment fragment = new BusFragment();
-	    	ft.replace(R.id.container, fragment, "busFragment").commit();
+	    	//ft.replace(R.id.container, fragment, "busFragment").commit();
 	    	RouteSelectNavigationDrawerFragment routeSelectNavigationDrawerFragment = (RouteSelectNavigationDrawerFragment) getFragmentManager().findFragmentByTag("routeSelectNavigationDrawerFragment");
 	    	// routeSelectNavigationDrawerFragment.getRouteList();
-			mainActivity.getRouteList();
+			// mainActivity.getRouteList();
 	    	
 	    	// populate the right hand side with the RouteList 
 	        break;

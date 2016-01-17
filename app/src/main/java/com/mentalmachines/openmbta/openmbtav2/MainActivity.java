@@ -4,14 +4,12 @@ import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
+import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.ListView;
 
-public class MainActivity extends ActionBarActivity implements
-		TransitMethodNavigationDrawerFragment.NavigationDrawerCallbacks, 
-		RouteSelectNavigationDrawerFragment.NavigationDrawerCallbacks{
+public class MainActivity extends AppCompatActivity{
 
 	/**
 	 * Fragment managing the behaviors, interactions and presentation of the
@@ -34,30 +32,21 @@ public class MainActivity extends ActionBarActivity implements
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
+		/*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.route_select_navigation_drawer_fragment);
+				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		mTitle = getTitle();
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
 
 		mTransitMethodNavigationDrawerItemTitles = getResources().getStringArray(R.array.transit_methods);
 		// Set up the drawer.
-		mTransitMethodNavigationDrawerFragment.setUp(R.id.transit_method_navigation_drawer_fragment,
-				(DrawerLayout) findViewById(R.id.drawer_layout));
+		/*mTransitMethodNavigationDrawerFragment.setUp(R.id.transit_method_navigation_drawer_fragment,
+				(DrawerLayout) findViewById(R.id.drawer_layout));*/
 	}
 
-
-	/*@Override
-	protected void onCreateView(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
-		setContentView(R.layout.activity_main);
-
-		mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-	}*/
-
-	@Override
+/*	@Override
 	public void onNavigationDrawerItemSelected(int position) {
 		// update the main content by replacing fragments
 		FragmentManager fragmentManager = getSupportFragmentManager();
@@ -65,7 +54,7 @@ public class MainActivity extends ActionBarActivity implements
 				.beginTransaction()
 				.replace(R.id.container,
 						BusFragment.newInstance(position + 1)).commit();
-	}
+	}*/
 
 	public void onSectionAttached(int number) {
 		switch (number) {
@@ -90,14 +79,14 @@ public class MainActivity extends ActionBarActivity implements
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		if (!mTransitMethodNavigationDrawerFragment.isDrawerOpen()) {
+/*		if (!mTransitMethodNavigationDrawerFragment.isDrawerOpen()) {
 			// Only show items in the action bar relevant to this screen
 			// if the drawer is not showing. Otherwise, let the drawer
 			// decide what to show in the action bar.
 			getMenuInflater().inflate(R.menu.main, menu);
 			restoreActionBar();
 			return true;
-		}
+		}*/
 		return super.onCreateOptionsMenu(menu);
 	}
 
