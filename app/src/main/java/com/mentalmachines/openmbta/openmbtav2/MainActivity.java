@@ -1,92 +1,89 @@
 package com.mentalmachines.openmbta.openmbtav2;
 
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
+import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.NavigationView;
+import android.support.design.widget.Snackbar;
+import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
+import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.view.Menu;
 import android.view.MenuItem;
-import android.widget.ListView;
+import android.view.View;
+import android.widget.TextView;
+import android.widget.Toast;
 
-public class MainActivity extends AppCompatActivity{
-
-	/**
-	 * Fragment managing the behaviors, interactions and presentation of the
-	 * navigation drawer.
-	 */
-	private TransitMethodNavigationDrawerFragment mTransitMethodNavigationDrawerFragment	;
-	public RouteSelectNavigationDrawerFragment mRouteSelectDrawerFragment;
-
-	ListView mTransitMethodDrawerList;
-	private DrawerLayout mTransitMethodNavigationDrawerLayout;
-	private String[] mTransitMethodNavigationDrawerItemTitles;
-	/**
-	 * Used to store the last screen title. For use in
-	 * {@link #restoreActionBar()}.
-	 */
-	private CharSequence mTitle;
+public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(toolbar);
 
-		/*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_in_out);
+        fab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                Snackbar.make(view, "action?", Snackbar.LENGTH_LONG)
+                        .setAction("Action", null).show();
+            }
+        });
+
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+        drawer.setDrawerListener(toggle);
+        toggle.syncState();
+
+        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView.setNavigationItemSelectedListener(this);
+
+        /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
-		mTitle = getTitle();
+
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
 
-		mTransitMethodNavigationDrawerItemTitles = getResources().getStringArray(R.array.transit_methods);
+		//String[] resources = getResources().getStringArray(R.array.transit_methods);
 		// Set up the drawer.
 		/*mTransitMethodNavigationDrawerFragment.setUp(R.id.transit_method_navigation_drawer_fragment,
 				(DrawerLayout) findViewById(R.id.drawer_layout));*/
 	}
 
-/*	@Override
-	public void onNavigationDrawerItemSelected(int position) {
-		// update the main content by replacing fragments
-		FragmentManager fragmentManager = getSupportFragmentManager();
-		fragmentManager
-				.beginTransaction()
-				.replace(R.id.container,
-						BusFragment.newInstance(position + 1)).commit();
-	}*/
-
-	public void onSectionAttached(int number) {
-		switch (number) {
-		case 1:
-			mTitle = getString(R.string.title_section1);
-			break;
-		case 2:
-			mTitle = getString(R.string.title_section2);
-			break;
-		case 3:
-			mTitle = getString(R.string.title_section3);
-			break;
-		}
-	}
-
-	public void restoreActionBar() {
-		ActionBar actionBar = getSupportActionBar();
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setTitle(mTitle);
-	}
+    @Override
+    public boolean onNavigationItemSelected(MenuItem item) {
+        switch(item.getItemId()) {
+            case R.id.dr_blue:
+                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_blue);
+                break;
+            case R.id.dr_green:
+                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_green);
+                break;
+            case R.id.dr_orange:
+                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_orange);
+                break;
+            case R.id.dr_redline:
+                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_red);
+                break;
+            case R.id.dr_silver:
+                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_silver);
+                break;
+        }
+        Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        drawer.closeDrawer(GravityCompat.START);
+        return true;
+    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-/*		if (!mTransitMethodNavigationDrawerFragment.isDrawerOpen()) {
-			// Only show items in the action bar relevant to this screen
-			// if the drawer is not showing. Otherwise, let the drawer
-			// decide what to show in the action bar.
-			getMenuInflater().inflate(R.menu.main, menu);
-			restoreActionBar();
-			return true;
-		}*/
+        getMenuInflater().inflate(R.menu.main, menu);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -95,18 +92,27 @@ public class MainActivity extends AppCompatActivity{
 		// Handle action bar item clicks here. The action bar will
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
-		int id = item.getItemId();
-		if (id == R.id.action_settings) {
-			return true;
-		}
+		switch (item.getItemId()) {
+            case R.id.menu_alerts:
+                break;
+            case R.id.menu_settings:
+                break;
+        }
+
 		return super.onOptionsItemSelected(item);
 	}
 
-	public void getRouteSelectDrawerFragment(){
+    @Override
+    public void onBackPressed() {
+        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        if (drawer.isDrawerOpen(GravityCompat.START)) {
+            drawer.closeDrawer(GravityCompat.START);
+        } else {
+            super.onBackPressed();
+        }
+    }
 
-	}
-
-	/**
+    /**
 	 * A placeholder fragment containing a simple view.
 	 */
 

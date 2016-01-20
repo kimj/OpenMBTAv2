@@ -1,11 +1,5 @@
 package com.mentalmachines.openmbta.openmbtav2;
 
-import java.util.ArrayList;
-import java.util.concurrent.ExecutionException;
-
-import org.simpleframework.xml.Serializer;
-import org.simpleframework.xml.core.Persister;
-
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.content.res.Configuration;
@@ -16,22 +10,24 @@ import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.app.Fragment;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.support.v7.app.ActionBar;
-import android.support.v7.app.ActionBarActivity;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.mentalmachines.openmbta.openmbtav2.objects.Route;
 import com.mentalmachines.openmbta.openmbtav2.objects.RouteConfig;
 import com.mentalmachines.openmbta.openmbtav2.objects.RouteList;
+
+import org.simpleframework.xml.Serializer;
+import org.simpleframework.xml.core.Persister;
+
+import java.util.ArrayList;
+import java.util.concurrent.ExecutionException;
 
 /**
  * Fragment used for managing interactions for and presentation of a navigation
@@ -157,9 +153,10 @@ public class RouteSelectNavigationDrawerFragment extends Fragment {
 				GravityCompat.START);
 		// set up the drawer's list view with items and click listener
 
-		ActionBar actionBar = getActionBar();
+		/* leave this to the activity
+		ActionBar actionBar = getSupportActionBar();
 		actionBar.setDisplayHomeAsUpEnabled(true);
-		actionBar.setHomeButtonEnabled(true);
+		actionBar.setHomeButtonEnabled(true);*/
 
 		// ActionBarDrawerToggle ties together the the proper interactions
 		// between the navigation drawer and the action bar app icon.
@@ -280,10 +277,12 @@ public class RouteSelectNavigationDrawerFragment extends Fragment {
 		// action bar.
 		if (mDrawerLayout != null && isDrawerOpen()) {
 			inflater.inflate(R.menu.global, menu);
-			showGlobalContextActionBar();
+			//showGlobalContextActionBar();
 		}
 		super.onCreateOptionsMenu(menu, inflater);
 	}
+
+	/* DO this in the acitivity
 
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) {
@@ -298,23 +297,9 @@ public class RouteSelectNavigationDrawerFragment extends Fragment {
 		}
 
 		return super.onOptionsItemSelected(item);
-	}
+	}*/
 
-	/**
-	 * Per the navigation drawer design guidelines, updates the action bar to
-	 * show the global app 'context', rather than just what's in the current
-	 * screen.
-	 */
-	private void showGlobalContextActionBar() {
-		ActionBar actionBar = getActionBar();
-		actionBar.setDisplayShowTitleEnabled(true);
-		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_STANDARD);
-		actionBar.setTitle(R.string.app_name);
-	}
 
-	private ActionBar getActionBar() {
-		return ((ActionBarActivity) getActivity()).getSupportActionBar();
-	}
 
 	/**
 	 * Callbacks interface that all activities using this fragment must

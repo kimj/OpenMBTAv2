@@ -1,21 +1,12 @@
 package com.mentalmachines.openmbta.openmbtav2;
 
-import java.util.concurrent.ExecutionException;
-
-import org.simpleframework.xml.Serializer;
-import org.simpleframework.xml.core.Persister;
-
-import com.mentalmachines.openmbta.openmbtav2.objects.RouteConfig;
-import com.mentalmachines.openmbta.openmbtav2.objects.RouteList;
-
-import android.app.Activity;
-import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+
+import com.mentalmachines.openmbta.openmbtav2.objects.RouteList;
 
 public class BusFragment extends Fragment{
 	/**
@@ -41,17 +32,17 @@ public class BusFragment extends Fragment{
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.fragment_main, container,
+		View rootView = inflater.inflate(R.layout.content_main, container,
 				false);
 		return rootView;
 	}
 
-	@Override
+	/*@Override
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
-		/*((MainActivity) activity).onSectionAttached(getArguments().getInt(
-				ARG_SECTION_NUMBER));*/
-	}
+		*//*((MainActivity) activity).onSectionAttached(getArguments().getInt(
+				ARG_SECTION_NUMBER));*//*
+	}*/
 }
 	
 
