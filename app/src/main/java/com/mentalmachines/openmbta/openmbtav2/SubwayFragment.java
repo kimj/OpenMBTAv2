@@ -3,10 +3,12 @@ package com.mentalmachines.openmbta.openmbtav2;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import com.mentalmachines.openmbta.openmbtav2.objects.RouteConfig;
 import com.mentalmachines.openmbta.openmbtav2.objects.RouteList;
@@ -18,32 +20,42 @@ import java.util.concurrent.ExecutionException;
 
 public class SubwayFragment extends Fragment{
 	/**
-	 * The fragment argument representing the section number for this
-	 * fragment.
+	 * A fragment representing the a train line
 	 */
-	private static final String ARG_SECTION_NUMBER = "section_number";
-	RouteList routeList;
+	private static final String STOPS_LIST = "stops";
+    private static final String LINE_NAME = "line";
+    private static final String TAG = "SubwayFragment";
 	/**
 	 * Returns a new instance of this fragment for the given section number.
 	 */
-	public static SubwayFragment newInstance(int sectionNumber) {
+	public static SubwayFragment newInstance(String[] stops, String title) {
 		SubwayFragment fragment = new SubwayFragment();
 		Bundle args = new Bundle();
-		args.putInt(ARG_SECTION_NUMBER, sectionNumber);
+		args.putStringArray(STOPS_LIST, stops);
+        args.putString(LINE_NAME, title);
 		fragment.setArguments(args);
 		return fragment;
 	}
 
-	public SubwayFragment() {
-	}
+	public SubwayFragment() { }
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.content_main, container,
-				false);
-		getRouteList();
-		getRouteConfig(1);
+		View rootView = inflater.inflate(R.layout.content_main, container, false);
+        ((TextView)rootView.findViewById(R.id.mc_title)).setText(
+                getArguments().getString(LINE_NAME));
+        final String[] listItems = getArguments().getStringArray(STOPS_LIST);
+        //final String[] listItems = getResources().getStringArray(R.array.fake_data);
+		final RecyclerView rView = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
+        if(listItems == null) {
+			rView.setVisibility(View.GONE);
+            Log.w(TAG, "no stops");
+        } else {
+			rView.setVisibility(View.VISIBLE);
+			rView.setAdapter(new SimpleStopAdapter(listItems));
+        }
+
 		return rootView;
 	}
 
@@ -51,7 +63,7 @@ public class SubwayFragment extends Fragment{
 	public void onAttach(Activity activity) {
 		super.onAttach(activity);
 		((MainActivity) activity).onSectionAttached(getArguments().getInt(
-				ARG_SECTION_NUMBER));
+				STOPS_LIST));
 	}*/
 	
 	public void getRouteList(){

@@ -2,7 +2,7 @@
 <resources>
 
     <string name="app_name">T-Time</string>
-
+    <string name="def_text">Where To?</string>
     <string name="nm_blue">Blue Line</string>
     <string name="nm_red">Red Line</string>
     <string name="nm_silver">Silver Line</string>
@@ -23,6 +23,16 @@
         <item>Subway</item>
         <item>Commuter Rail</item>
         <item>Boat</item>
+    </string-array>
+
+    <string-array name="fake_data">
+        <item>Forest Hills</item>
+        <item>Jamaica Plain</item>
+        <item>Back Bay</item>
+        <item>Tufts Medical</item>
+        <item>Chinatown</item>
+        <item>Downtown Crossings</item>
+        <item>Oak Grove</item>
     </string-array>
 
 </resources>

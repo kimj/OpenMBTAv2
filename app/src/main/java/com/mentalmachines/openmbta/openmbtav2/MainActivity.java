@@ -9,13 +9,15 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.TextView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+
+    public static final String TAG = "MainActivity";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -41,7 +43,9 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
-
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, SubwayFragment.newInstance(null, getString(R.string.def_text)))
+                .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
@@ -58,21 +62,34 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
+        final String[] fakeData = getResources().getStringArray(R.array.fake_data);
+        Log.w(TAG, "no of stops? " + fakeData.length);
         switch(item.getItemId()) {
             case R.id.dr_blue:
-                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_blue);
+                //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, getString(R.string.nm_blue)))
+                        .commit();
                 break;
             case R.id.dr_green:
-                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_green);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, getString(R.string.nm_green)))
+                        .commit();
                 break;
             case R.id.dr_orange:
-                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_orange);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, getString(R.string.nm_orange)))
+                        .commit();
                 break;
             case R.id.dr_redline:
-                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_red);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, getString(R.string.nm_red)))
+                        .commit();
                 break;
             case R.id.dr_silver:
-                ((TextView)findViewById(R.id.tv)).setText(R.string.nm_silver);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, getString(R.string.nm_silver)))
+                        .commit();
                 break;
         }
         Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
