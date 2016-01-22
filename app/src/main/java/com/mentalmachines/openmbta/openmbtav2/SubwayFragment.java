@@ -2,12 +2,15 @@ package com.mentalmachines.openmbta.openmbtav2;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CheckBox;
+import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.mentalmachines.openmbta.openmbtav2.objects.RouteConfig;
@@ -25,8 +28,10 @@ public class SubwayFragment extends Fragment{
 	private static final String STOPS_LIST = "stops";
     private static final String LINE_NAME = "line";
     private static final String TAG = "SubwayFragment";
+
 	/**
-	 * Returns a new instance of this fragment for the given section number.
+	 * Returns a new instance of this fragment
+     * sets the route stops and route name
 	 */
 	public static SubwayFragment newInstance(String[] stops, String title) {
 		SubwayFragment fragment = new SubwayFragment();
@@ -43,8 +48,10 @@ public class SubwayFragment extends Fragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.content_main, container, false);
-        ((TextView)rootView.findViewById(R.id.mc_title)).setText(
-                getArguments().getString(LINE_NAME));
+        final String lineName = getArguments().getString(LINE_NAME);
+        rootView.setTag(lineName);
+        ((TextView)rootView.findViewById(R.id.mc_title)).setText(lineName);
+        //now work the list
         final String[] listItems = getArguments().getStringArray(STOPS_LIST);
         //final String[] listItems = getResources().getStringArray(R.array.fake_data);
 		final RecyclerView rView = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
@@ -55,9 +62,25 @@ public class SubwayFragment extends Fragment{
 			rView.setVisibility(View.VISIBLE);
 			rView.setAdapter(new SimpleStopAdapter(listItems));
         }
+        final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
+        if(listItems != null) {
+            cb.setVisibility(View.VISIBLE);
+            //read and set preference
+            cb.setChecked(PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean(lineName, false));
+            cb.setOnCheckedChangeListener(favListener);
+        }
 
 		return rootView;
 	}
+
+    final CompoundButton.OnCheckedChangeListener favListener = new CompoundButton.OnCheckedChangeListener() {
+
+        @Override
+        public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+            PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
+                    .putBoolean((String)getView().getTag(), b).commit();
+        }
+    };
 
 	/*@Override
 	public void onAttach(Activity activity) {
