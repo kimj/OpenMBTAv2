@@ -16,11 +16,13 @@ import android.widget.TextView;
 
 public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
     public static final String TAG = "SimpleStopAdapter";
-    String[] mItems;
+    final String[] mItems;
+    final int drawableResource;
 
-    public SimpleStopAdapter(String[] data) {
+    public SimpleStopAdapter(String[] data, int resource) {
         super();
         mItems = data;
+        drawableResource = resource;
     }
 
     @Override
@@ -54,9 +56,15 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
                     + "\n7:30pm");
             holder.mETA.setText("Now");
         }
-        if(position == 3) {
-            holder.mImage.setImageResource(android.R.drawable.ic_dialog_alert);
+        switch (position) {
+            case 3:
+                holder.mImage.setImageResource(android.R.drawable.ic_dialog_alert);
+                break;
+            case 1:
+                holder.mImage.setImageResource(drawableResource);
+                break;
         }
+
     }
 
     public class StopViewHolder extends RecyclerView.ViewHolder {

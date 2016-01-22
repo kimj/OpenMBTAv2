@@ -8,15 +8,8 @@
     android:paddingLeft="@dimen/def_padding"
     android:paddingRight="@dimen/def_padding"
     android:paddingTop="@dimen/def_margin"
-    tools:context="com.mentalmachines.openmbta.openmbtav2.MainActivity"  >
+    tools:context="com.mentalmachines.openmbta.openmbtav2.SubwayFragment"  >
 
-    <CheckBox android:id="@+id/mc_favorite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/def_padding"
-        android:layout_alignParentRight="true"
-        android:visibility="gone"
-        android:button="@android:drawable/btn_star" />
     <TextView android:id="@+id/mc_title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -26,6 +19,20 @@
         android:text="@string/def_text"
         android:textColor="@color/colorPrimary"
         android:textSize="18dp" />
+    <ImageView android:id="@+id/mc_icon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_toLeftOf="@id/mc_title"
+        android:visibility="gone"
+        android:layout_marginRight="@dimen/def_margin" />
+    <CheckBox android:id="@+id/mc_favorite"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@id/mc_favorite"
+        android:layout_marginLeft="@dimen/def_margin"
+        android:layout_toRightOf="@id/mc_title"
+        android:visibility="gone"
+        android:button="@android:drawable/btn_star" />
     <!-- To do text appearance large -->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/mc_routelist"
