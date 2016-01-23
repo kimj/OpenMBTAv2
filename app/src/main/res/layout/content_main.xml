@@ -8,7 +8,7 @@
     android:paddingLeft="@dimen/def_padding"
     android:paddingRight="@dimen/def_padding"
     android:paddingTop="@dimen/def_margin"
-    tools:context="com.mentalmachines.ttime.SubwayFragment"  >
+    tools:context="com.mentalmachines.ttime.RouteFragment"  >
 
     <TextView android:id="@+id/mc_title"
         android:layout_width="wrap_content"
