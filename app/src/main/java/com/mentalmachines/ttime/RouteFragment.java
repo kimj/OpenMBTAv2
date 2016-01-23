@@ -1,6 +1,5 @@
 package com.mentalmachines.ttime;
 
-import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
@@ -14,29 +13,20 @@ import android.widget.CompoundButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.mentalmachines.ttime.objects.RouteConfig;
-import com.mentalmachines.ttime.objects.RouteList;
-import com.mentalmachines.ttime.openmbtav2.R;
-
-import org.simpleframework.xml.Serializer;
-import org.simpleframework.xml.core.Persister;
-
-import java.util.concurrent.ExecutionException;
-
-public class SubwayFragment extends Fragment{
+public class RouteFragment extends Fragment{
 	/**
 	 * A fragment representing the a train line
 	 */
 	private static final String STOPS_LIST = "stops";
     private static final String LINE_NAME = "line";
-    private static final String TAG = "SubwayFragment";
+    private static final String TAG = "RouteFragment";
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static SubwayFragment newInstance(String[] stops, int title) {
-		SubwayFragment fragment = new SubwayFragment();
+	public static RouteFragment newInstance(String[] stops, int title) {
+		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
 		args.putStringArray(STOPS_LIST, stops);
         args.putInt(LINE_NAME, title);
@@ -44,7 +34,7 @@ public class SubwayFragment extends Fragment{
 		return fragment;
 	}
 
-	public SubwayFragment() { }
+	public RouteFragment() { }
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
@@ -123,70 +113,4 @@ public class SubwayFragment extends Fragment{
         }
     };
 
-	/*@Override
-	public void onAttach(Activity activity) {
-		super.onAttach(activity);
-		((MainActivity) activity).onSectionAttached(getArguments().getInt(
-				STOPS_LIST));
-	}*/
-	
-	public void getRouteList(){
-		String jsonResponse = null;
-		Uri.Builder builder = new Uri.Builder();
-		Serializer serializer = new Persister();
-		RouteList routeList;
-		// http://realtime.mbta.com/developer/api/v2/stopsbylocation?api_key=wX9NwuHnZU2ToO7GmGR9
-		// uw&lat=42.346961&lon=-71.076640&format=json
-		
-		Integer latitude = null, longitude = null;
-		String apiKey = null;
-		builder.scheme("http").authority("realtime.mbta.com").appendPath("developer");
-		builder.appendPath("api").appendPath("v2").appendPath("stopsbylocation");
-		builder.appendQueryParameter("api_key", apiKey).appendQueryParameter("lat", latitude.toString());
-		builder.appendQueryParameter("lon", longitude.toString()).appendQueryParameter("format", "json");
-		String URL = builder.toString();
-		try {
-			jsonResponse = new HttpRequestTask().execute(URL, "", "").get();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			routeList = serializer.read(RouteList.class, jsonResponse);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-	}
-	
-	public void getRouteConfig(Integer routeId){
-		String xmlResponse = null;
-		Uri.Builder builder = new Uri.Builder();
-		Serializer serializer = new Persister();
-		RouteConfig routeConfig;
-		
-		builder.scheme("http").authority("webservices.nextbus.com").appendPath("service");
-		builder.appendPath("publicXMLFeed").appendQueryParameter("command", "routeConfig").appendQueryParameter("a", "mbta");
-		builder.appendQueryParameter("r", routeId.toString());
-		String URL = builder.toString();
-		try {
-			xmlResponse = new HttpRequestTask().execute(URL, "", "").get();
-		} catch (InterruptedException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (ExecutionException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		try {
-			routeConfig = serializer.read(RouteConfig.class, xmlResponse);
-		} catch (Exception e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		Log.i("OpenMBTAv2", xmlResponse);
-	}
 }

@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "com.mentalmachines.ttime.openmbtav2"
+        applicationId "com.mentalmachines.ttime"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
@@ -29,11 +29,6 @@ dependencies {
             [group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.1']
     )
     compile 'com.android.support:design:23.1.1'
-    compile('org.simpleframework:simple-xml:2.7.+'){
-        exclude module: 'stax'
-        exclude module: 'stax-api'
-        exclude module: 'xpp3'
-    }
     compile 'io.reactivex:rxandroid:1.1.0'
 // Because RxAndroid releases are few and far between, it is recommended you also
 // explicitly depend on RxJava's latest version for bug fixes and new features.

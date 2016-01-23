@@ -15,8 +15,6 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.openmbtav2.R;
-
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     public static final String TAG = "MainActivity";
@@ -46,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, SubwayFragment.newInstance(null, R.string.def_text))
+                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text))
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
@@ -70,27 +68,27 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.dr_blue:
                 //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, R.string.nm_blue))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue))
                         .commit();
                 break;
             case R.id.dr_green:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, R.string.nm_green))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green))
                         .commit();
                 break;
             case R.id.dr_orange:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, R.string.nm_orange))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange))
                         .commit();
                 break;
             case R.id.dr_redline:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, R.string.nm_red))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red))
                         .commit();
                 break;
             case R.id.dr_silver:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, SubwayFragment.newInstance(fakeData, R.string.nm_silver))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver))
                         .commit();
                 break;
         }
@@ -147,7 +145,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 				break;
 			case 1:
 				// routeSelectNavigationDrawerFragment.loadSubwayRoutes();
-				fragment = new SubwayFragment();
+				fragment = new RouteFragment();
 				break;
 			case 2:
 				// routeSelectNavigationDrawerFragment.loadCommuterRailRoutes();
