@@ -8,7 +8,7 @@
     android:paddingLeft="@dimen/def_padding"
     android:paddingRight="@dimen/def_padding"
     android:paddingTop="@dimen/def_margin"
-    tools:context="com.mentalmachines.openmbta.openmbtav2.SubwayFragment"  >
+    tools:context="com.mentalmachines.ttime.SubwayFragment"  >
 
     <TextView android:id="@+id/mc_title"
         android:layout_width="wrap_content"
@@ -36,7 +36,7 @@
     <!-- To do text appearance large -->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/mc_routelist"
-        android:name="com.mentalmachines.openmbta.openmbtav2.SubwayFragment"
+        android:name="com.mentalmachines.ttime.openmbtav2.SubwayFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/mc_title"
@@ -45,7 +45,7 @@
         android:padding="4dp"
         app:layoutManager="LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
-        tools:context="com.mentalmachines.openmbta.openmbtav2.MainActivity"
+        tools:context="com.mentalmachines.ttime.MainActivity"
         tools:listitem="@layout/t_stop" />
 
 </RelativeLayout>

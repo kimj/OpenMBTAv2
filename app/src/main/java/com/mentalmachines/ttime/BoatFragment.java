@@ -1,4 +1,4 @@
-package com.mentalmachines.openmbta.openmbtav2;
+package com.mentalmachines.ttime;
 
 import android.net.Uri;
 import android.os.Bundle;
@@ -8,8 +8,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.mentalmachines.openmbta.openmbtav2.objects.RouteConfig;
-import com.mentalmachines.openmbta.openmbtav2.objects.RouteList;
+import com.mentalmachines.ttime.objects.RouteConfig;
+import com.mentalmachines.ttime.objects.RouteList;
+import com.mentalmachines.ttime.openmbtav2.R;
 
 import org.simpleframework.xml.Serializer;
 import org.simpleframework.xml.core.Persister;

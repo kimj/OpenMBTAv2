@@ -5,7 +5,7 @@ android {
     buildToolsVersion "23.0.2"
 
     defaultConfig {
-        applicationId "com.mentalmachines.openmbta.openmbtav2"
+        applicationId "com.mentalmachines.ttime.openmbtav2"
         minSdkVersion 15
         targetSdkVersion 23
         versionCode 1
