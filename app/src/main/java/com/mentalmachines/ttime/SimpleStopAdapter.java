@@ -8,8 +8,6 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.mentalmachines.ttime.openmbtav2.R;
-
 /**
  * Created by emezias on 1/20/16.
  * This is a simple adapter to fill in the stop,
@@ -48,6 +46,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         return new StopViewHolder(view);
     }
 
+    //all text is dummy data to format the display on the screen
     @Override
     public void onBindViewHolder(final StopViewHolder holder, int position) {
         if(mItems == null || mItems.length < position) {
@@ -55,15 +54,18 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             holder.mStopTiming.setText("");
         } else {
             holder.mStopTiming.setText(mItems[position]
-                    + "\n7:30pm");
-            holder.mETA.setText("Now");
+                    + "\nNext: 7:30pm and 7:40");
+            holder.mETA.setText("Actual time: 7:31, 7:40");
         }
         switch (position) {
             case 3:
                 holder.mImage.setImageResource(android.R.drawable.ic_dialog_alert);
                 break;
-            case 1:
+            case 0:
                 holder.mImage.setImageResource(drawableResource);
+                holder.mStopTiming.setText(mItems[position]
+                        + "\nNext: 7:20pm and 7:30");
+                holder.mETA.setText("Actual time: 7:21, 7:33");
                 break;
         }
 

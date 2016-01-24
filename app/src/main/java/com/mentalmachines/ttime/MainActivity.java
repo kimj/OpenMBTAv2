@@ -13,7 +13,6 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -44,7 +43,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
         navigationView.setNavigationItemSelectedListener(this);
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text))
+                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text,
+                        getResources().getColor(android.R.color.transparent)))
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
@@ -68,31 +68,36 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.dr_blue:
                 //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue,
+                                getResources().getColor(R.color.bluelineBG)))
                         .commit();
                 break;
             case R.id.dr_green:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green,
+                                getResources().getColor(R.color.greenlineBG)))
                         .commit();
                 break;
             case R.id.dr_orange:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange,
+                                getResources().getColor(R.color.orangelineBG)))
                         .commit();
                 break;
             case R.id.dr_redline:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red,
+                                getResources().getColor(R.color.redlineBG)))
                         .commit();
                 break;
             case R.id.dr_silver:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver,
+                                getResources().getColor(R.color.silverlineBG)))
                         .commit();
                 break;
         }
-        Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
