@@ -3,6 +3,9 @@
 
     <string name="app_name">T-Time</string>
     <string name="def_text">Where To?</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+
     <string name="nm_blue">Blue Line</string>
     <string name="nm_green">Green Line</string>
     <string name="nm_orange">Orange Line</string>

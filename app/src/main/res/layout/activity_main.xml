@@ -36,6 +36,7 @@
             android:id="@+id/fab_in_out"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:visibility="gone"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/def_margin"
             android:src="@drawable/ic_menu_forward" />
@@ -48,8 +49,13 @@
         android:id="@+id/nav_view"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_gravity="start"
-        android:fitsSystemWindows="true"
-        app:menu="@menu/activity_main_drawer" />
+        android:layout_gravity="start">
+
+        <ExpandableListView android:id="@+id/routeNavList"
+            android:layout_marginTop="?attr/actionBarSize"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="@dimen/def_padding" />
+        </android.support.design.widget.NavigationView>
         <!--app:headerLayout="@layout/nav_header_nav" -->
 </android.support.v4.widget.DrawerLayout>

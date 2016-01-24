@@ -105,6 +105,10 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                         R.layout.group_view, null);
             }
             ((TextView) convertView).setText(mGroupNames[groupPosition]);
+            ((TextView) convertView).setTextColor(
+                    parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]));
+            convertView.setBackgroundColor(
+                    parent.getContext().getResources().getColor(GroupColorBG[groupPosition]));
         }
         return convertView;
     }
@@ -122,8 +126,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                                 R.layout.child_view, null);
                     }
                     ((TextView) convertView).setText(fakeBlue[childPosition]);
-                    ((TextView) convertView).setTextColor(
-                            parent.getContext().getResources().getColor(R.color.solidBlueline));
                 }
                 break;
             case GREEN:
@@ -135,8 +137,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                                 R.layout.child_view, null);
                     }
                     ((TextView) convertView).setText(fakeGreen[childPosition]);
-                    ((TextView) convertView).setTextColor(
-                            parent.getContext().getResources().getColor(R.color.solidGreenline));
                 }
                 break;
             case ORANGE:
@@ -148,8 +148,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                                 R.layout.child_view, null);
                     }
                     ((TextView) convertView).setText(fakeOrange[childPosition]);
-                    ((TextView) convertView).setTextColor(
-                            parent.getContext().getResources().getColor(R.color.solidOrangeline));
                 }
                 break;
             case RED:
@@ -161,8 +159,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                                 R.layout.child_view, null);
                     }
                     ((TextView) convertView).setText(fakeRed[childPosition]);
-                    ((TextView) convertView).setTextColor(
-                            parent.getContext().getResources().getColor(R.color.solidRedline));
                 }
                 break;
             case SILVER:
@@ -174,11 +170,12 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                                 R.layout.child_view, null);
                     }
                     ((TextView) convertView).setText(fakeSilver[childPosition]);
-                    ((TextView) convertView).setTextColor(
-                            parent.getContext().getResources().getColor(R.color.solidSilverline));
                 }
                 break;
         }
+        ((TextView) convertView).setTextColor(
+                parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]));
+        convertView.setTag(groupPosition);
         return convertView;
     }
 
@@ -187,6 +184,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         return true;
     }
 
+
     //These group position constants will be more dynamic
     static final int BLUE = 0;
     static final int GREEN = 1;
@@ -194,20 +192,25 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     static final int RED = 3;
     static final int SILVER = 4;
 
-    String[] fakeBlue = {"Wonderland to Bowdoin (inbound)", "Bowdoin to Wonderland (outbound"};
-    String[] fakeOrange = {"Forest Hills to Oak Grove (inbound)", "Oak Grove to Forest Hills (outbound"};
-    String[] fakeGreen = {"Green A (inbound)", "Green A (outbound",
-            "Green b (inbound)", "Green b (outbound",
-            "Green c (inbound)", "Green c (outbound",
-            "Green d (inbound)", "Green d (outbound"};
+    public static final int[] GroupColorBG = { R.color.bluelineBG, R.color.greenlineBG,
+            R.color.orangelineBG, R.color.redlineBG, R.color.silverlineBG };
+    public static final int[] GroupTxtColor = { R.color.solidBlueline, R.color.solidGreenline,
+            R.color.solidOrangeline, R.color.solidRedline, android.R.color.darker_gray };
+
+    String[] fakeBlue = {"Wonderland to Bowdoin (inbound)", "Bowdoin to Wonderland (outbound)"};
+    String[] fakeOrange = {"Forest Hills to Oak Grove (inbound)", "Oak Grove to Forest Hills (outbound)"};
+    String[] fakeGreen = {"Green A (inbound)", "Green A (outbound)",
+            "Green b (inbound)", "Green b (outbound)",
+            "Green c (inbound)", "Green c (outbound)",
+            "Green d (inbound)", "Green d (outbound)"};
     String[] fakeRed = {"Alewife to BrainTree (inbound)",
             "Braintree to Alewife (outbound)",
             "Ashmont to Braintree (inbound)",
-            "Braintree to Ashmont (outbound"};
+            "Braintree to Ashmont (outbound)"};
     String[] fakeSilver = { "SL2 to South Station (inbound)",
             "SL2 to Airport (outbound)",
             "SL4 to South Station (inbound)",
             "SL4 to Ruggles (outbound)",
             "SL5 to Downtown Crossing (inbound)",
-            "SL5 to Ruggles (outbound"};
+            "SL5 to Ruggles (outbound)"};
 }

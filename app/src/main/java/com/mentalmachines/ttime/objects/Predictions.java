@@ -1,13 +1,8 @@
 package com.mentalmachines.ttime.objects;
 
-import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.ElementList;
-
-import java.util.List;
 
 public class Predictions {
-	@Attribute
+	/*@Attribute
 	String agencyTitle;
 	@Attribute
 	String routeTag;
@@ -44,7 +39,7 @@ public class Predictions {
 		String dirTag;
 		@Attribute
 		Integer block;
-	}
+	}*/
 
 	class Message {
 		String text;

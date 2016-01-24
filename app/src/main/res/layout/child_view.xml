@@ -2,6 +2,7 @@
 <TextView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
+    android:onClick="childClick"
     android:layout_marginLeft="@dimen/def_padding"
     android:padding="@dimen/def_margin"
     android:textColor="@color/solidBlueline"

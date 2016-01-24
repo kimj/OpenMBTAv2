@@ -44,12 +44,13 @@ public class RouteFragment extends Fragment{
         final Bundle args = getArguments();
         final int lineName = args.getInt(LINE_NAME);
         rootView.setTag(getString(lineName));
-        final int d = setUpTitle(lineName, args.getInt(TAG), (TextView)rootView.findViewById(R.id.mc_title),
+        final int d = setUpTitle(lineName, (TextView)rootView.findViewById(R.id.mc_title),
                 (ImageView) rootView.findViewById(R.id.mc_icon));
         //now work the list
         final String[] listItems = args.getStringArray(STOPS_LIST);
         //final String[] listItems = getResources().getStringArray(R.array.fake_data);
 		final RecyclerView rView = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
+        rView.setBackgroundColor(args.getInt(TAG));
         if(listItems == null) {
 			rView.setVisibility(View.GONE);
             Log.w(TAG, "no stops");
@@ -73,12 +74,10 @@ public class RouteFragment extends Fragment{
      * Setup up the line name title textview
      * Return the icon resource needed by the Recycler View
      * @param titleResource - name string int resource
-     * @param bgColor - yellow for a bus or the line color
       *@param titleTV - the title text field  @return icon drawable resource
      */
-    int setUpTitle(int titleResource, int bgColor, TextView titleTV, ImageView v) {
+    int setUpTitle(int titleResource, TextView titleTV, ImageView v) {
         titleTV.setText(titleResource);
-        titleTV.setBackgroundColor(bgColor);
         switch (titleResource) {
             case R.string.nm_blue:
                 v.setImageResource(R.drawable.ic_blueline);
