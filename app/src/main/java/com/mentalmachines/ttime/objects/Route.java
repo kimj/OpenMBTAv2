@@ -1,13 +1,20 @@
 package com.mentalmachines.ttime.objects;
 
-import java.util.ArrayList;
-
+/*
+import org.simpleframework.xml.Attribute;
+import org.simpleframework.xml.Element;
+@Element(name="route")
 public class Route{
-	static ArrayList<RouteData> bus = new ArrayList<RouteData>();
-	static ArrayList<RouteData> bus_hide = new ArrayList<RouteData>();
-	static ArrayList<RouteData> subway = new ArrayList<RouteData>();
-
-	public class RouteData{
-		public String route_id, route_name, mode_name;
+	@Attribute
+	String tag;
+	@Attribute
+	String title;
+	
+	public String getTag(){
+		return tag;
 	}
-}
+	
+	public String getTitle(){
+		return title;
+	} 
+}	*/

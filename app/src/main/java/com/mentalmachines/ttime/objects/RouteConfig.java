@@ -1,14 +1,8 @@
 package com.mentalmachines.ttime.objects;
 
-import org.simpleframework.xml.Attribute;
-import org.simpleframework.xml.Element;
-import org.simpleframework.xml.ElementList;
-
-import java.util.ArrayList;
-import java.util.List;
 
 public class RouteConfig {
-	@Attribute
+	/*@Attribute
 	String copyright;
 	
 	@ElementList(inline=true)
@@ -75,5 +69,5 @@ public class RouteConfig {
 	static class Point{
 		@Attribute
 		Double lat, lon;
-	}
+	}*/
 }

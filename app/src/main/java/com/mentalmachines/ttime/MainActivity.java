@@ -10,9 +10,11 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ExpandableListView;
 import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
@@ -41,10 +43,29 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        navigationView.setNavigationItemSelectedListener(this);
+        final ExpandableListView routeList = (ExpandableListView) findViewById(R.id.routeNavList);
+        routeList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
+        routeList.setAdapter(new RouteExpandableAdapter(this, false));
+        //allow only one open group
+        routeList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
+            // Keep track of previous expanded group
+            int previousGroup = -1;
+
+            @Override
+            public void onGroupExpand(int groupPosition) {
+                // Collapse previous parent if expanded.
+                if ((previousGroup != -1) && (groupPosition != previousGroup)) {
+                    routeList.collapseGroup(previousGroup);
+                }
+                previousGroup = groupPosition;
+            }
+        });
+        //NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        //navigationView.setNavigationItemSelectedListener(this);
+        //no more menu? using exp list view
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text))
+                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text,
+                        getResources().getColor(android.R.color.transparent)))
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
@@ -54,10 +75,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
 
-		//String[] resources = getResources().getStringArray(R.array.transit_methods);
-		// Set up the drawer.
-		/*mTransitMethodNavigationDrawerFragment.setUp(R.id.transit_method_navigation_drawer_fragment,
-				(DrawerLayout) findViewById(R.id.drawer_layout));*/
 	}
 
     @Override
@@ -68,31 +85,36 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             case R.id.dr_blue:
                 //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue,
+                                getResources().getColor(R.color.bluelineBG)))
                         .commit();
                 break;
             case R.id.dr_green:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green,
+                                getResources().getColor(R.color.greenlineBG)))
                         .commit();
                 break;
             case R.id.dr_orange:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange,
+                                getResources().getColor(R.color.orangelineBG)))
                         .commit();
                 break;
             case R.id.dr_redline:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red,
+                                getResources().getColor(R.color.redlineBG)))
                         .commit();
                 break;
             case R.id.dr_silver:
                 getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver))
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver,
+                                getResources().getColor(R.color.silverlineBG)))
                         .commit();
                 break;
         }
-        Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
+        //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
         return true;
@@ -111,8 +133,10 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 		// as you specify a parent activity in AndroidManifest.xml.
 		switch (item.getItemId()) {
             case R.id.menu_alerts:
+                Toast.makeText(this, R.string.action_alerts, Toast.LENGTH_SHORT).show();
                 break;
             case R.id.menu_settings:
+                Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
                 break;
         }
 
@@ -129,49 +153,53 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         }
     }
 
-    /**
-	 * A placeholder fragment containing a simple view.
-	 */
+    public void setList(View v) {
+        //show either lines or bus expandable list view in the drawer
 
-	/*class TransitMethodDrawerClickListener implements ListView.OnItemClickListener {
+    }
 
-		@Override
-		public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-			Fragment fragment = null;  
-			switch (position) {
-			case 0:
-				mRouteSelectDrawerFragment.loadBusRoutes();
-				fragment = new BusFragment();
-				break;
-			case 1:
-				// routeSelectNavigationDrawerFragment.loadSubwayRoutes();
-				fragment = new RouteFragment();
-				break;
-			case 2:
-				// routeSelectNavigationDrawerFragment.loadCommuterRailRoutes();
-				fragment = new CommuterRailFragment();
-				break;
-			case 3:
-				// routeSelectNavigationDrawerFragment.loadBoatRoutes();
-				fragment = new BoatFragment();
-				break;
-
-			default:
-				break;
-			}
-
-			if (fragment != null) {
-				FragmentManager fragmentManager = getSupportFragmentManager();
-				fragmentManager.beginTransaction().replace(R.id.container, fragment).commit();
-
-				mTransitMethodDrawerList.setItemChecked(position, true);
-				mTransitMethodDrawerList.setSelection(position);
-				getActionBar().setTitle(mTransitMethodNavigationDrawerItemTitles[position]);
-				mTransitMethodNavigationDrawerLayout.closeDrawer(mTransitMethodDrawerList);
-
-			} else {
-				Log.e("MainActivity", "Error in creating fragment");
-			}
-		}
-	}*/
+    public void childClick(View v) {
+        //click listener set on the child view
+        final String[] fakeData = getResources().getStringArray(R.array.fake_data);
+        Log.w(TAG, "no of stops? " + fakeData.length);
+        final int route = (int) v.getTag();
+        switch(route) {
+            case RouteExpandableAdapter.BLUE:
+                //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue,
+                                getResources().getColor(R.color.bluelineBG)))
+                        .commit();
+                break;
+            case RouteExpandableAdapter.GREEN:
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green,
+                                getResources().getColor(R.color.greenlineBG)))
+                        .commit();
+                break;
+            case RouteExpandableAdapter.ORANGE:
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange,
+                                getResources().getColor(R.color.orangelineBG)))
+                        .commit();
+                break;
+            case RouteExpandableAdapter.RED:
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red,
+                                getResources().getColor(R.color.redlineBG)))
+                        .commit();
+                break;
+            case RouteExpandableAdapter.SILVER:
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver,
+                                getResources().getColor(R.color.silverlineBG)))
+                        .commit();
+                break;
+        }
+        //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
+        ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
+        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_in_out);
+        fab.setVisibility(View.VISIBLE);
+        fab.setBackgroundResource(RouteExpandableAdapter.GroupTxtColor[route]);
+    }
 }

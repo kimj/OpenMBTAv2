@@ -3,4 +3,21 @@
     <color name="colorPrimary">#658BA3</color>
     <color name="colorPrimaryDark">#517488</color>
     <color name="colorAccent">#4c12ea</color>
+
+    <!-- line colors -->
+    <color name="solidBlueline">#2a70a4</color>
+    <color name="bluelineBG">#682a70a4</color>
+    <color name="solidGreenline">#009666</color>
+    <color name="greenlineBG">#68009666</color>
+    <color name="solidOrangeline">#d4693f</color>
+    <color name="orangelineBG">#68d4693f</color>
+    <color name="solidCommuter">#882569</color>
+    <color name="commuterBG">#68882569</color>
+    <color name="solidRedline">#d12649</color>
+    <color name="redlineBG">#68d12649</color>
+    <color name="solidSilverline">#b2b5b4</color>
+    <color name="silverlineBG">#68b2b5b4</color>
+    <color name="solidBusYellow">#fec444</color>
+    <color name="busYellowBG">#68fec444</color>
+
 </resources>

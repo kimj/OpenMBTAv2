@@ -25,11 +25,12 @@ public class RouteFragment extends Fragment{
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(String[] stops, int title) {
+	public static RouteFragment newInstance(String[] stops, int title, int bgColor) {
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
 		args.putStringArray(STOPS_LIST, stops);
         args.putInt(LINE_NAME, title);
+        args.putInt(TAG, bgColor);
 		fragment.setArguments(args);
 		return fragment;
 	}
@@ -40,14 +41,16 @@ public class RouteFragment extends Fragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.content_main, container, false);
-        final int lineName = getArguments().getInt(LINE_NAME);
+        final Bundle args = getArguments();
+        final int lineName = args.getInt(LINE_NAME);
         rootView.setTag(getString(lineName));
         final int d = setUpTitle(lineName, (TextView)rootView.findViewById(R.id.mc_title),
                 (ImageView) rootView.findViewById(R.id.mc_icon));
         //now work the list
-        final String[] listItems = getArguments().getStringArray(STOPS_LIST);
+        final String[] listItems = args.getStringArray(STOPS_LIST);
         //final String[] listItems = getResources().getStringArray(R.array.fake_data);
 		final RecyclerView rView = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
+        rView.setBackgroundColor(args.getInt(TAG));
         if(listItems == null) {
 			rView.setVisibility(View.GONE);
             Log.w(TAG, "no stops");
@@ -71,8 +74,7 @@ public class RouteFragment extends Fragment{
      * Setup up the line name title textview
      * Return the icon resource needed by the Recycler View
      * @param titleResource - name string int resource
-     * @param titleTV - the title text field
-     * @return icon drawable resource
+      *@param titleTV - the title text field  @return icon drawable resource
      */
     int setUpTitle(int titleResource, TextView titleTV, ImageView v) {
         titleTV.setText(titleResource);

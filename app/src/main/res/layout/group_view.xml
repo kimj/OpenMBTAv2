@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<TextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:padding="@dimen/def_margin"
+    android:textColor="@android:color/white"
+    android:background="@color/solidSilverline"
+    android:text="Silver Line"
+    android:textAppearance="@android:style/TextAppearance.Large">
+    <!-- layout for a group in the drawer -->
+</TextView>
