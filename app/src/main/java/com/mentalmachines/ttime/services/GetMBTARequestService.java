@@ -13,6 +13,7 @@ import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.objects.Route;
 
 import java.io.IOException;
+import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -80,7 +81,7 @@ public class GetMBTARequestService extends IntentService {
             //make the network call here in the background
             //final Bundle b = intent.getExtras();
             //LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
-            parser = factory.createParser(ROUTES);
+            parser = factory.createParser(new URL(ROUTES));
             parseAPICall();
 
         } catch (IOException e) {
@@ -151,7 +152,7 @@ public class GetMBTARequestService extends IntentService {
                                 token = parser.nextToken();
                                 rtData.name = parser.getValueAsString();
                                 rtList.add(rtData);
-                                Log.d(TAG, "debug output..." + rtData.toString());
+                                Log.d(TAG, "debug output..." + rtData.name + ": " + rtData.mode_name);
                                 rtData = new Route();
                             }
 

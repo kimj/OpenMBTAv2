@@ -3,7 +3,10 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.2"
-
+    packagingOptions {
+        exclude 'META-INF/LICENSE'
+        exclude 'META-INF/NOTICE'
+    }
     defaultConfig {
         applicationId "com.mentalmachines.ttime"
         minSdkVersion 15
@@ -29,6 +32,9 @@ dependencies {
             [group: 'com.fasterxml.jackson.core', name: 'jackson-core', version: '2.4.1'],
             [group: 'com.fasterxml.jackson.core', name: 'jackson-annotations', version: '2.4.1'],
             [group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.4.1']
+    )
+    compile (
+            [group: 'com.google.transit', name: 'gtfs-realtime-bindings', version: '0.0.4']
     )
     compile 'com.android.support:design:23.1.1'
     compile 'io.reactivex:rxandroid:1.1.0'
