@@ -1,29 +1,26 @@
 package com.mentalmachines.ttime;
 
-import android.content.ContentValues;
 import android.content.Context;
-import android.database.Cursor;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import com.mentalmachines.ttime.objects.Route;
-
-import java.util.ArrayList;
-
 /**
  * Created by CaptofOuterSpace on 1/23/2016.
  */
 public class DBHelper extends SQLiteOpenHelper {
-    public static final String DB_KEY_ROUTE_MODE = "mode";
-    public static final String DB_KEY_ROUTE_ID = "route_id";
-    public static final String DB_KEY_ROUTE_ROUTE_NAME = "route_name";
+    public static final String TAG = "DBAdapter";
+    public static final int DB_VERSION = 1;
 
-    private static final String DB_TABLE_ROUTE = "route";
+    public static final String KEY_ROUTE_MODE = "mode";
+    public static final String KEY_ROUTE_MODE_NM = "mode_name";
+    public static final String KEY_ROUTE_ID = "route_id";
+    public static final String KEY_ROUTE_NAME = "route_name";
+    public static final String KEY_ROUTE_TYPE = "route_type";
+    public static final String ROUTE = "route";
+    public static final String DB_ROUTE_TABLE = "route_table";
 
-    private static final String TAG = "DBAdapter";
-    private static final int DB_VERSION = 1;
 
     private SQLiteDatabase mackeyrmsDatabase;
     private static Context context= null;
@@ -39,15 +36,15 @@ public class DBHelper extends SQLiteOpenHelper {
         Log.w(TAG, "Upgrading database from version " + oldVersion
                 + " to "
                 + newVersion + ", which will destroy all old data");
-        String dropAllTables = "DROP TABLE IF EXISTS " + DB_TABLE_ROUTE + ";";
+        String dropAllTables = "DROP TABLE IF EXISTS " + DB_ROUTE_TABLE + ";";
         db.execSQL(dropAllTables);
         onCreate(db);
     }
-    String CREATE_DB_TABLE_ROUTE  = "create table if not exists " + DB_TABLE_ROUTE + "("
+    String CREATE_DB_TABLE_ROUTE  = "create table if not exists " + DB_ROUTE_TABLE + "("
                 + "id Integer AUTOINCREMENT PRIMARY KEY"
-                + DB_KEY_ROUTE_MODE + "TEXT"
-                + DB_KEY_ROUTE_ID + "INTEGER"
-                + DB_KEY_ROUTE_ROUTE_NAME + "TEXT)";
+                + KEY_ROUTE_MODE + "TEXT"
+                + KEY_ROUTE_ID + "INTEGER"
+                + KEY_ROUTE_NAME + "TEXT)";
 
     @Override
     public void onCreate(SQLiteDatabase db) {}

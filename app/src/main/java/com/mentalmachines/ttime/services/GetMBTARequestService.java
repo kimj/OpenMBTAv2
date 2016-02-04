@@ -3,10 +3,7 @@ package com.mentalmachines.ttime.services;
 import android.app.IntentService;
 import android.content.Intent;
 import android.graphics.BitmapFactory;
-import android.os.Bundle;
-import android.os.Parcelable;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.TextUtils;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -15,9 +12,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.objects.Route;
 
-import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.GregorianCalendar;
@@ -35,7 +30,7 @@ import java.util.GregorianCalendar;
  */
 public class GetMBTARequestService extends IntentService {
 
-    public static final String TAG = "GetNewzService";
+    public static final String TAG = "GetMBTARequestService";
     //reusable for displaying the date
     private final SimpleDateFormat fmt = new SimpleDateFormat("MMM-dd");
 
@@ -45,13 +40,9 @@ public class GetMBTARequestService extends IntentService {
     private static final GregorianCalendar cal = new GregorianCalendar();
     private static final BitmapFactory.Options opts = new BitmapFactory.Options();
     //Base URL
-    public static final String DEFAULT = "http://www.faroo.com/api?src=news&rlength=3&f=json&key=BiLaVoSafZjhLpHZZnv9Oe16rdY_";
 
-    public static final String API_KEY = "wX9NwuHnZU2ToO7GmGR9uw";
-    public static final String PREFIX = "http://realtime.mbta.com/developer/api/v2/";
-    public static final String SUFFIX = "<query>?api_key=" + API_KEY +" &<parameter>=<required/optional parameters>";
-    public static final String BY = "by ";
-    public static final String COMMA = ", ";
+    public static final String ROUTES = "http://realtime.mbta.com/developer/api/v2/routes?api_key=wX9NwuHnZU2ToO7GmGR9uw";
+
 
     // Query Types
     /*    Routes
@@ -80,71 +71,108 @@ public class GetMBTARequestService extends IntentService {
 
     /**
      * The extra on the intent tells the service what to do
+     *
      * @param intent
      */
     @Override
     protected void onHandleIntent(Intent intent) {
         try {
             //make the network call here in the background
-            final Bundle b = intent.getExtras();
-            FarooItem[] list = null;
-            if(b == null) {
-                parser = factory.createParser(getURL("ROUTE"));
-                list = parseAPICall();
-            } else if(b.containsKey(TAG)) {
-                //This call is passing in user input, the search term
-                final String keyword = b.getString(TAG);
-                Log.i(TAG, "Keyword search: " + keyword);
-                parser = factory.createParser(new URL(PREFIX + TextUtils.htmlEncode(keyword) + SUFFIX));
-                list = parseAPICall();
-            //Next two can return without a follow up broadcast
-            } else if(b.containsKey(NewzListActivity.TAG)) {
-                File f = new File(getExternalFilesDir(null), FILENAME);
-                f.setReadable(true);
+            //final Bundle b = intent.getExtras();
+            //LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
+            parser = factory.createParser(ROUTES);
+            parseAPICall();
 
-                //read saved data and return
-                if(f.exists()) {
-                    parser = factory.createParser(f);
-                    list = parseAPICall();
-                    Log.d(TAG, "reading file, list count? " + list.length);
-                } else {
-                    Log.w(TAG, "no file saved, last list not saved");
-                    return;
-                }
-            } else if(b.containsKey(NEWS)) {
-                Parcelable[] stuff = b.getParcelableArray(NEWS);
-                list = new FarooItem[stuff.length];
-                int dex = 0;
-                for(Parcelable p: stuff) {
-                    list[dex++] = (FarooItem) p;
-                }
-                return;
-            }
-
-            //This part wraps things up and sends the data back to the activity
-            final Intent tnt = new Intent(TAG);
-            tnt.putExtra(TAG, list);
-            if(b != null && b.containsKey(TAG) && list.length == 0) {
-                tnt.putExtra(NewzListActivity.TAG, b.getString(TAG));
-                tnt.putExtra(PROB, "");
-            }
-            LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
             final Intent tnt = new Intent(TAG);
             //empty array triggers error in activity
-            tnt.putExtra(TAG, new FarooItem[0]);
-            tnt.putExtra(PROB, e.getMessage());
             LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
         }
     }
+
+    void parseAPICall() throws IOException {
+        Route rtData = new Route();
+        ArrayList<Route> rtList = new ArrayList<>();
+        String mode_name = null;
+        int rtType = -1;
+        while (!parser.isClosed()) {
+            //start parsing, get the token
+            JsonToken token = parser.nextToken();
+            if (token == null)
+                break;
+            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE.equals(parser.getCurrentName())) {
+                //begin with an array named mode
+                token = parser.nextToken();
+                if (!JsonToken.START_ARRAY.equals(token)) {
+                    // bail out, no array, can also show error to user
+                    break;
+                }
+                token = parser.nextToken();
+                // each element of the array is an object holding an article/news item so the next token -> start object
+                if (!JsonToken.START_OBJECT.equals(token)) {
+                    //maybe the end of the list of objects
+                    break;
+                }
+                // now parse the series of JSON objects into items, add to the list with date and create new
+                while (true) {
+                    token = parser.nextToken();
+                    if (token == null) {
+                        break;
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_TYPE.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        rtType = parser.getValueAsInt();
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE_NM.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        mode_name = parser.getValueAsString();
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.ROUTE.equals(parser.getCurrentName())) {
+                        //this is an array of routes
+                        token = parser.nextToken();
+                        if (!JsonToken.START_ARRAY.equals(token)) {
+                            // bail out, no routes
+                            break;
+                        }
+                        token = parser.nextToken();
+                        // each element of the array is a route to combine with the mode name and route type
+                        if (!JsonToken.START_OBJECT.equals(token)) {
+                            //maybe the end of the list of objects
+                            break;
+                        }
+                        while (!JsonToken.END_ARRAY.equals(token)) {
+                            token = parser.nextToken();
+                            if (token == null) {
+                                break;
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_ID.equals(parser.getCurrentName())) {
+                                rtData.type = rtType;
+                                rtData.mode_name = mode_name;
+                                token = parser.nextToken();
+                                rtData.id = parser.getValueAsString();
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
+                                token = parser.nextToken();
+                                rtData.name = parser.getValueAsString();
+                                rtList.add(rtData);
+                                Log.d(TAG, "debug output..." + rtData.toString());
+                                rtData = new Route();
+                            }
+
+                        }//array of routes is parsed
+
+                    }//end while
+
+                }
+            }
+        }
+    }
+
+}//end class
+
 
     /**
      * This method will send a url to Faroo and parse the JSON response
      * Parser is initialized before calling this method
      * @return the list that is parsed
      * @throws IOException
-     */
+     *
     Route parseAPICall() throws IOException {
         Route.RouteData route;
         String mode;
@@ -173,7 +201,7 @@ public class GetMBTARequestService extends IntentService {
                     token = parser.nextToken();
                     if (token == null) {
                         break;
-                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.DB_KEY_ROUTE_MODE.equals(parser.getCurrentName())) {
+                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         mode = parser.getText();
                         //Log.d(TAG, "Title: " + article.title);
@@ -232,5 +260,5 @@ public class GetMBTARequestService extends IntentService {
         parseList.clear();
         return returnArray;
         //clean up the parseList ArrayList collection and use a simpler, faster array structure
-    }
-}
+    } */
+
