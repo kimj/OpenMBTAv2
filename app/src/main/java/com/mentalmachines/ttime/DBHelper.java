@@ -4,7 +4,14 @@ import android.content.Context;
 import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.Environment;
 import android.util.Log;
+import android.widget.Toast;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 
 /**
  * Created by CaptofOuterSpace on 1/23/2016.
@@ -12,7 +19,9 @@ import android.util.Log;
 public class DBHelper extends SQLiteOpenHelper {
     public static final String TAG = "DBAdapter";
     public static final int DB_VERSION = 1;
+    public static final String DBNAME = "ttimedb.sqlite3";
 
+    //Route table keys
     public static final String KEY_ROUTE_MODE = "mode";
     public static final String KEY_ROUTE_MODE_NM = "mode_name";
     public static final String KEY_ROUTE_ID = "route_id";
@@ -21,15 +30,49 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String ROUTE = "route";
     public static final String DB_ROUTE_TABLE = "route_table";
 
+    String CREATE_DB_TABLE_ROUTE  = "create table if not exists " + DB_ROUTE_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_MODE + " TEXT not null, "
+            + KEY_ROUTE_ID + " TEXT not null, "
+            + KEY_ROUTE_NAME + " TEXT not null);";
 
-    private SQLiteDatabase mackeyrmsDatabase;
-    private static Context context= null;
+    //Stop keys, some duplication with routes
+    public static final String KEY_DIR = "direction";
+    public static final String KEY_DIR_NM = "direction_name";
+    //Inbound, Outbound
+    public static final String STOP = "stop";
+    public static final String KEY_STOP_ORD = "stop_order";
+    public static final String KEY_STOPID = "stop_id";
+    public static final String KEY_STOPNM = "stop_name";
+    public static final String KEY_STOPLT = "stop_lat";
+    public static final String KEY_STOPLN = "stop_lon";
 
+    public static final String DB_INB_TABLE = "inbound_table";
+    public static final String DB_OUT_TABLE = "outbound_table";
+    String CREATE_DB_TABLE_INBOUND  = "create table if not exists " + DB_INB_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT not null,"
+            + KEY_STOPID + " INT not null,"
+            + KEY_STOP_ORD + " INT not null,"
+            + KEY_STOPNM + " TEXT not null,"
+            + KEY_STOPLT + " REAL not null,"
+            + KEY_STOPLN + " REAL not null);";
 
-    public void initializeDatabase(){
-        SQLiteDatabase db = this.getWritableDatabase();
-        db.execSQL(CREATE_DB_TABLE_ROUTE);
-    }
+    String CREATE_DB_TABLE_OUTBOUND  = "create table if not exists " + DB_OUT_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT not null,"
+            + KEY_STOPID + " INT not null,"
+            + KEY_STOP_ORD + " INT not null,"
+            + KEY_STOPNM + " TEXT not null,"
+            + KEY_STOPLT + " NUMERIC not null,"
+            + KEY_STOPLN + " NUMERIC not null);";
+
+    private static final String RTINDEX = "CREATE INDEX RTINDEX ON " + DB_ROUTE_TABLE + "("
+            + "_id," + KEY_ROUTE_MODE + ");";
+    private static final String STOP_IN_DEX = "CREATE UNIQUE INDEX STOP_IN_DEX ON " + DB_INB_TABLE + "("
+            + "_id," + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
+    private static final String STOP_OUT_DEX = "CREATE UNIQUE INDEX STOP_OUT_DEX ON " + DB_OUT_TABLE + "("
+            + "_id," + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
 
     @Override
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
@@ -40,38 +83,52 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(dropAllTables);
         onCreate(db);
     }
-    String CREATE_DB_TABLE_ROUTE  = "create table if not exists " + DB_ROUTE_TABLE + "("
-                + "id Integer AUTOINCREMENT PRIMARY KEY"
-                + KEY_ROUTE_MODE + "TEXT"
-                + KEY_ROUTE_ID + "INTEGER"
-                + KEY_ROUTE_NAME + "TEXT)";
 
     @Override
-    public void onCreate(SQLiteDatabase db) {}
-
-    @Override
-    public void onOpen(SQLiteDatabase db) { super.onOpen(db); }
+    public void onCreate(SQLiteDatabase db) {
+        db.execSQL(CREATE_DB_TABLE_ROUTE);
+        db.execSQL(CREATE_DB_TABLE_INBOUND);
+        db.execSQL(CREATE_DB_TABLE_OUTBOUND);
+        db.execSQL(RTINDEX);
+        db.execSQL(STOP_IN_DEX);
+        db.execSQL(STOP_OUT_DEX);
+    }
 
     public DBHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version, DatabaseErrorHandler errorHandler) {
         super(context, name, factory, version, errorHandler);
     }
 
-/*    public ArrayList<Route> getRoutes(){
-        SQLiteDatabase db = this.getReadableDatabase();
-        Cursor routesCursor = db.query(DB_TABLE_ROUTE, new String[]{
-                        KEY_NOTE_ACTION, KEY_NOTE_ALT_HTML, KEY_NOTE_BODY, KEY_NOTE_COMMENTS, KEY_NOTE_CONTACT_ID },
-                null, null, null, null, null);
-
-        return routesCursor;
+    public DBHelper(Context context) {
+        super(context, DBNAME, null, DB_VERSION);
     }
 
-    public long insertRoute(Route route)
-    {
-        SQLiteDatabase db = this.getWritableDatabase();
-        ContentValues initialValues = new ContentValues();
-        initialValues.put(KEY_NOTE_ACTION, route.getAction());
+    /**
+     * This function runs in the bg and copies the db over to the root directory
+     * @param ctxt
+     * @throws IOException
+     */
+    static void copyDBFile(Context ctxt) throws IOException {
+        //use as needed to verify data
+        FileInputStream inStream = new FileInputStream("/data/data/com.mentalmachines.ttime/databases/" + DBNAME);
+        final File outFile;
+        if (android.os.Environment.getExternalStorageState().equals(
+                android.os.Environment.MEDIA_MOUNTED)) {
+            outFile = new File(Environment.getExternalStorageDirectory(), "copy" + DBNAME);
 
-        return db.insert(DB_TABLE_ROUTE, null, initialValues);
+        } else {
+            outFile = new File("copy" + DBNAME);
+        }
+        //outFile.setReadOnly(false);
+        //this line is failing on permissions
 
-    }*/
+        FileOutputStream outStream = new FileOutputStream(outFile);
+        int tmp = inStream.read(); //read one byte
+        while(tmp != -1) {
+            outStream.write(tmp); //write that byte
+            tmp = inStream.read();
+        }
+        Log.d(TAG, "db file: " + outFile.getName());
+        Toast.makeText(ctxt, "database copy to sdcard complete", Toast.LENGTH_SHORT).show();
+    }
+
 }

@@ -9,10 +9,12 @@ public class Stops {
     ArrayList<Stop> stops  = new ArrayList<Stop>();
 
     class Stop {
-        String stop_order;
-        String stop_id;
+        int route;
+        int stop_order;
+        int stop_id;
         String stop_name;
-        String stop_lat;
-        String stop_lon;
+        double stop_lat;
+        double stop_lon;
     }
+
 }
