@@ -14,6 +14,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.objects.Alert;
 
 import java.io.IOException;
 import java.net.URL;
@@ -270,6 +271,93 @@ public class GetMBTARequestService extends IntentService {
             }
         }
     }
+
+    void parseAlertsCall(JsonParser parser) throws IOException {
+        final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
+        if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ALERTS_TABLE) > 0) {
+            Log.d(TAG, "db exists");
+            return;
+        }
+        final ContentValues cv = new ContentValues();
+
+        String mode_name = null;
+        Alert alert = new Alert();
+        while (!parser.isClosed()) {
+            //start parsing, get the token
+            JsonToken token = parser.nextToken();
+            if (token == null)
+                break;
+            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ALERTS.equals(parser.getCurrentName())) {
+                //begin with an array named mode
+                token = parser.nextToken();
+                if (!JsonToken.START_ARRAY.equals(token)) {
+                    // bail out, no array, can also show error to user
+                    break;
+                }
+                token = parser.nextToken();
+                // each element of the array is an object holding an article/news item so the next token -> start object
+                if (!JsonToken.START_OBJECT.equals(token)) {
+                    //maybe the end of the list of objects
+                    break;
+                }
+                // now parse the series of JSON objects into items, add to the list with date and create new
+                while (true) {
+                    token = parser.nextToken();
+                    if (token == null) {
+                        break;
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ALERT_ID.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.alert_id = parser.getValueAsInt();
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_NAME.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.effect_name = parser.getValueAsString();
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.effect = parser.getValueAsString();
+                    }else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CAUSE.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.cause = parser.getValueAsString();
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_PERIODS.equals(parser.getCurrentName())) {
+                        //this is an array of routes
+                        token = parser.nextToken();
+                        if (!JsonToken.START_ARRAY.equals(token)) {
+                            // bail out, no routes
+                            break;
+                        }
+                        token = parser.nextToken();
+                        // each element of the array is a route to combine with the mode name and route type
+                        if (!JsonToken.START_OBJECT.equals(token)) {
+                            //maybe the end of the list of objects
+                            break;
+                        }
+                        while (!JsonToken.END_ARRAY.equals(token)) {
+                            token = parser.nextToken();
+                            if (token == null) {
+                                break;
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_ID.equals(parser.getCurrentName())) {
+                                /*rtData.type = rtType;
+                                rtData.mode_name = mode_name;*/
+                                token = parser.nextToken();
+                                cv.put(DBHelper.KEY_ROUTE_ID, parser.getValueAsString());
+                                //cv.put(DBHelper.KEY_ROUTE_TYPE, rtType);
+                                cv.put(DBHelper.KEY_ROUTE_MODE, mode_name);
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
+                                token = parser.nextToken();
+                                cv.put(DBHelper.KEY_ROUTE_NAME, parser.getValueAsString());
+                            } else if (JsonToken.END_OBJECT.equals(token)) {
+                                token = parser.nextToken();
+                                Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + db.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
+                                final Intent tnt = new Intent(this, GetMBTARequestService.class);
+                                tnt.putExtra(TAG, cv.getAsString(DBHelper.KEY_ROUTE_ID));
+                                startService(tnt);
+                                cv.clear();
+                            }
+                        }//array of alerts is parsed
+                    }//end while
+                }
+            }
+        }
+    } //end parseAlerts()
 
 }//end class
 

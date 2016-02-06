@@ -47,6 +47,25 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_STOPLT = "stop_lat";
     public static final String KEY_STOPLN = "stop_lon";
 
+    public static final String KEY_ALERTS= "alerts";
+    public static final String KEY_ALERT_ID = "alert_id";
+    public static final String KEY_EFFECT_NAME = "effect_name";
+    public static final String KEY_EFFECT = "effect";
+    public static final String KEY_CAUSE_NAME = "cause_name";
+    public static final String KEY_CAUSE = "cause";
+    public static final String KEY_HEADER_TEXT = "header_text";
+    public static final String KEY_SHORT_HEADER_TEXT = "short_header_text";
+    public static final String KEY_DESCRIPTION_TEXT = "description_text";
+    public static final String KEY_SEVERITY = "severity";
+    public static final String KEY_CREATED_DT = "created_dt";
+    public static final String KEY_LAST_MODIFIED_DT = "last_modified_dt";
+    public static final String KEY_SERVICE_EFFECT_TEXT = "service_effect_text";
+    public static final String KEY_TIMEFRAME_TEXT = "timeframe_text";
+    public static final String KEY_ALERT_LIFECYCLE = "alert_lifecycle";
+    public static final String KEY_EFFECT_PERIOD_START = "effect_start";
+    public static final String KEY_EFFECT_PERIOD_END = "effect_end";
+    public static final String KEY_EFFECT_PERIODS = "effect_periods";
+
     public static final String DB_INB_TABLE = "inbound_table";
     public static final String DB_OUT_TABLE = "outbound_table";
     String CREATE_DB_TABLE_INBOUND  = "create table if not exists " + DB_INB_TABLE + "("
@@ -66,6 +85,26 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_STOPNM + " TEXT not null,"
             + KEY_STOPLT + " NUMERIC not null,"
             + KEY_STOPLN + " NUMERIC not null);";
+
+    public static final String DB_ALERTS_TABLE = "alerts";
+
+    String CREATE_DB_TABLE_ALERTS  = "create table if not exists " + DB_ALERTS_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ALERT_ID + " INT not null,"
+            + KEY_EFFECT_NAME + " TEXT not null,"
+            + KEY_CAUSE_NAME + " TEXT not null,"
+            + KEY_CAUSE + " TEXT not null,"
+            + KEY_HEADER_TEXT + " TEXT not null,"
+            + KEY_SHORT_HEADER_TEXT + " TEXT not null);"
+            + KEY_DESCRIPTION_TEXT + " TEXT not null);"
+            + KEY_SEVERITY + " TEXT not null);"
+            + KEY_CREATED_DT + " TEXT not null);"
+            + KEY_LAST_MODIFIED_DT + " TEXT not null);"
+            + KEY_SERVICE_EFFECT_TEXT + " TEXT not null);"
+            + KEY_TIMEFRAME_TEXT + " TEXT not null);"
+            + KEY_ALERT_LIFECYCLE + " TEXT not null);"
+            + KEY_EFFECT_PERIOD_START + " TEXT not null);"
+            + KEY_EFFECT_PERIOD_END + " TEXT not null);";
 
     private static final String RTINDEX = "CREATE INDEX RTINDEX ON " + DB_ROUTE_TABLE + "("
             + "_id," + KEY_ROUTE_MODE + ");";
@@ -92,6 +131,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(RTINDEX);
         db.execSQL(STOP_IN_DEX);
         db.execSQL(STOP_OUT_DEX);
+        db.execSQL(CREATE_DB_TABLE_ALERTS);
     }
 
     public DBHelper(Context context, String name, SQLiteDatabase.CursorFactory factory, int version, DatabaseErrorHandler errorHandler) {
