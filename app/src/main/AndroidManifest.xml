@@ -22,5 +22,6 @@
         </activity>
 
         <service android:name=".services.GetMBTARequestService"/>
+        <service android:name=".services.DBCreateStopsRoutes"/>
     </application>
 </manifest>
