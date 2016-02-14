@@ -1,8 +1,11 @@
 package com.mentalmachines.ttime.objects.gtfs;
 
 import android.content.Context;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 
 import java.io.BufferedReader;
@@ -14,21 +17,28 @@ public class TransitTrip {
     public static final String TAG = "TransitTrip";
     static TransitTrip[] tripMapList;
 
-	public String route_id;
-	public String service_id;
-	public String trip_id;
-	public String trip_headsign;
+    public String route_id;
+    public String service_id;
+    public String trip_id;
+    public String trip_headsign;
     public String trip_short_name;
-	public String direction_id;
-	public String block_id;
+    public String direction_id;
+    /**
+     * "direction_id": "0",
+     "direction_name": "Southbound",
+     "direction_id": "0",
+     "direction_name": "Outbound",
+     */
+    public String block_id;
     public String shape_id;
     public String wheelchair_accessible;
+    public boolean isBus;
 
 
-	public TransitTrip(String str){
-		String[] temp = str.split(",");
-        
-		this.route_id = temp[0];
+    public TransitTrip(String str){
+        String[] temp = str.split(",");
+
+        this.route_id = temp[0];
         this.service_id = temp[1];
         this.trip_id = temp[2];
         this.trip_headsign = temp[3];
@@ -37,16 +47,34 @@ public class TransitTrip {
         this.block_id = temp[6];
         this.shape_id = temp[7];
         this.wheelchair_accessible = temp[8];
-		
-	}
 
+    }
+
+    final static String[] projection = new String[] { DBHelper.KEY_ROUTE_MODE };
+    final static String whereClause = DBHelper.KEY_ROUTE_ID + " like ";
     public static void createTrips(Context ctx) {
+        /*final SQLiteDatabase mDB = new DBHelper(ctx).getWritableDatabase();
         BufferedReader rawReader = new BufferedReader(new InputStreamReader(ctx.getResources().openRawResource(R.raw.trips)));
         String line = "";
         ArrayList<TransitTrip> tripCollection = new ArrayList<>();
+        TransitTrip tmp;
+        Cursor c;
         try {
             while((line = rawReader.readLine()) != null) {
-                tripCollection.add(new TransitTrip(line));
+                tmp = new TransitTrip(line);
+                //set the trip mode, only add trips that are subway and bus
+                c = mDB.query(DBHelper.DB_ROUTE_TABLE, projection, whereClause + tmp.route_id, null, null, null, null);
+                if(c.getCount() > 0) {
+                    c.moveToFirst();
+                    if(c.getString(0).equals(DBHelper.SUBWAY_MODE)){
+                        tmp.isBus = false;
+                    } else {
+                        tmp.isBus = true;
+                    }
+
+                    tripCollection.add(tmp);
+                }
+                c.close();
             }
             tripMapList = new TransitTrip[tripCollection.size()];
             tripMapList = tripCollection.toArray(tripMapList);
@@ -54,7 +82,7 @@ public class TransitTrip {
         } catch (IOException e) {
             Log.e(TAG, "Error reading GTFS");
             e.printStackTrace();
-        }
+        }*/
     }
 
     public static TransitTrip[] returnTripsWithScheduleIds(String[] calList) {

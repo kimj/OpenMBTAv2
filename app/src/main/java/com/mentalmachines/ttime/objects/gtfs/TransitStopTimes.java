@@ -20,19 +20,22 @@ import java.io.InputStreamReader;
 public class TransitStopTimes {
     public static final String TAG = "TransitStopTimes";
 
-	public String trip_id;
-	public String arrival_time;
-	public String departure_time;
-	public String stop_id;
-	//public String stop_sequence;
-	//public String stop_headsign;
-	//public String pickup_type;
-	//public String drop_off_type;
+    static SQLiteDatabase mDB;
+    final static ContentValues cv = new ContentValues();
 
-	public TransitStopTimes(String str){
-		String[] temp = str.split(",");
-        
-		this.trip_id = temp[0];
+    public String trip_id;
+    public String arrival_time;
+    public String departure_time;
+    public String stop_id;
+    //public String stop_sequence;
+    //public String stop_headsign;
+    //public String pickup_type;
+    //public String drop_off_type;
+
+    public TransitStopTimes(String str){
+        String[] temp = str.split(",");
+
+        this.trip_id = temp[0];
         this.arrival_time = temp[1];
         this.departure_time = temp[2];
         this.stop_id = temp[3];
@@ -40,40 +43,99 @@ public class TransitStopTimes {
 		/*this.stop_headsign = temp[5];
         this.pickup_type = temp[6];
         this.drop_off_type = temp[7];*/
-	}
+    }
 
     public static void createScheduleEntries(Context ctx) {
-        final ContentValues cv = new ContentValues();
-        final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
+        /*mDB = new DBHelper(ctx).getWritableDatabase();
         final BufferedReader rawReader = new BufferedReader(new InputStreamReader(ctx.getResources().openRawResource(R.raw.stop_times)));
         String line = "";
         Log.i(TAG, "reading the big file");
-        TransitStopTimes schedTime;
+        TransitStopTimes sched;
         try {
             while((line = rawReader.readLine()) != null) {
-                schedTime = new TransitStopTimes(line);
+                sched = new TransitStopTimes(line);
+                cv.put(DBHelper.KEY_STOPID, sched.stop_id);
+                cv.put(DBHelper.KEY_ARR_TIME, sched.arrival_time);
+                cv.put(DBHelper.KEY_DEP_TIME, sched.departure_time);
+                cv.put(DBHelper.KEY_ARR_TIME, sched.arrival_time);
+                cv.put(DBHelper.KEY_DEP_TIME, sched.departure_time);
+                //TODO would be nice to create an array list for weekdays, saturday, sunday and use contains
                 for(TransitTrip trip: TransitCalendar.weekdays) {
-                    if(trip.trip_id.equals(schedTime.trip_id)) {
-                        loadTable(schedTime, trip, DBHelper.WEEKDAY_TABLE, db, cv);
-                    }
-                }
-                //now friday, saturday and sunday
-                //Log.i(TAG, "fri, sat, sun, " + schedTime.trip_id);
-                for(TransitTrip trip: TransitCalendar.fridays) {
-                    if(trip.trip_id.equals(schedTime.trip_id)) {
-                        loadTable(schedTime, trip, DBHelper.FRIDAY_TABLE, db, cv);
-                    }
-                }
+                    if(trip.trip_id.equals(sched.trip_id)) {
+                        //weekday trip
+                        cv.put(DBHelper.KEY_TRIP_ID, trip.trip_id);
+                        cv.put(DBHelper.KEY_TRIP_SIGN, trip.trip_headsign);
+                        cv.put(DBHelper.KEY_ROUTE_ID, trip.route_id);
+                        if(trip.isBus) {
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, trip.route_id.length() < 3? DBHelper.WEEKDAY_TABLE_BUS_OUT:DBHelper.WEEKDAY_TABLE_4BUS_OUT
+                                        + ": " + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(trip.route_id.length() < 3? DBHelper.WEEKDAY_TABLE_BUS_OUT:DBHelper.WEEKDAY_TABLE_4BUS_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "bus in " + sched.arrival_time + " "
+                                        + mDB.insert(trip.route_id.length() < 3? DBHelper.WEEKDAY_TABLE_BUS_IN:DBHelper.WEEKDAY_TABLE_4BUS_IN, "", cv));
+                            }
+                        } else {
+                            //trip is subway
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, DBHelper.WEEKDAY_TABLE_SUB_OUT + ": " + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(DBHelper.WEEKDAY_TABLE_SUB_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "subway in " + sched.arrival_time + " " + mDB.insert(DBHelper.WEEKDAY_TABLE_SUB_IN, "", cv));
+                            }
+                        }
 
+                    }
+                }
+                //check saturday and sunday next
                 for(TransitTrip trip: TransitCalendar.saturdays) {
-                    if(trip.trip_id.equals(schedTime.trip_id)) {
-                        loadTable(schedTime, trip, DBHelper.SATURDAY_TABLE, db, cv);
+                    if(trip.trip_id.equals(sched.trip_id)) {
+                        cv.put(DBHelper.KEY_TRIP_ID, trip.trip_id);
+                        cv.put(DBHelper.KEY_TRIP_SIGN, trip.trip_headsign);
+                        cv.put(DBHelper.KEY_ROUTE_ID, trip.route_id);
+                        if(trip.isBus) {
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, trip.route_id.length() < 3? DBHelper.SATURDAY_TABLE_BUS_OUT:DBHelper.SATURDAY_TABLE_4BUS_OUT + ": "
+                                        + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(trip.route_id.length() < 3? DBHelper.SATURDAY_TABLE_BUS_OUT:DBHelper.SATURDAY_TABLE_4BUS_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "bus in " + sched.arrival_time + " "
+                                        + mDB.insert(trip.route_id.length() < 3? DBHelper.SATURDAY_TABLE_BUS_IN:DBHelper.SATURDAY_TABLE_4BUS_IN, "", cv));
+                            }
+                        } else {
+                            //trip is subway
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, DBHelper.SATURDAY_TABLE_SUB_OUT + ": " + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(DBHelper.SATURDAY_TABLE_SUB_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "subway in " + sched.arrival_time + " " + mDB.insert(DBHelper.SATURDAY_TABLE_SUB_IN, "", cv));
+                            }
+                        }
                     }
                 }
 
                 for(TransitTrip trip: TransitCalendar.sundays) {
-                    if(trip.trip_id.equals(schedTime.trip_id)) {
-                        loadTable(schedTime, trip, DBHelper.SUNDAY_TABLE, db, cv);
+                    if(trip.trip_id.equals(sched.trip_id)) {
+                        cv.put(DBHelper.KEY_TRIP_ID, trip.trip_id);
+                        cv.put(DBHelper.KEY_TRIP_SIGN, trip.trip_headsign);
+                        cv.put(DBHelper.KEY_ROUTE_ID, trip.route_id);
+                        if(trip.isBus) {
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, trip.route_id.length() < 3? DBHelper.SUNDAY_TABLE_BUS_OUT:DBHelper.SUNDAY_TABLE_4BUS_OUT + ": " + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(trip.route_id.length() < 3? DBHelper.SUNDAY_TABLE_BUS_OUT:DBHelper.SUNDAY_TABLE_4BUS_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "bus in " + sched.arrival_time + " "
+                                        + mDB.insert(trip.route_id.length() < 3? DBHelper.SUNDAY_TABLE_BUS_IN:DBHelper.SUNDAY_TABLE_4BUS_IN, "", cv));
+                            }
+                        } else {
+                            //trip is subway
+                            if(trip.direction_id.equals("0")) {
+                                Log.d(TAG, DBHelper.SUNDAY_TABLE_SUB_OUT + ": " + trip.trip_id + ", " + sched.stop_id + ", " + sched.arrival_time);
+                                Log.d(TAG, "row " + mDB.insert(DBHelper.SUNDAY_TABLE_SUB_OUT, "", cv));
+                            } else {
+                                Log.i(TAG, "subway in " + sched.arrival_time + " " + mDB.insert(DBHelper.SUNDAY_TABLE_SUB_IN, "", cv));
+                            }
+                        }
                     }
                 }
             }
@@ -82,25 +144,20 @@ public class TransitStopTimes {
             Log.e(TAG, "Error reading GTFS");
             e.printStackTrace();
         }
-        db.execSQL(DBHelper.WEEKDAY_DEX);
-        db.execSQL(DBHelper.FRIDAY_DEX);
-        db.execSQL(DBHelper.SATURDAY_DEX);
-        db.execSQL(DBHelper.SUNDAY_DEX);
-        db.close();
-    }
 
-    static void loadTable(TransitStopTimes sched, TransitTrip trip,
-                          String table, SQLiteDatabase db, ContentValues cv) {
-        cv.put(DBHelper.KEY_ROUTE_ID, trip.route_id);
-        cv.put(DBHelper.KEY_DIR_ID, trip.direction_id);
-        cv.put(DBHelper.KEY_STOPID, sched.stop_id);
-        cv.put(DBHelper.KEY_TRIP_ID, trip.trip_id);
-        cv.put(DBHelper.KEY_TRIP_SIGN, trip.trip_headsign);
-        cv.put(DBHelper.KEY_ARR_TIME, sched.arrival_time);
-        cv.put(DBHelper.KEY_DEP_TIME, sched.departure_time);
-        Log.i(TAG, table + ": " + db.insert(DBHelper.FRIDAY_TABLE, "", cv));
-
-        cv.clear();
+        mDB.execSQL(DBHelper.WEEKDAY_DEX_B_IN);
+        mDB.execSQL(DBHelper.WEEKDAY_DEX_B_OUT);
+        mDB.execSQL(DBHelper.WEEKDAY_DEX_SUB_IN);
+        mDB.execSQL(DBHelper.WEEKDAY_DEX_SUB_OUT);
+        mDB.execSQL(DBHelper.SATURDAY_DEX_B_IN);
+        mDB.execSQL(DBHelper.SATURDAY_DEX_B_OUT);
+        mDB.execSQL(DBHelper.SATURDAY_DEX_SUB_IN);
+        mDB.execSQL(DBHelper.SATURDAY_DEX_SUB_OUT);
+        mDB.execSQL(DBHelper.SUN_DEX_B_IN);
+        mDB.execSQL(DBHelper.SUN_DEX_B_OUT);
+        mDB.execSQL(DBHelper.SUN_DEX_SUB_IN);
+        mDB.execSQL(DBHelper.SUN_DEX_SUB_OUT);
+        mDB.close();*/
     }
 
 }

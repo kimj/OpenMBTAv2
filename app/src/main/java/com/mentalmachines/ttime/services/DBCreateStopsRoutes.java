@@ -27,11 +27,7 @@ import java.util.GregorianCalendar;
  */
 public class DBCreateStopsRoutes extends IntentService {
 
-    public static final String TAG = "GetMBTARequestService";
-    //reusable for displaying the date
-    private final SimpleDateFormat fmt = new SimpleDateFormat("MMM-dd");
-
-    // final private static ArrayList<FarooItem> parseList = new ArrayList<>();
+    public static final String TAG = "DBCreateStopsRoutes";
     final private static JsonFactory factory = new JsonFactory();
     //private static JsonParser parser;
     private static final GregorianCalendar cal = new GregorianCalendar();
@@ -65,14 +61,9 @@ public class DBCreateStopsRoutes extends IntentService {
                 Log.i(TAG, "route search: " + route);
                 parseStopsCall(route);
             }
-            //LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
-
 
         } catch (IOException e) {
             Log.e(TAG, e.getMessage());
-            final Intent tnt = new Intent(TAG);
-            //empty array triggers error in activity
-            LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
         }
     }
 
@@ -145,10 +136,17 @@ public class DBCreateStopsRoutes extends IntentService {
                                 cv.put(DBHelper.KEY_ROUTE_NAME, parser.getValueAsString());
                             } else if (JsonToken.END_OBJECT.equals(token)) {
                                 token = parser.nextToken();
-                                Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + db.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
-                                final Intent tnt = new Intent(this, DBCreateStopsRoutes.class);
-                                tnt.putExtra(TAG, cv.getAsString(DBHelper.KEY_ROUTE_ID));
-                                startService(tnt);
+                                //logic to load only buses and subways
+                                if(mode_name.equals(DBHelper.BUS_MODE) || mode_name.equals(DBHelper.SUBWAY_MODE)) {
+                                    Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + db.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
+                                    final Intent tnt = new Intent(this, DBCreateStopsRoutes.class);
+                                    tnt.putExtra(TAG, cv.getAsString(DBHelper.KEY_ROUTE_ID));
+                                    startService(tnt);
+                                } else {
+                                    Log.i(TAG, "skipping route " + cv.getAsString(DBHelper.KEY_ROUTE_ID) +
+                                            " mode is: " + cv.get(DBHelper.KEY_ROUTE_MODE_NM));
+                                }
+
                                 cv.clear();
                             }
 
@@ -167,7 +165,7 @@ public class DBCreateStopsRoutes extends IntentService {
         //TODO error check that the route isn't already in the db
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ROUTE_ID, route);
-        String table = DBHelper.DB_OUT_TABLE;
+        String table = DBHelper.STOPS_OUT_TABLE;
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -193,11 +191,11 @@ public class DBCreateStopsRoutes extends IntentService {
                         break;
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
-                        Log.d(TAG, "direction name check: " + parser.getValueAsString());
+                        //Log.d(TAG, "direction name check: " + parser.getValueAsString());
                         if (parser.getValueAsString().equals("Outbound")) {
-                            table = DBHelper.DB_OUT_TABLE;
+                            table = DBHelper.STOPS_OUT_TABLE;
                         } else {
-                            table = DBHelper.DB_INB_TABLE;
+                            table = DBHelper.STOPS_INB_TABLE;
                         }
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
@@ -243,6 +241,7 @@ public class DBCreateStopsRoutes extends IntentService {
             }
         }
     }
+
 
 }//end class
 
