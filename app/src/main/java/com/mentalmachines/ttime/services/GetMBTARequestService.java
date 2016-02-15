@@ -39,6 +39,13 @@ public class GetMBTARequestService extends IntentService {
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
+<<<<<<< HEAD
+    public static final String ROUTES = BASE + "routes" + SUFFIX;
+    public static final String STOPS = BASE + "stopsbyroute" + SUFFIX + "&route=";
+    public static final String alertsParams ="&include_access_alerts=true&include_service_alerts=true";
+    public static final String ALERTS = BASE + "alerts" + SUFFIX + alertsParams;
+=======
+>>>>>>> 346ea7b6fa8b756e6e139ec353a6e625e6c985b5
 
     // Query Types
     /*    Routes
@@ -119,6 +126,15 @@ public class GetMBTARequestService extends IntentService {
                     }else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CAUSE.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         alert.cause = parser.getValueAsString();
+                    }else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CAUSE_NAME.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.cause_name = parser.getValueAsString();
+                    }else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_HEADER_TEXT.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.header_text= parser.getValueAsString();
+                    }else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DESCRIPTION_TEXT.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        alert.description_text= parser.getValueAsString();
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_PERIODS.equals(parser.getCurrentName())) {
                         //this is an array of routes
                         token = parser.nextToken();
