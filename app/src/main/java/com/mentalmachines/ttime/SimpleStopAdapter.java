@@ -17,12 +17,15 @@ import android.widget.TextView;
 public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
     public static final String TAG = "SimpleStopAdapter";
     final String[] mItems;
-    final int drawableResource;
+    final int mTextColor;
+    //final int drawableResource;
 
-    public SimpleStopAdapter(String[] data, int resource) {
+    //public SimpleStopAdapter(String[] data, int resource) {
+    public SimpleStopAdapter(String[] data, int textColor) {
         super();
         mItems = data;
-        drawableResource = resource;
+        mTextColor = textColor;
+        //drawableResource = resource = -1;
     }
 
     @Override
@@ -43,6 +46,9 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public StopViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.t_stop, parent, false);
+        if(mTextColor > 0) {
+            ((TextView) view.findViewById(R.id.stop_desc)).setTextColor(mTextColor);
+        }
         return new StopViewHolder(view);
     }
 
@@ -54,21 +60,9 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             holder.mStopTiming.setText("");
         } else {
             holder.mStopTiming.setText(mItems[position]
-                    + "\nNext: 7:30pm and 7:40");
+                    + "\nNext scheduled times: 7:30pm and 7:40");
             holder.mETA.setText("Actual time: 7:31, 7:40");
         }
-        switch (position) {
-            case 3:
-                holder.mImage.setImageResource(android.R.drawable.ic_dialog_alert);
-                break;
-            case 0:
-                holder.mImage.setImageResource(drawableResource);
-                holder.mStopTiming.setText(mItems[position]
-                        + "\nNext: 7:20pm and 7:30");
-                holder.mETA.setText("Actual time: 7:21, 7:33");
-                break;
-        }
-
     }
 
     public class StopViewHolder extends RecyclerView.ViewHolder {

@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime;
 
 import android.content.Context;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
@@ -219,9 +220,21 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
     }
 
-
     public DBHelper(Context context) {
         super(context, DBNAME, null, DB_VERSION);
     }
 
+    //Some utilities
+    public static String[] makeArrayFromCursor(Cursor c, int colIndex) {
+        if(c.getCount() > 0 && c.moveToFirst()) {
+            final String[] tmp = new String[c.getCount()];
+            for(int dex = 0; dex < tmp.length; dex++) {
+                tmp[dex] = c.getString(colIndex);
+                c.moveToNext();
+            }
+            return tmp;
+        }
+        Log.w(TAG, "bad cursor, no array");
+        return null;
+    }
 }

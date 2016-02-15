@@ -1,9 +1,10 @@
 package com.mentalmachines.ttime;
 
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.NavigationView;
 import android.support.design.widget.Snackbar;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -21,10 +22,11 @@ import android.widget.Toast;
 
 import com.mentalmachines.ttime.services.CopyDBService;
 
-public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
+public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     ExpandableListView mRouteList;
+    SQLiteDatabase mDB;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -71,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         //navigationView.setNavigationItemSelectedListener(this);
         //no more menu? using exp list view
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, RouteFragment.newInstance(null, R.string.def_text,
+                .replace(R.id.container, RouteFragment.newInstance(null, null, getString(R.string.def_text),
                         getResources().getColor(android.R.color.transparent)))
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
@@ -83,49 +85,6 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
 
 	}
-
-    @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
-        final String[] fakeData = getResources().getStringArray(R.array.nav_groups);
-        Log.w(TAG, "no of stops? " + fakeData.length);
-        switch(item.getItemId()) {
-            case R.id.dr_blue:
-                //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue,
-                                getResources().getColor(R.color.bluelineBG)))
-                        .commit();
-                break;
-            case R.id.dr_green:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green,
-                                getResources().getColor(R.color.greenlineBG)))
-                        .commit();
-                break;
-            case R.id.dr_orange:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange,
-                                getResources().getColor(R.color.orangelineBG)))
-                        .commit();
-                break;
-            case R.id.dr_redline:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red,
-                                getResources().getColor(R.color.redlineBG)))
-                        .commit();
-                break;
-            case R.id.dr_silver:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver,
-                                getResources().getColor(R.color.silverlineBG)))
-                        .commit();
-                break;
-        }
-        //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        drawer.closeDrawer(GravityCompat.START);
-        return true;
-    }
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
@@ -176,11 +135,31 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
     public void childClick(View v) {
         //click listener set on the child view
         Toast.makeText(this, ((TextView)v).getText(), Toast.LENGTH_SHORT).show();
+        //DEBUG
+        if(mDB == null || !mDB.isOpen()) {
+            mDB = new DBHelper(this).getReadableDatabase();
+        }
+        final String routeId = (String) v.getTag();
+        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, RouteExpandableAdapter.mStopProjection,
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
+                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+        String[] inStops = DBHelper.makeArrayFromCursor(c, 0);
+        c.close();
+        c = mDB.query(DBHelper.STOPS_OUT_TABLE, RouteExpandableAdapter.mStopProjection,
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
+                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+        String[] outStops = DBHelper.makeArrayFromCursor(c, 0);
+        c.close();
+        getSupportFragmentManager().beginTransaction()
+            .replace(R.id.container, RouteFragment.newInstance(inStops, outStops,
+                    ((TextView)v).getText().toString(),
+                    v.getTag(R.layout.child_view) == null?
+                        getResources().getColor(android.R.color.transparent):(int)v.getTag(R.layout.child_view)))
+            .commit();
 
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_in_out);
-        fab.setVisibility(View.VISIBLE);
-        //fab.setBackgroundResource(RouteExpandableAdapter.GroupTxtColor[route]);
+        findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+        //Fab is to switch between inbound and outbound
     }
 }
