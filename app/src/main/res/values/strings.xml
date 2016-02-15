@@ -28,39 +28,31 @@
     </string-array>
 
     <string-array name="line_group">
-        <item>Blue Line</item>
-        <item>Green Line</item>
-        <item>Orange Line</item>
-        <item>Red Line</item>
-        <item>Silver Line</item>
+        <item>Blue</item>
+        <item>Green</item>
+        <item>Mattapan</item>
+        <item>Orange</item>
+        <item>Red</item>
+        <item>Silver</item>
     </string-array>
 
-    <string-array name="bus_group">
-        <item>Bus C and X</item>
-        <item>Bus 1-99</item>
+    <string-array name="nav_groups">
+        <item>Bus 1-50</item>
+        <item>Bus 51-99</item>
         <item>Bus 100-199</item>
-        <item>Bus 200-299</item>
-        <item>Bus 300-399</item>
-        <item>Bus 400-499</item>
-        <item>Bus 500-599</item>
-        <item>Bus 600-699</item>
-        <item>Bus 700-799</item>
-        <item>Bus 800-899</item>
-        <item>Bus 900-999</item>
-        <item>Bus 1000-1099</item>
-        <item>Bus 1100-1199</item>
-        <item>Bus 1200-1299</item>
+        <item>Bus 200-399</item>
+        <item>Bus 400-599</item>
+        <item>Bus 600-750</item>
+        <item>Bus 9000+</item>
     </string-array>
 
 
-    <string-array name="fake_data">
-        <item>Forest Hills</item>
-        <item>Jamaica Plain</item>
-        <item>Back Bay</item>
-        <item>Tufts Medical</item>
-        <item>Chinatown</item>
-        <item>Downtown Crossings</item>
-        <item>Oak Grove</item>
+    <string-array name="silver_routes">
+        <item>741</item>
+        <item>742</item>
+        <item>751</item>
+        <item>749</item>
+        <item>746</item>
     </string-array>
 
 </resources>

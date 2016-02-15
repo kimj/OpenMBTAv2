@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
         /*Log.d(TAG, "starting svc");
-        startService(new Intent(this, GetMBTARequestService.class));*/
+        startService(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
@@ -48,7 +48,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
         final ExpandableListView routeList = (ExpandableListView) findViewById(R.id.routeNavList);
         routeList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
-        routeList.setAdapter(new RouteExpandableAdapter(this, false));
+        routeList.setAdapter(new RouteExpandableAdapter(this, true));
         //allow only one open group
         routeList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
             // Keep track of previous expanded group

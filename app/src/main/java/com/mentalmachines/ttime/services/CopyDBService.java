@@ -4,7 +4,6 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.os.Environment;
 import android.util.Log;
-import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 
@@ -50,7 +49,7 @@ public class CopyDBService extends IntentService {
                 tmp = inStream.read();
             }
             Log.d(TAG, "db file: " + outFile.getName());
-            Toast.makeText(this, "database copy to sdcard complete", Toast.LENGTH_SHORT).show();
+            //Toast.makeText(this, "database copy to sdcard complete", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         } catch (IOException e) {

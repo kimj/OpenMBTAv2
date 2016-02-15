@@ -232,6 +232,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         final String[] returnList = new String[tmp.size()];
         tmp.toArray(returnList);
         tmp.clear();
+        Log.d(TAG, "returning line array, size is " + returnList.length);
         return returnList;
     }
 
@@ -306,6 +307,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         BusData[] childNames = new BusData[tmp.size()];
         childNames = tmp.toArray(childNames);
         tmp.clear();
+        Log.d(TAG, "returning line array, size is " + childNames.length);
         return childNames;
     }
 

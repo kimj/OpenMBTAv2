@@ -103,7 +103,10 @@ public class DBCreateStopsRoutes extends IntentService {
                         rtType = parser.getValueAsInt();
                     } */else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE_NM.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
-                        mode_name = parser.getValueAsString();
+                        if(!parser.getValueAsString().equals("null") && !parser.getValueAsString().isEmpty()) {
+                            mode_name = parser.getValueAsString();
+                        }
+
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.ROUTE.equals(parser.getCurrentName())) {
                         //this is an array of routes
                         token = parser.nextToken();
@@ -134,14 +137,14 @@ public class DBCreateStopsRoutes extends IntentService {
                             } else if (JsonToken.END_OBJECT.equals(token)) {
                                 token = parser.nextToken();
                                 //logic to load only buses and subways
-                                if(mode_name.equals(DBHelper.BUS_MODE) || mode_name.equals(DBHelper.SUBWAY_MODE)) {
+                                if(cv.get(DBHelper.KEY_ROUTE_MODE).equals(DBHelper.BUS_MODE) || cv.get(DBHelper.KEY_ROUTE_MODE).equals(DBHelper.SUBWAY_MODE)) {
                                     Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + db.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
                                     final Intent tnt = new Intent(this, DBCreateStopsRoutes.class);
                                     tnt.putExtra(TAG, cv.getAsString(DBHelper.KEY_ROUTE_ID));
                                     startService(tnt);
                                 } else {
                                     Log.i(TAG, "skipping route " + cv.getAsString(DBHelper.KEY_ROUTE_ID) +
-                                            " mode is: " + cv.get(DBHelper.KEY_ROUTE_MODE_NM));
+                                            " mode is: " + cv.get(DBHelper.KEY_ROUTE_MODE));
                                 }
 
                                 cv.clear();
