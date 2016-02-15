@@ -7,18 +7,15 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.objects.Alert;
 
 import java.io.IOException;
 import java.net.URL;
-import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 
 /**
@@ -189,10 +186,10 @@ public class DBCreateStopsRoutes extends IntentService {
                     token = parser.nextToken();
                     if (token == null) {
                         break;
-                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         //Log.d(TAG, "direction name check: " + parser.getValueAsString());
-                        if (parser.getValueAsString().equals("Outbound")) {
+                        if (parser.getValueAsString().equals("1")) {
                             table = DBHelper.STOPS_OUT_TABLE;
                         } else {
                             table = DBHelper.STOPS_INB_TABLE;

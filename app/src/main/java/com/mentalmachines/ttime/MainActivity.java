@@ -1,6 +1,5 @@
 package com.mentalmachines.ttime;
 
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -16,9 +15,8 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ExpandableListView;
+import android.widget.TextView;
 import android.widget.Toast;
-
-import com.mentalmachines.ttime.services.GetMBTARequestService;
 
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
@@ -28,9 +26,8 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-        Log.d(TAG, "starting svc");
-        startService(new Intent(this, GetMBTARequestService.class));
-
+        /*Log.d(TAG, "starting svc");
+        startService(new Intent(this, GetMBTARequestService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
@@ -85,7 +82,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     @Override
     public boolean onNavigationItemSelected(MenuItem item) {
-        final String[] fakeData = getResources().getStringArray(R.array.fake_data);
+        final String[] fakeData = getResources().getStringArray(R.array.nav_groups);
         Log.w(TAG, "no of stops? " + fakeData.length);
         switch(item.getItemId()) {
             case R.id.dr_blue:
@@ -166,46 +163,12 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void childClick(View v) {
         //click listener set on the child view
-        final String[] fakeData = getResources().getStringArray(R.array.fake_data);
-        Log.w(TAG, "no of stops? " + fakeData.length);
-        final int route = (int) v.getTag();
-        switch(route) {
-            case RouteExpandableAdapter.BLUE:
-                //((TextView)findViewById(R.id.title)).setText(R.string.nm_blue);
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_blue,
-                                getResources().getColor(R.color.bluelineBG)))
-                        .commit();
-                break;
-            case RouteExpandableAdapter.GREEN:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_green,
-                                getResources().getColor(R.color.greenlineBG)))
-                        .commit();
-                break;
-            case RouteExpandableAdapter.ORANGE:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_orange,
-                                getResources().getColor(R.color.orangelineBG)))
-                        .commit();
-                break;
-            case RouteExpandableAdapter.RED:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_red,
-                                getResources().getColor(R.color.redlineBG)))
-                        .commit();
-                break;
-            case RouteExpandableAdapter.SILVER:
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, RouteFragment.newInstance(fakeData, R.string.nm_silver,
-                                getResources().getColor(R.color.silverlineBG)))
-                        .commit();
-                break;
-        }
+        Toast.makeText(this, ((TextView)v).getText(), Toast.LENGTH_SHORT).show();
+
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_in_out);
         fab.setVisibility(View.VISIBLE);
-        fab.setBackgroundResource(RouteExpandableAdapter.GroupTxtColor[route]);
+        //fab.setBackgroundResource(RouteExpandableAdapter.GroupTxtColor[route]);
     }
 }

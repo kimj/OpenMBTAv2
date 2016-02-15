@@ -1,17 +1,9 @@
 package com.mentalmachines.ttime;
 
 import android.content.Context;
-import android.database.DatabaseErrorHandler;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.os.Environment;
 import android.util.Log;
-import android.widget.Toast;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 /**
  * Created by CaptofOuterSpace on 1/23/2016.
@@ -29,7 +21,7 @@ public class DBHelper extends SQLiteOpenHelper {
     //public static final String KEY_ROUTE_TYPE = "route_type";
     public static final String ROUTE = "route";
     public static final String DB_ROUTE_TABLE = "route_table";
-    public static final String BUS_MODE = "Bus";
+    public static final String BUS_MODE = "'Bus'";
     public static final String SUBWAY_MODE = "Subway";
 
     String CREATE_DB_TABLE_ROUTE  = TABLE_PREFIX + DB_ROUTE_TABLE + "("
@@ -40,7 +32,8 @@ public class DBHelper extends SQLiteOpenHelper {
 
     //Stop keys, some duplication with routes
     public static final String KEY_DIR = "direction";
-    public static final String KEY_DIR_NM = "direction_name";
+    //public static final String KEY_DIR_NM = "direction_name";
+    public static final String KEY_DIR_ID = "direction_id";
     //Inbound, Outbound
     public static final String STOP = "stop";
     public static final String KEY_STOP_ORD = "stop_order";
