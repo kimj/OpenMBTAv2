@@ -7,7 +7,6 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -17,7 +16,6 @@ import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.objects.Alert;
 
 import java.io.IOException;
-import java.net.URL;
 import java.text.SimpleDateFormat;
 import java.util.GregorianCalendar;
 
@@ -39,13 +37,9 @@ public class GetMBTARequestService extends IntentService {
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
-<<<<<<< HEAD
-    public static final String ROUTES = BASE + "routes" + SUFFIX;
-    public static final String STOPS = BASE + "stopsbyroute" + SUFFIX + "&route=";
+
     public static final String alertsParams ="&include_access_alerts=true&include_service_alerts=true";
     public static final String ALERTS = BASE + "alerts" + SUFFIX + alertsParams;
-=======
->>>>>>> 346ea7b6fa8b756e6e139ec353a6e625e6c985b5
 
     // Query Types
     /*    Routes
