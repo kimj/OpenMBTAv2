@@ -24,7 +24,7 @@ import java.util.List;
  */
 public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     public static final String TAG = "RouteExpandableAdapter";
-    final String[] mGroupNames;
+    String[] mGroupNames;
     final boolean isBus;
     static boolean loadComplete = false;
     static SQLiteDatabase mDB;
@@ -33,33 +33,53 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             DBHelper.KEY_ROUTE_ID, DBHelper.KEY_ROUTE_NAME
     };
     final static String[] mLineProjection = new String[] {
-            DBHelper.KEY_STOPNM
+            DBHelper.KEY_STOPNM, DBHelper.KEY_STOP_ORD
     };
-    final static String routeSubWhereClause = DBHelper.KEY_STOP_ORD + "=1 AND "
-            + DBHelper.KEY_ROUTE_ID + " like ";
-    final static String routeSilverWhereClause = DBHelper.KEY_STOP_ORD + "=1 AND "
-            + DBHelper.KEY_ROUTE_ID + " like?";
+    final static String routeSubwayWhereClause = DBHelper.KEY_ROUTE_NAME + " like ";
+    final static String stopsSubwayWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
+
     final static String modeWhereClause = DBHelper.KEY_ROUTE_MODE + " like ";
 
     //here is the actual data to display
     static BusData[][] mBusArrays;
-    static String[][] mLineArrays;
+
 
     public RouteExpandableAdapter(Context ctx, boolean busList) {
         isBus = busList;
         if(busList) {
             mGroupNames = ctx.getResources().getStringArray(R.array.nav_groups);
         } else {
-            mGroupNames = ctx.getResources().getStringArray(R.array.line_group);
+            //mGroupNames = ctx.getResources().getStringArray(R.array.line_group);
+            if(mDB == null || !mDB.isOpen()) {
+                mDB = new DBHelper(ctx).getReadableDatabase();
+            }
+            final Cursor c = mDB.query(DBHelper.DB_ROUTE_TABLE,
+                    new String[] { DBHelper.KEY_ROUTE_NAME },
+                    modeWhereClause + "'" + DBHelper.SUBWAY_MODE + "'",
+                    null, null, null, null);
+            if(c.moveToFirst()) {
+                mGroupNames = new String[c.getCount()];
+                for(int dex = 0; dex < mGroupNames.length; dex++) {
+                    mGroupNames[dex] = c.getString(0);
+                    c.moveToNext();
+                }
+                c.close();
+
+            }
         }
     }
 
     @Override
     public int getGroupCount() {
-        if(mGroupNames != null) {
+        if(mGroupNames == null) {
+            return 0;
+        }
+        if(isBus) {
             return mGroupNames.length;
         }
-        return 0;
+        //The lines are all children in group 0
+        return 1;
+
     }
 
     @Override
@@ -68,15 +88,15 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             return mBusArrays[groupPosition].length;
         }
         //now work with the lines, subway mode or silverline
-        return mLineArrays[groupPosition].length;
+        return mGroupNames.length;
     }
 
     @Override
     public Object getGroup(int i) {
-        if(mGroupNames != null && i < mGroupNames.length) {
+        if(isBus && mGroupNames != null && i < mGroupNames.length) {
             return mGroupNames[i];
         }
-        return null;
+        return DBHelper.SUBWAY_MODE;
     }
 
     @Override
@@ -84,7 +104,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         if(isBus) {
             return mBusArrays[groupPosition][childPosition];
         }
-        return mLineArrays[groupPosition][childPosition];
+        return mGroupNames[childPosition];
     }
 
     @Override
@@ -104,8 +124,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public View getGroupView(int groupPosition, boolean isExpanded, View convertView, ViewGroup parent) {
-        if(mGroupNames != null && groupPosition >= mGroupNames.length) {
-            Log.w(TAG, "bad group number, array ready? " + (mGroupNames != null));
+        if(isBus && mGroupNames != null && groupPosition >= mGroupNames.length) {
             return null;
         } else {
             if(convertView == null) {
@@ -113,15 +132,18 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 convertView = LayoutInflater.from(parent.getContext()).inflate(
                         R.layout.group_view, null);
             }
-            ((TextView) convertView).setText(mGroupNames[groupPosition]);
+
             if(!isBus) {
+                ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
                 ((TextView) convertView).setTextColor(
                         parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]));
                 convertView.setBackgroundColor(
                         parent.getContext().getResources().getColor(GroupColorBG[groupPosition]));
-            } /*else {
-                TODO work with bus yellow
-            }*/
+            } else {
+                ((TextView) convertView).setText(mGroupNames[groupPosition]);
+                convertView.setBackgroundColor(
+                        parent.getContext().getResources().getColor(GroupColorBG[2]));
+            }
         }
         return convertView;
     }
@@ -134,15 +156,15 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                     R.layout.child_view, null);
         }
         if(isBus) {
-
+            ((TextView)convertView).setText(mBusArrays[groupPosition][childPosition].routeName);
         } else {
             //is subway
+            ((TextView)convertView).setText(mGroupNames[childPosition]);
             ((TextView) convertView).setTextColor(
                     parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]));
-            convertView.setTag(groupPosition);
+
         }
-
-
+        //??convertView.setTag(groupPosition);
         return convertView;
     }
 
@@ -159,7 +181,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         final BusData[][] busGroups = new BusData[7][];
 
         final Cursor c = mDB.query(DBHelper.DB_ROUTE_TABLE, mRouteProjection,
-                modeWhereClause + DBHelper.BUS_MODE,
+                modeWhereClause + "'" + DBHelper.BUS_MODE + "'",
                 null, null, null, null);
         Log.i(TAG, "cursor size? " + c.getCount());
         BusData bData;
@@ -178,14 +200,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             busGroups[dex] = loadBusArray(dex, masterBusList);
         }
         mBusArrays = busGroups;
-        final String[] lines = ctx.getResources().getStringArray(R.array.line_group);
-        final String[][] subwayGroups = new String[lines.length][];
-        for(int dex= 0; dex < lines.length-1; dex++) {
-            subwayGroups[dex] = loadLineArray("'"+lines[dex]+"%'", mDB);
-        }
-        //now the silver line
-        subwayGroups[lines.length-1] = loadLineArray(ctx.getResources().getStringArray(R.array.silver_routes), mDB);
-        mLineArrays = subwayGroups;
+
         loadComplete = true;
         /*new Thread() {
             @Override
@@ -209,24 +224,40 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
 
     static String[] loadLineArray(String line, SQLiteDatabase db) {
         final ArrayList<String> tmp = new ArrayList<>();
-        Cursor c = db.query(DBHelper.STOPS_INB_TABLE, mLineProjection,
-                routeSubWhereClause + line,
+        Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, mRouteProjection,
+                routeSubwayWhereClause + line, null,
                 null, null, null, null);
+        //get all the subway color routes then get the first and last stop
         if(c.getCount() > 0 && c.moveToFirst()) {
             do {
                 tmp.add(c.getString(0));
             } while(c.moveToNext());
             c.close();
         }
-
-        c = db.query(DBHelper.STOPS_OUT_TABLE, mLineProjection,
-                routeSubWhereClause + line,
-                null, null, null, null);
-        if(c.getCount() > 0 && c.moveToFirst()) {
-            do {
-                tmp.add(c.getString(0));
-            } while(c.moveToNext());
-            c.close();
+        final String[] routeIds = new String[tmp.size()];
+        tmp.toArray(routeIds);
+        tmp.clear();
+        String routeChild;
+        for(String r: routeIds) {
+            //get all of the inbound stops, use the first and last to describe the route
+            c = db.query(DBHelper.STOPS_INB_TABLE, mLineProjection,
+                    stopsSubwayWhereClause + "'" + r + "'",
+                    null, null, null, null);
+            if(c.getCount() > 0 && c.moveToFirst()) {
+                routeChild = c.getString(0);
+                c.moveToLast();
+                tmp.add(routeChild + "-" + c.getString(0));
+                c.close();
+            }
+            c = db.query(DBHelper.STOPS_OUT_TABLE, mLineProjection,
+                    stopsSubwayWhereClause + "'" + r + "'",
+                    null, null, null, null);
+            if(c.getCount() > 0 && c.moveToFirst()) {
+                routeChild = c.getString(0);
+                c.moveToLast();
+                tmp.add(routeChild + "-" + c.getString(0));
+                c.close();
+            }
         }
 
         final String[] returnList = new String[tmp.size()];

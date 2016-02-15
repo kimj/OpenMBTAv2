@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.NavigationView;
@@ -18,16 +19,19 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mentalmachines.ttime.services.CopyDBService;
+
 public class MainActivity extends AppCompatActivity implements NavigationView.OnNavigationItemSelectedListener {
 
     public static final String TAG = "MainActivity";
+    ExpandableListView mRouteList;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-        /*Log.d(TAG, "starting svc");
-        startService(new Intent(this, CopyDBService.class));*/
+        Log.d(TAG, "starting svc");
+        startService(new Intent(this, CopyDBService.class));
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
@@ -46,11 +50,11 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        final ExpandableListView routeList = (ExpandableListView) findViewById(R.id.routeNavList);
-        routeList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
-        routeList.setAdapter(new RouteExpandableAdapter(this, true));
+        mRouteList = (ExpandableListView) findViewById(R.id.routeNavList);
+        mRouteList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
+        mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
         //allow only one open group
-        routeList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
+        mRouteList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
             // Keep track of previous expanded group
             int previousGroup = -1;
 
@@ -58,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
             public void onGroupExpand(int groupPosition) {
                 // Collapse previous parent if expanded.
                 if ((previousGroup != -1) && (groupPosition != previousGroup)) {
-                    routeList.collapseGroup(previousGroup);
+                    mRouteList.collapseGroup(previousGroup);
                 }
                 previousGroup = groupPosition;
             }
@@ -158,7 +162,15 @@ public class MainActivity extends AppCompatActivity implements NavigationView.On
 
     public void setList(View v) {
         //show either lines or bus expandable list view in the drawer
-
+        switch(v.getId()) {
+            case R.id.exp_bus:
+                mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
+                break;
+            case R.id.exp_lines:
+                mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
+                mRouteList.expandGroup(0);
+                break;
+        }
     }
 
     public void childClick(View v) {
