@@ -5,7 +5,6 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
 
 /**
@@ -49,6 +48,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         if(mTextColor > 0) {
             ((TextView) view.findViewById(R.id.stop_desc)).setTextColor(mTextColor);
         }
+
         return new StopViewHolder(view);
     }
 
@@ -57,24 +57,22 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public void onBindViewHolder(final StopViewHolder holder, int position) {
         if(mItems == null || mItems.length < position) {
             Log.w(TAG, "bad position sent to adapter " + position);
-            holder.mStopTiming.setText("");
+            holder.mStopDescription.setText("");
         } else {
-            holder.mStopTiming.setText(mItems[position]
-                    + "\nNext scheduled times: 7:30pm and 7:40");
-            holder.mETA.setText("Actual time: 7:31, 7:40");
+            holder.mStopDescription.setText(mItems[position]
+                    + "\nNext scheduled times: ? and ?");
+            holder.mETA.setText("Actual time: ?, in ? minutes and ? in ? minutes");
         }
     }
 
     public class StopViewHolder extends RecyclerView.ViewHolder {
-        public final TextView mStopTiming;
+        public final TextView mStopDescription;
         public final TextView mETA;
-        public final ImageView mImage;
 
         public StopViewHolder(View itemView) {
             super(itemView);
-            mStopTiming = (TextView) itemView.findViewById(R.id.stop_desc);
+            mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
-            mImage = (ImageView) itemView.findViewById(R.id.stop_img);
         }
     }
 

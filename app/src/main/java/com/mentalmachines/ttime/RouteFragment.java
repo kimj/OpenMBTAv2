@@ -1,16 +1,16 @@
 package com.mentalmachines.ttime;
 
 import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
@@ -26,13 +26,11 @@ public class RouteFragment extends Fragment{
     private static final String OUT_STOPS_LIST = "out";
     private static final String LINE_NAME = "line";
     private static final String TAG = "RouteFragment";
-    private static final int SWIPE_VELOCITY = 150;
 
     boolean mInbound = true;
     RecyclerView mList;
     String[] mItems;
-
-    ObjectAnimator moveLeft, moveLeft2, moveRight, moveRight2;
+    AnimatorSet moveLeft, moveRight;
 
 	/**
 	 * Returns a new instance of this fragment
@@ -55,7 +53,7 @@ public class RouteFragment extends Fragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		View rootView = inflater.inflate(R.layout.content_main, container, false);
-        animationSetup(rootView);
+
         final Bundle args = getArguments();
 
         ((TextView)rootView.findViewById(R.id.mc_title)).setText(args.getString(LINE_NAME));
@@ -75,6 +73,7 @@ public class RouteFragment extends Fragment{
         } else {
 			mList.setVisibility(View.VISIBLE);
 			mList.setAdapter(new SimpleStopAdapter(listItems, args.getInt(TAG)));
+            swipeListHelper.attachToRecyclerView(mList);
             //TODO wire up inbound and outbound
         }
         final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
@@ -88,35 +87,36 @@ public class RouteFragment extends Fragment{
 
         //Floating Action button switches between inbound and outbound
         getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
-        rootView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return gesture.onTouchEvent(event);
-            }
-        });
 		return rootView;
 	}
 
     View.OnClickListener fabListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            setAndRunAnimation(true);
+            if(moveRight == null) {
+                animationSetup(getView());
+            }
+            mInbound = !mInbound;
+            if(mInbound) {
+                ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+                mItems = getArguments().getStringArray(IN_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+                moveRight.start();
+            } else {
+                ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+                mItems = getArguments().getStringArray(OUT_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+                moveLeft.start();
+            }
+
         }
     };
 
     void setAndRunAnimation(boolean right) {
-        mInbound = !mInbound;
-        if(mInbound) {
-            mItems = getArguments().getStringArray(IN_STOPS_LIST);
-        } else {
-            mItems = getArguments().getStringArray(OUT_STOPS_LIST);
-        }
-        if(right) {
-            moveRight.start();
-        } else {
-            moveLeft.start();
-        }
+
     }
+
+    /*  The gesture detector does not play nicely with a scrolling list
 
     final GestureDetector gesture = new GestureDetector(getActivity(),
             new GestureDetector.SimpleOnGestureListener() {
@@ -142,7 +142,7 @@ public class RouteFragment extends Fragment{
                     }
                     return true;
                 }
-            });
+            });*/
 
 
     /**
@@ -150,30 +150,51 @@ public class RouteFragment extends Fragment{
      * the "moveRight" go along with the direction of the FAB
      * the moveLeft are also setup for gesture detectors, swiping changes the list
      */
-    void animationSetup(View screen) {
+    void animationSetup(final View screen) {
+
         final int width = screen.getWidth();
-        moveRight = ObjectAnimator.ofFloat(screen, "translationX", 0, 2 * width);
-        moveRight2 = ObjectAnimator.ofFloat(screen, "translationX", -width, 0);
-        moveRight.addListener(new AnimatorListenerAdapter() {
+        Log.d(TAG, "setting up animations " + width);
+        moveRight = new AnimatorSet();
+        moveRight.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f))
+                .before(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f))
+                .with(ObjectAnimator.ofFloat(mList, "translationX", -width, 0));
+        moveRight.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) { }
+
             @Override
             public void onAnimationEnd(Animator animation) {
                 mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
-                moveRight2.start();
             }
 
+            @Override
+            public void onAnimationCancel(Animator animator) { }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) { }
         });
-        moveLeft = ObjectAnimator.ofFloat(screen, "translationX", 0, -width);
-        //instantiate the second animation here, instead of everytime the listener runs
-        moveLeft2 = ObjectAnimator.ofFloat(screen, "translationX", width, 0);
 
-        moveLeft.addListener(new AnimatorListenerAdapter() {
+        moveLeft = new AnimatorSet();
+        moveLeft.play(ObjectAnimator.ofFloat(mList, "translationX", 0, -width))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f))
+                .before(ObjectAnimator.ofFloat(mList, "translationX", width, 0))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f));
+
+        moveLeft.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) { }
+
             @Override
             public void onAnimationEnd(Animator animation) {
-                //after animating current fragment offscreen, hide it
                 mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
-                //now animate the new fragment on to the screen
-                moveLeft2.start();
             }
+
+            @Override
+            public void onAnimationCancel(Animator animator) { }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) { }
         });
     }
 
@@ -221,5 +242,27 @@ public class RouteFragment extends Fragment{
                     .putBoolean(getArguments().getString(LINE_NAME), b).commit();
         }
     };
+
+    /**
+     * this touch code is not acting on the list item
+     it is triggering an animation and changes out the underlying list
+     */
+    ItemTouchHelper swipeListHelper = new ItemTouchHelper(
+            new ItemTouchHelper.SimpleCallback(0, 0) {
+
+        @Override
+        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
+            return true;
+        }
+
+        @Override
+        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
+            if(direction == ItemTouchHelper.LEFT) {
+                moveLeft.start();
+            } else {
+                moveRight.start();
+            }
+        }
+    });
 
 }

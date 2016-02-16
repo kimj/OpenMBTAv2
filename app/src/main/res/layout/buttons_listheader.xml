@@ -2,20 +2,26 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingLeft="@dimen/def_padding"
-    android:paddingRight="@dimen/def_padding">
+    android:padding="4dp">
     <!-- layout for a stop in a listview -->
-    <Button android:id="@+id/exp_lines"
+    <View android:id="@+id/center"
+        android:layout_width="1dp"
+        android:layout_height="1dp"
+        android:layout_centerInParent="true" />
+    <ImageButton android:id="@+id/exp_lines"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:text="Lines"
-        android:layout_centerVertical="true"
+        android:src="@drawable/btn_train"
+        android:background="@android:color/transparent"
+        android:layout_toLeftOf="@id/center"
+        android:padding="6dp"
         android:onClick="setList"/>
-    <Button android:id="@+id/exp_bus"
+    <ImageButton android:id="@+id/exp_bus"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
-        android:layout_toRightOf="@id/exp_lines"
-        android:text="Buses"
-        android:layout_centerVertical="true"
+        android:src="@drawable/btn_bus"
+        android:background="@android:color/transparent"
+        android:layout_toRightOf="@id/center"
+        android:padding="6dp"
         android:onClick="setList"/>
 </RelativeLayout>

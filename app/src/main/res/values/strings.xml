@@ -27,23 +27,15 @@
         <item>Boat</item>
     </string-array>
 
-    <string-array name="line_group">
-        <item>Blue</item>
-        <item>Green</item>
-        <item>Mattapan</item>
-        <item>Orange</item>
-        <item>Red</item>
-        <item>Silver</item>
-    </string-array>
-
     <string-array name="nav_groups">
+        <item>Silver Line</item>
         <item>Bus 1-50</item>
         <item>Bus 51-99</item>
         <item>Bus 100-199</item>
         <item>Bus 200-399</item>
         <item>Bus 400-599</item>
         <item>Bus 600-750</item>
-        <item>Bus 9000+</item>
+        <item>Bus 9000*</item>
     </string-array>
 
 

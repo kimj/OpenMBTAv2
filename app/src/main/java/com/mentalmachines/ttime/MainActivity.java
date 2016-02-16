@@ -54,7 +54,9 @@ public class MainActivity extends AppCompatActivity {
 
         mRouteList = (ExpandableListView) findViewById(R.id.routeNavList);
         mRouteList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
-        mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
+        //shows the subway lines and sets the background on the view as selected
+        mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
+        mRouteList.expandGroup(0);
         //allow only one open group
         mRouteList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
             // Keep track of previous expanded group
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity {
         //no more menu? using exp list view
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, RouteFragment.newInstance(null, null, getString(R.string.def_text),
-                        getResources().getColor(android.R.color.transparent)))
+                        getResources().getColor(R.color.colorPrimary)))
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
@@ -134,8 +136,6 @@ public class MainActivity extends AppCompatActivity {
 
     public void childClick(View v) {
         //click listener set on the child view
-        Toast.makeText(this, ((TextView)v).getText(), Toast.LENGTH_SHORT).show();
-        //DEBUG
         if(mDB == null || !mDB.isOpen()) {
             mDB = new DBHelper(this).getReadableDatabase();
         }
@@ -154,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
             .replace(R.id.container, RouteFragment.newInstance(inStops, outStops,
                     ((TextView)v).getText().toString(),
                     v.getTag(R.layout.child_view) == null?
-                        getResources().getColor(android.R.color.transparent):(int)v.getTag(R.layout.child_view)))
+                        getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view)))
             .commit();
 
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
