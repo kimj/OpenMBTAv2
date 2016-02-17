@@ -84,11 +84,13 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        if(isBus) {
+        if(isBus && mBusArrays != null) {
             return mBusArrays[groupPosition].length;
-        }
-        //now work with the lines, subway mode or silverline
-        return mGroupNames.length;
+        } else if(mGroupNames != null) {
+            return mGroupNames.length;
+        } else return 0;
+        //if the db is initializing, these can be null
+
     }
 
     @Override
@@ -134,13 +136,20 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
             ((TextView) convertView).setTextColor(
                     parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]));
-            convertView.setBackgroundColor(
-                    parent.getContext().getResources().getColor(GroupColorBG[groupPosition]));
+            convertView.setBackgroundResource(GroupColorBG[groupPosition]);
 
         } else {
+            if(groupPosition == 0) {
+                ((TextView) convertView).setTextColor(
+                        parent.getContext().getResources().getColor(R.color.solidSilverline));
+                convertView.setBackgroundResource(R.color.silverlineBG);
+            } else {
+                ((TextView) convertView).setTextColor(
+                        parent.getContext().getResources().getColor(R.color.solidBusYellow));
+                convertView.setBackgroundResource(android.R.color.white);
+            }
             ((TextView) convertView).setText(mGroupNames[groupPosition]);
-            convertView.setBackgroundColor(
-                    parent.getContext().getResources().getColor(GroupColorBG[2]));
+
         }
         return convertView;
     }
@@ -178,7 +187,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             mDB = new DBHelper(ctx).getReadableDatabase();
         }
         final ArrayList<BusData> masterBusList = new ArrayList<>();
-        final BusData[][] busGroups = new BusData[7][];
+        final BusData[][] busGroups = new BusData[8][];
 
         final Cursor c = mDB.query(DBHelper.DB_ROUTE_TABLE, mRouteProjection,
                 modeWhereClause + "'" + DBHelper.BUS_MODE + "'",
@@ -195,11 +204,13 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             c.close();
         }
         Log.i(TAG, "master list size? " + masterBusList.size());
-        for(int dex=0; dex < 7; dex++) {
+        for(int dex=0; dex < busGroups.length; dex++) {
             Log.i(TAG, "Loading bus group " + dex);
             busGroups[dex] = loadBusArray(dex, masterBusList);
         }
         mBusArrays = busGroups;
+        Log.i(TAG, "master list size? " + masterBusList.size());
+        masterBusList.clear();
     }
 
     static BusData[] loadBusArray(int groupPosition, ArrayList<BusData> busList) {
@@ -208,72 +219,75 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         switch(groupPosition) {
             case 0:
                 for(BusData bus: busList) {
-                    if (bus.routeId.matches("[0-9]+") && bus.routeId.length() <= 2 &&
-                            Integer.valueOf(bus.routeId) < 51) {
+                    if (bus.routeName.contains("Silver")) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 1:
                 for(BusData bus: busList) {
                     if (bus.routeId.matches("[0-9]+") && bus.routeId.length() <= 2 &&
-                            Integer.valueOf(bus.routeId) > 50) {
+                            Integer.valueOf(bus.routeId) < 51) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 2:
                 for(BusData bus: busList) {
-                    if (bus.routeId.matches("[0-9]+") && bus.routeId.length() == 3 &&
-                            Integer.valueOf(bus.routeId) < 200) {
+                    if (bus.routeId.matches("[0-9]+") && bus.routeId.length() <= 2 &&
+                            Integer.valueOf(bus.routeId) > 50) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 3:
                 for(BusData bus: busList) {
                     if (bus.routeId.matches("[0-9]+") && bus.routeId.length() == 3 &&
-                            Integer.valueOf(bus.routeId) > 199 && Integer.valueOf(bus.routeId) < 400) {
+                            Integer.valueOf(bus.routeId) < 200) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 4:
                 for(BusData bus: busList) {
                     if (bus.routeId.matches("[0-9]+") && bus.routeId.length() == 3 &&
-                            Integer.valueOf(bus.routeId) > 399 && Integer.valueOf(bus.routeId) < 600) {
+                            Integer.valueOf(bus.routeId) > 199 && Integer.valueOf(bus.routeId) < 400) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 5:
-                //this section may need to exclude the Silver line
                 for(BusData bus: busList) {
                     if (bus.routeId.matches("[0-9]+") && bus.routeId.length() == 3 &&
-                            Integer.valueOf(bus.routeId) > 599 && Integer.valueOf(bus.routeId) <= 751) {
+                            Integer.valueOf(bus.routeId) > 399 && Integer.valueOf(bus.routeId) < 600) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
             case 6:
+                //this section has to exclude the Silver line which is case 1
+                for(BusData bus: busList) {
+                    if(!bus.routeName.contains("Silver") && bus.routeId.matches("[0-9]+") && bus.routeId.length() == 3 &&
+                            Integer.valueOf(bus.routeId) > 599 && Integer.valueOf(bus.routeId) <= 751) {
+                        tmp.add(bus);
+                    }
+                }
+                break;
+            case 7:
                 for(BusData bus: busList) {
                     if(bus.routeId.length() > 3) {
                         tmp.add(bus);
-                        //mBusList.remove(bus);
                     }
                 }
                 break;
         }
+        for(BusData bus: tmp) {
+            busList.remove(bus);
+        }
         BusData[] childNames = new BusData[tmp.size()];
         childNames = tmp.toArray(childNames);
         tmp.clear();
-        Log.d(TAG, "returning line array, size is " + childNames.length);
+        Log.d(TAG, "returning next array, size is " + childNames.length);
         return childNames;
     }
 
