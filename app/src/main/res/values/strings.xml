@@ -5,9 +5,8 @@
     <string name="def_text">Where To?</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-    <string name="inbound">(Inbound)</string>
-    <string name="outbound">(Outbound)</string>
-
+    <string name="no_favs">Pick a subway or bus and mark it as a favorite</string>
+    <string name="favorites">Favorites</string>
     <string name="action_alerts">Get Alerts</string>
     <string name="action_settings">Settings</string>
     

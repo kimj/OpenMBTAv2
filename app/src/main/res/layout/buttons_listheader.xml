@@ -18,8 +18,7 @@
         android:onClick="setList"/>
     <View
         android:layout_width="8dp"
-        android:layout_height="match_parent"
-        android:layout_weight="wrap_content" />
+        android:layout_height="match_parent" />
     <ImageButton android:id="@+id/exp_bus"
         android:layout_width="0dp"
         android:layout_height="match_parent"
@@ -30,8 +29,7 @@
         android:onClick="setList"/>
     <View
         android:layout_width="8dp"
-        android:layout_height="match_parent"
-        android:layout_weight="wrap_content" />
+        android:layout_height="match_parent" />
     <ImageButton android:id="@+id/exp_favorite"
         android:layout_width="0dp"
         android:layout_height="match_parent"

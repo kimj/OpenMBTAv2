@@ -130,6 +130,10 @@ public class MainActivity extends AppCompatActivity {
             case R.id.exp_favorite:
                 //mRouteList.setAdapter(new RouteExpandableAdapter(this));
                 Toast.makeText(this, "Favorites to do", Toast.LENGTH_SHORT).show();
+                mRouteList.setAdapter(new RouteExpandableAdapter(this));
+                if(((RouteExpandableAdapter)mRouteList.getAdapter()).mLineIds != null) {
+                    mRouteList.expandGroup(0);
+                }
         }
     }
 

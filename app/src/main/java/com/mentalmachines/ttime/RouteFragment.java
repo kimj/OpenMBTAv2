@@ -72,11 +72,11 @@ public class RouteFragment extends Fragment{
                     getArguments().getString(LINE_NAME), false));
             cb.setOnCheckedChangeListener(favListener);
             //defaulting to inbound
-            titleTV.setText(args.getString(LINE_NAME) + " " + getString(R.string.inbound));
+            titleTV.setText(args.getString(LINE_NAME));
             titleTV.setTextColor(args.getInt(TAG));
 			mList.setVisibility(View.VISIBLE);
 			mList.setAdapter(new SimpleStopAdapter(mItems, args.getInt(TAG)));
-            swipeListHelper.attachToRecyclerView(mList);
+
             //TODO wire up inbound and outbound based on time/previous display
         }
         //Floating Action button switches the display between inbound and outbound
@@ -96,14 +96,14 @@ public class RouteFragment extends Fragment{
                 mItems = getArguments().getStringArray(IN_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
-                        getArguments().getString(LINE_NAME) + " " + getString(R.string.inbound));
+                        getArguments().getString(LINE_NAME));
                 moveRight.start();
             } else {
                 ObjectAnimator.ofFloat(view, "rotation", -540f).start();
                 mItems = getArguments().getStringArray(OUT_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
-                        getArguments().getString(LINE_NAME) + " " + getString(R.string.outbound));
+                        getArguments().getString(LINE_NAME));
                 moveLeft.start();
             }
 
@@ -202,29 +202,9 @@ public class RouteFragment extends Fragment{
         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
             PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
                     .putBoolean(getArguments().getString(LINE_NAME), b).commit();
+            DBHelper.handleFavorite(getContext(), getArguments().getString(LINE_NAME), b);
         }
     };
 
-    /**
-     * this touch code is not acting on the list item
-     it is triggering an animation and changes out the underlying list
-     */
-    ItemTouchHelper swipeListHelper = new ItemTouchHelper(
-            new ItemTouchHelper.SimpleCallback(0, 0) {
-
-        @Override
-        public boolean onMove(RecyclerView recyclerView, RecyclerView.ViewHolder viewHolder, RecyclerView.ViewHolder target) {
-            return true;
-        }
-
-        @Override
-        public void onSwiped(RecyclerView.ViewHolder viewHolder, int direction) {
-            if(direction == ItemTouchHelper.LEFT) {
-                moveLeft.start();
-            } else {
-                moveRight.start();
-            }
-        }
-    });
 
 }
