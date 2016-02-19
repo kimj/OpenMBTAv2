@@ -1,27 +1,47 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:padding="4dp">
+    android:orientation="horizontal">
     <!-- layout for a stop in a listview -->
-    <View android:id="@+id/center"
-        android:layout_width="1dp"
-        android:layout_height="1dp"
-        android:layout_centerInParent="true" />
-    <ImageButton android:id="@+id/exp_lines"
-        android:layout_width="wrap_content"
+    <View
+        android:layout_width="0dp"
         android:layout_height="match_parent"
+        android:layout_weight="0.75" />
+    <ImageButton android:id="@+id/exp_lines"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
         android:src="@drawable/btn_train"
         android:background="@android:color/transparent"
-        android:layout_toLeftOf="@id/center"
         android:padding="6dp"
         android:onClick="setList"/>
-    <ImageButton android:id="@+id/exp_bus"
-        android:layout_width="wrap_content"
+    <View
+        android:layout_width="8dp"
         android:layout_height="match_parent"
+        android:layout_weight="wrap_content" />
+    <ImageButton android:id="@+id/exp_bus"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
         android:src="@drawable/btn_bus"
         android:background="@android:color/transparent"
-        android:layout_toRightOf="@id/center"
         android:padding="6dp"
         android:onClick="setList"/>
-</RelativeLayout>
+    <View
+        android:layout_width="8dp"
+        android:layout_height="match_parent"
+        android:layout_weight="wrap_content" />
+    <ImageButton android:id="@+id/exp_favorite"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="1"
+        android:src="@android:drawable/btn_star_big_on"
+        android:background="@android:color/transparent"
+        android:padding="6dp"
+        android:onClick="setList"/>
+    <View
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.75" />
+</LinearLayout>

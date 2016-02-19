@@ -127,6 +127,9 @@ public class MainActivity extends AppCompatActivity {
                 mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
                 mRouteList.expandGroup(0);
                 break;
+            case R.id.exp_favorite:
+                //mRouteList.setAdapter(new RouteExpandableAdapter(this));
+                Toast.makeText(this, "Favorites to do", Toast.LENGTH_SHORT).show();
         }
     }
 
