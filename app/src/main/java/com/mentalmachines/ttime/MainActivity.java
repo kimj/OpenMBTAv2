@@ -21,7 +21,7 @@ import android.widget.Toast;
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
-    ExpandableListView mRouteList;
+    public ExpandableListView mRouteList;
     SQLiteDatabase mDB;
 
 	@Override
@@ -109,7 +109,7 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
@@ -121,18 +121,35 @@ public class MainActivity extends AppCompatActivity {
         //show either lines or bus expandable list view in the drawer
         switch(v.getId()) {
             case R.id.exp_bus:
+                //mRouteList.setVisibility(View.VISIBLE);
                 mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
                 break;
             case R.id.exp_lines:
+                //mRouteList.setVisibility(View.VISIBLE);
                 mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
                 mRouteList.expandGroup(0);
                 break;
             case R.id.exp_favorite:
                 //mRouteList.setAdapter(new RouteExpandableAdapter(this));
-                Toast.makeText(this, "Favorites to do", Toast.LENGTH_SHORT).show();
-                mRouteList.setAdapter(new RouteExpandableAdapter(this));
-                if(((RouteExpandableAdapter)mRouteList.getAdapter()).mLineIds != null) {
+                final Cursor c = RouteExpandableAdapter.getFavorites(this);
+                if(c.getCount() > 0) {
+                    mRouteList.setVisibility(View.VISIBLE);
+                    mRouteList.setAdapter(new RouteExpandableAdapter(this, c));
                     mRouteList.expandGroup(0);
+                } else {
+                    /* Need to clear the adapter to display the empty view
+                    final View emptyV = LayoutInflater.from(this).inflate(R.layout.group_view, null);
+                    ((TextView) emptyV).setText(getString(R.string.no_favs));
+                    ((TextView) emptyV).setTextColor(getResources().getColor(R.color.colorPrimary));
+                    emptyV.setBackgroundResource(android.R.color.white);*/
+                    //mRouteList.setVisibility(View.GONE);
+                    final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+                    if (drawer.isDrawerOpen(GravityCompat.START)) {
+                        Toast.makeText(this, getString(R.string.no_favs), Toast.LENGTH_SHORT).show();
+                        ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
+                    }
+
+
                 }
         }
     }

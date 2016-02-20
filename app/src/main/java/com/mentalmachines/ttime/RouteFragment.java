@@ -8,7 +8,6 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.helper.ItemTouchHelper;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -203,6 +202,10 @@ public class RouteFragment extends Fragment{
             PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
                     .putBoolean(getArguments().getString(LINE_NAME), b).commit();
             DBHelper.handleFavorite(getContext(), getArguments().getString(LINE_NAME), b);
+            if(getActivity().findViewById(R.id.exp_favorite).getTag() != null) {
+                getActivity().findViewById(R.id.exp_favorite).callOnClick();
+                //problem with zero?
+            }
         }
     };
 

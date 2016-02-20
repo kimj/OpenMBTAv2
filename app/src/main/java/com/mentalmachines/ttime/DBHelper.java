@@ -246,20 +246,20 @@ public class DBHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    public final static String[]sFavProjection = new String[] { KEY_ROUTE_NAME };
     public static void handleFavorite(Context ctx, String routeNm, boolean isFavorite) {
 
         final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
-        final Cursor c = db.query(FAVS_TABLE, sFavProjection, sFavProjection + " like " + routeNm, null, null, null, null);
+        final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         if(isFavorite && c.getCount() == 0) {
             final ContentValues cv = new ContentValues();
             cv.put(KEY_ROUTE_NAME, routeNm);
-            Log.i(TAG, "adding favorite " + routeNm + db.insert(
+            Log.i(TAG, "adding favorite " + routeNm + " row:" + db.insert(
                     FAVS_TABLE, "_id", cv));
             cv.clear();
         } else if(c.getCount() > 0) {
+            //not a favorite and found in the table
             Log.i(TAG, "dropping favorite " + routeNm + db.delete(
-                    FAVS_TABLE, KEY_ROUTE_NAME + " like " + routeNm, null));
+                    FAVS_TABLE, KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
         }
 
         if(!c.isClosed()) c.close();

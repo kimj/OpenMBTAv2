@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -25,7 +26,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     public static final String TAG = "RouteExpandableAdapter";
     String[] mGroupNames;
     public String[] mLineIds;
-    final int mMode;
+    public final int mMode;
     static SQLiteDatabase mDB;
 
     final static String[] mRouteProjection = new String[] {
@@ -37,33 +38,38 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     final static String[] mFavIDProjection = new String[] {
             DBHelper.KEY_ROUTE_ID
     };
+    final static String[] mFavProjection = new String[] {
+            DBHelper.KEY_ROUTE_NAME
+    };
     final static String stopsSubwayWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
     final static String modeWhereClause = DBHelper.KEY_ROUTE_MODE + " like ";
-    final static String favWhereClause = DBHelper.KEY_ROUTE_NAME + " like ";
+    final static String routeWhereClause = DBHelper.KEY_ROUTE_NAME + " like ";
     //here is the actual data to display, along with mGroupNames
     static BusData[][] mBusArrays;
 
-    public RouteExpandableAdapter(Activity ctx) {
+    public RouteExpandableAdapter(Activity ctx, Cursor c) {
         //this is the favorites list
         mMode = FAVE;
-        if(mDB == null || !mDB.isOpen()) {
-            mDB = new DBHelper(ctx).getReadableDatabase();
-        }
-        //select all
-        Cursor c = mDB.query(DBHelper.FAVS_TABLE,
-                DBHelper.sFavProjection,
-                null, null, null, null, null);
-        if(c.getCount() > 0 && c.moveToFirst()) {
+        setSelectedBtn(R.id.exp_favorite, ctx);
+        final int sz = c.getCount();
+        if(sz > 0 && c.moveToFirst()) {
             mGroupNames = DBHelper.makeArrayFromCursor(c, 0);
-            c.close();
-            c = mDB.query(DBHelper.DB_ROUTE_TABLE,
-                    mRouteProjection,
-                    favWhereClause,
-                    mGroupNames, null, null, null);
-            if(c.getCount() > 0 && c.moveToFirst()) {
-                mLineIds = DBHelper.makeArrayFromCursor(c, 0);
-                c.close();
+            mLineIds = new String[sz];
+
+            int dex = 0;
+            for(String route: mGroupNames) {
+                c = mDB.query(DBHelper.DB_ROUTE_TABLE,
+                        mFavIDProjection,
+                        routeWhereClause + "'" + route + "'",
+                        null, null, null, null);
+                if(c.getCount() > 0 && c.moveToFirst()) {
+                    mLineIds[dex] = c.getString(0);
+                } else {
+                    Log.w(TAG, "no route id for: " + route);
+                }
+                dex++;
             }
+            c.close();
         } else {
             //no favorites
             mGroupNames = new String[] { ctx.getString(R.string.no_favs)};
@@ -77,12 +83,10 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         if(busList) {
             mMode = BUS;
             mGroupNames = ctx.getResources().getStringArray(R.array.nav_groups);
-            ctx.findViewById(R.id.exp_bus).setBackgroundResource(R.color.bluelineBG);
-            ctx.findViewById(R.id.exp_lines).setBackgroundResource(android.R.color.transparent);
+            setSelectedBtn(R.id.exp_bus, ctx);
         } else {
             mMode = SUBWAY;
-            ctx.findViewById(R.id.exp_bus).setBackgroundResource(android.R.color.transparent);
-            ctx.findViewById(R.id.exp_lines).setBackgroundResource(R.color.bluelineBG);
+            setSelectedBtn(R.id.exp_lines, ctx);
             if(mDB == null || !mDB.isOpen()) {
                 mDB = new DBHelper(ctx).getReadableDatabase();
             }
@@ -179,54 +183,44 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 convertView.setBackgroundResource(android.R.color.white);
             }
             ((TextView) convertView).setText(mGroupNames[groupPosition]);
-        }
-
-
-        if(mMode != SUBWAY) {
-            ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
-            ((TextView) convertView).setTextColor(
-                    ctx.getResources().getColor(GroupTxtColor[groupPosition]));
-            convertView.setBackgroundResource(GroupColorBG[groupPosition]);
-
         } else {
-            //Favorites mode
-            if(mLineIds == null ) {
-                //favorites selected, no favorites set up
-                ((TextView) convertView).setText(ctx.getString(R.string.no_favs));
-            } else {
-                ((TextView) convertView).setText(ctx.getString(R.string.favorites));
-            }
             ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
             convertView.setBackgroundResource(android.R.color.white);
-
+            if(mMode == SUBWAY) {
+                ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
+            } else {
+                //Favorites mode
+                ((TextView) convertView).setText(ctx.getString(R.string.favorites));
+            }
         }
+
+
         return convertView;
     }
 
     @Override
     public View getChildView(int groupPosition, int childPosition,
              boolean isLastChild, View convertView, ViewGroup parent) {
+        final Context ctx = parent.getContext();
         if(convertView == null) {
-            convertView = LayoutInflater.from(parent.getContext()).inflate(
+            convertView = LayoutInflater.from(ctx).inflate(
                     R.layout.child_view, null);
         }
         if(mMode == BUS) {
             final BusData tmp = mBusArrays[groupPosition][childPosition];
             ((TextView)convertView).setText(tmp.routeName);
             convertView.setTag(tmp.routeId);
-        } else if(mLineIds == null) {
-
         } else if(mMode == SUBWAY) {
-            //is subway
-            final int color = parent.getContext().getResources().getColor(GroupTxtColor[groupPosition]);
+            final int color = getBgColor(ctx, mGroupNames[childPosition]);
             ((TextView)convertView).setText(mGroupNames[childPosition]);
-            ((TextView) convertView).setTextColor(color);
+            ((TextView) convertView).setTextColor(Color.BLACK);
+            convertView.setBackgroundColor(color);
             convertView.setTag(mLineIds[childPosition]);
             convertView.setTag(R.layout.child_view, color);
         } else {
             //must be favorites with a valid mLineids array
             ((TextView)convertView).setText(mGroupNames[childPosition]);
-            ((TextView) convertView).setTextColor(parent.getContext().getResources().getColor(R.color.colorPrimary));
+            ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
             convertView.setTag(mLineIds[childPosition]);
         }
         //??convertView.setTag(groupPosition);
@@ -347,14 +341,60 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         return childNames;
     }
 
+    void setSelectedBtn(int buttonId, Activity ctx) {
+        View v = ctx.findViewById(buttonId);
+        v.setBackgroundResource(R.color.silverlineBG);
+        v.setTag(true);
+        if(R.id.exp_lines != buttonId) {
+            v = ctx.findViewById(R.id.exp_lines);
+            v.setBackgroundResource(android.R.color.transparent);
+            v.setTag(null);
+        }
+        if(R.id.exp_bus != buttonId) {
+            v = ctx.findViewById(R.id.exp_bus);
+            v.setBackgroundResource(android.R.color.transparent);
+            v.setTag(null);
+        }
+        if(R.id.exp_favorite != buttonId) {
+            v = ctx.findViewById(R.id.exp_favorite);
+            v.setBackgroundResource(android.R.color.transparent);
+            v.setTag(null);
+        }
+    }
+
     public static class BusData {
         String routeId;
         String routeName;
     }
 
+    public static Cursor getFavorites(Context ctx) {
+        if(mDB == null || !mDB.isOpen()) {
+            mDB = new DBHelper(ctx).getReadableDatabase();
+        }
+        //select all, table only has one column
+        return mDB.query(DBHelper.FAVS_TABLE,
+                mFavProjection, null, null, null, null, null);
+    }
+
     public static final int SUBWAY = 0;
     public static final int BUS = 1;
     public static final int FAVE = 2;
+
+    public static int getBgColor(Context ctx, String route) {
+        if(route.contains("Green")) {
+            return ctx.getResources().getColor(R.color.greenlineBG);
+        } else if(route.contains("Blue")) {
+            return ctx.getResources().getColor(R.color.bluelineBG);
+        } else if(route.contains("Orange")) {
+            return ctx.getResources().getColor(R.color.orangelineBG);
+        } else if(route.contains("Red")) {
+            return ctx.getResources().getColor(R.color.redlineBG);
+        } /* See if this is needed...
+        else if(route.contains("Silver")) {
+            return ctx.getResources().getColor(R.color.silverlineBG);
+        }*/
+        return ctx.getResources().getColor(R.color.busYellowBG);
+    }
 
     //Quick access colors, ordered by the lines
     public static final int[] GroupColorBG = { R.color.bluelineBG, R.color.greenlineBG, R.color.busYellowBG,
