@@ -51,16 +51,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_STOPLT = "stop_lat";
     public static final String KEY_STOPLN = "stop_lon";
 
-
-    public static final String STOPS_COLS = "("
-            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ROUTE_ID + " TEXT not null,"
-            + KEY_STOPID + " TEXT not null,"
-            + KEY_STOP_ORD + " INT not null,"
-            + KEY_STOPNM + " TEXT not null,"
-            + KEY_STOPLT + " NUMERIC not null,"
-            + KEY_STOPLN + " NUMERIC not null);";
-
     public static final String KEY_TRIP_ID = "trip_id";
     public static final String KEY_TRIP_SIGN = "trip_headsign";
     //public static final String KEY_DIR_ID = "direction_id";
@@ -72,8 +62,8 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_STOPID + " TEXT not null,"
             + KEY_TRIP_ID + " TEXT not null,"
             + KEY_TRIP_SIGN + " TEXT,"
-            + KEY_ARR_TIME + " NUMERIC not null,"
-            + KEY_DEP_TIME + " NUMERIC not null);";
+            + KEY_ARR_TIME + " TEXT not null,"
+            + KEY_DEP_TIME + " TEXT not null);";
 
     public static final String TABLE_PREFIX = "create table if not exists ";
     public static final String WEEKDAY_TABLE_BUS_IN = "weekday_table_b_in";
@@ -185,6 +175,20 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ALERT_LIFECYCLE + " TEXT not null);"
             + KEY_EFFECT_PERIOD_START + " TEXT not null);"
             + KEY_EFFECT_PERIOD_END + " TEXT not null);";
+
+    public static final String STOPS_COLS = "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT not null,"
+            + KEY_STOPID + " TEXT not null,"
+            + KEY_STOP_ORD + " INT not null,"
+            + KEY_STOPNM + " TEXT not null,"
+            + KEY_ALERT_ID + " NUMERIC not null,"
+            + KEY_STOPLT + " NUMERIC not null,"
+            + KEY_STOPLN + " NUMERIC not null);";
+
+    //TODO save most recent alert id to the stop table
+    // parse alerts in reverse chron order, save alert id to stop table
+    //check the stop table alert is still valid, else look for other alert id for stop
 
 
     @Override

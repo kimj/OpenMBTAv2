@@ -172,6 +172,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             //inflate a new group view
             convertView = LayoutInflater.from(ctx).inflate(R.layout.group_view, null);
         }
+        //Group position zero has the silver line bg, merges selected button into the list
         if(mMode == BUS) {
             if(groupPosition == 0) {
                 ((TextView) convertView).setTextColor(
@@ -185,7 +186,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             ((TextView) convertView).setText(mGroupNames[groupPosition]);
         } else {
             ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
-            convertView.setBackgroundResource(android.R.color.white);
+            convertView.setBackgroundResource(R.color.silverlineBG);
             if(mMode == SUBWAY) {
                 ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
             } else {
@@ -193,8 +194,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 ((TextView) convertView).setText(ctx.getString(R.string.favorites));
             }
         }
-
-
         return convertView;
     }
 

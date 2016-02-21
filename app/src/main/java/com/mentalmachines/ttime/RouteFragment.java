@@ -73,6 +73,7 @@ public class RouteFragment extends Fragment{
             //defaulting to inbound
             titleTV.setText(args.getString(LINE_NAME));
             titleTV.setTextColor(args.getInt(TAG));
+            getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
 			mList.setAdapter(new SimpleStopAdapter(mItems, args.getInt(TAG)));
 
