@@ -16,6 +16,17 @@
         android:textColor="@color/colorPrimaryDark"
         android:background="@android:color/transparent"
         android:textSize="18dp" />
+    <ImageButton
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignTop="@+id/stop_desc"
+        android:layout_alignParentRight="true"
+        android:paddingTop="18dip"
+        android:layout_marginRight="18dp"
+        android:gravity="right|center_vertical"
+        android:src="@android:drawable/ic_menu_compass"
+        android:onClick="openMap"
+        android:background="@android:color/transparent"  />
     <TextView
         android:id="@+id/stop_eta"
         android:layout_width="wrap_content"
@@ -28,7 +39,6 @@
         android:textColor="@android:color/black"
         android:background="@android:color/transparent"
         android:textSize="18dp" />
-
     <View android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"

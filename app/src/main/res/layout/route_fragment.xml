@@ -36,7 +36,6 @@
     <!-- To do text appearance large -->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/mc_routelist"
-        android:name="com.mentalmachines.ttime.openmbtav2.SubwayFragment"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/mc_title"

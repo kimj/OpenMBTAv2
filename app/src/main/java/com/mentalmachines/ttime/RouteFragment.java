@@ -16,29 +16,29 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
+
 public class RouteFragment extends Fragment{
 	/**
 	 * A fragment representing a train or bus line
 	 */
-    private static final String IN_STOPS_LIST = "in";
-    private static final String OUT_STOPS_LIST = "out";
     private static final String LINE_NAME = "line";
     private static final String TAG = "RouteFragment";
 
     boolean mInbound = true;
     RecyclerView mList;
-    String[] mItems;
+    static StopData[] mInStops, mOutStops;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(String[] instops, String[] outstops, String title, int bgColor) {
+	public static RouteFragment newInstance(StopData[] instops, StopData[] outstops, String title, int bgColor) {
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
-		args.putStringArray(IN_STOPS_LIST, instops);
-        args.putStringArray(OUT_STOPS_LIST, outstops);
+        mInStops = instops;
+        mOutStops = outstops;
         args.putString(LINE_NAME, title);
         args.putInt(TAG, bgColor);
 		fragment.setArguments(args);
@@ -50,20 +50,21 @@ public class RouteFragment extends Fragment{
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.content_main, container, false);
+		View rootView = inflater.inflate(R.layout.route_fragment, container, false);
 
         final Bundle args = getArguments();
         final TextView titleTV = (TextView)rootView.findViewById(R.id.mc_title);
-        mItems = args.getStringArray(IN_STOPS_LIST);
 
 		mList = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
 
-        if(mItems == null) {
+        if(mInStops == null) {
 			mList.setVisibility(View.GONE);
             Log.w(TAG, "no stops");
-            titleTV.setText(args.getString(LINE_NAME));
-            titleTV.setTextColor(args.getInt(TAG));
+            ((MainActivity)getActivity()).setMenuItems(false);
+            /*titleTV.setText(args.getString(LINE_NAME));
+            titleTV.setTextColor(args.getInt(TAG));*/
         } else {
+            ((MainActivity)getActivity()).setMenuItems(false);
             final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
             cb.setVisibility(View.VISIBLE);
             //read and set preference
@@ -75,7 +76,7 @@ public class RouteFragment extends Fragment{
             titleTV.setTextColor(args.getInt(TAG));
             getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
-			mList.setAdapter(new SimpleStopAdapter(mItems, args.getInt(TAG)));
+			mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
 
             //TODO wire up inbound and outbound based on time/previous display
         }
@@ -93,14 +94,14 @@ public class RouteFragment extends Fragment{
             mInbound = !mInbound;
             if(mInbound) {
                 ObjectAnimator.ofFloat(view, "rotation", 540f).start();
-                mItems = getArguments().getStringArray(IN_STOPS_LIST);
+                //mItems = getArguments().getStringArray(IN_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
                         getArguments().getString(LINE_NAME));
                 moveRight.start();
             } else {
                 ObjectAnimator.ofFloat(view, "rotation", -540f).start();
-                mItems = getArguments().getStringArray(OUT_STOPS_LIST);
+                //mItems = getArguments().getStringArray(OUT_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
                         getArguments().getString(LINE_NAME));
@@ -160,7 +161,8 @@ public class RouteFragment extends Fragment{
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
+                //move right, IN_STOPS_LIST
+                mList.setAdapter(new SimpleStopAdapter(mInStops, getArguments().getInt(TAG)));
                 moveR2.start();
             }
 
@@ -184,7 +186,7 @@ public class RouteFragment extends Fragment{
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
+                mList.setAdapter(new SimpleStopAdapter(mOutStops, getArguments().getInt(TAG)));
                 moveL2.start();
             }
 

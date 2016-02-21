@@ -200,6 +200,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     @Override
     public View getChildView(int groupPosition, int childPosition,
              boolean isLastChild, View convertView, ViewGroup parent) {
+        //the tags are used to open the routeFragment
         final Context ctx = parent.getContext();
         if(convertView == null) {
             convertView = LayoutInflater.from(ctx).inflate(
@@ -222,7 +223,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
             convertView.setTag(mLineIds[childPosition]);
         }
-        //??convertView.setTag(groupPosition);
         return convertView;
     }
 

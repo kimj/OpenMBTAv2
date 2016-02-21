@@ -1,7 +1,9 @@
 package com.mentalmachines.ttime;
 
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -18,11 +20,14 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
+
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     public ExpandableListView mRouteList;
     SQLiteDatabase mDB;
+    String mSelectedRouteId;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -96,6 +101,12 @@ public class MainActivity extends AppCompatActivity {
 		// automatically handle clicks on the Home/Up button, so long
 		// as you specify a parent activity in AndroidManifest.xml.
 		switch (item.getItemId()) {
+            /* TODO move route name, map button and favorite selection up to action bar
+            case R.id.menu_favorites:
+                break;
+            case R.id.menu_map:
+                //map menu from the action bar will display the route
+                break;*/
             case R.id.menu_alerts:
                 Toast.makeText(this, R.string.action_alerts, Toast.LENGTH_SHORT).show();
                 break;
@@ -155,20 +166,21 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void childClick(View v) {
-        //click listener set on the child view
+        //click listener set on the child view in the nav drawer
         if(mDB == null || !mDB.isOpen()) {
             mDB = new DBHelper(this).getReadableDatabase();
         }
-        final String routeId = (String) v.getTag();
-        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, RouteExpandableAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
+        mSelectedRouteId = (String) v.getTag();
+
+        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, SimpleStopAdapter.mStopProjection,
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'",
                 null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
-        String[] inStops = DBHelper.makeArrayFromCursor(c, 0);
+        StopData[] inStops = SimpleStopAdapter.makeStopsList(c);
         c.close();
-        c = mDB.query(DBHelper.STOPS_OUT_TABLE, RouteExpandableAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
+        c = mDB.query(DBHelper.STOPS_OUT_TABLE, SimpleStopAdapter.mStopProjection,
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'",
                 null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
-        String[] outStops = DBHelper.makeArrayFromCursor(c, 0);
+        StopData[] outStops = SimpleStopAdapter.makeStopsList(c);
         c.close();
         getSupportFragmentManager().beginTransaction()
             .replace(R.id.container, RouteFragment.newInstance(inStops, outStops,
@@ -182,4 +194,18 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
         //Fab is to switch between inbound and outbound
     }
+
+    public void openMap(View v) {
+        //click listener in the route fragment recycler view
+        Uri uri = Uri.parse("geo:0,0?q=22.99948365856307,72.60040283203125(Maninagar)");
+        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
+        startActivity(intent);
+    }
+
+    /* Showing Route between to Places,
+        Intent intent = new Intent(Intent.ACTION_VIEW,
+        Uri.parse("http://maps.google.com/maps?saddr="+23.0094408+","+72.5988541+"&
+                            daddr="+22.99948365856307+","+72.60040283203125));
+        startActivity(intent);
+     */
 }
