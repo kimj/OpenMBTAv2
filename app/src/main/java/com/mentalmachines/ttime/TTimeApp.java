@@ -7,6 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.mentalmachines.ttime.services.DBCreateStopsRoutes;
+import com.mentalmachines.ttime.services.GetMBTARequestService;
 
 /**
  * Created by emezias on 2/5/16.
@@ -21,6 +22,7 @@ public class TTimeApp extends Application{
         if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
             Log.i(TAG, "no db");
             startService(new Intent(this, DBCreateStopsRoutes.class));
+            startService(new Intent(this, GetMBTARequestService.class));
         } else {
             RouteExpandableAdapter.initBusList(this);
             Log.i(TAG, "initializing bus routes");
