@@ -74,7 +74,6 @@ public class GetMBTARequestService extends IntentService {
         final Bundle b = intent.getExtras();
     }
 
-
     void parseAlertsCall(JsonParser parser) throws IOException {
         final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
         if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ALERTS_TABLE) > 0) {

@@ -20,6 +20,7 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.services.CopyDBService;
 
 public class MainActivity extends AppCompatActivity {
@@ -99,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
 		// as you specify a parent activity in AndroidManifest.xml.
 		switch (item.getItemId()) {
             case R.id.menu_alerts:
-                Toast.makeText(this, R.string.action_alerts, Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, AlertsFragment.class));
                 break;
             case R.id.menu_settings:
                 Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
