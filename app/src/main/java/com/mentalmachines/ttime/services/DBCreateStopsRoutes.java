@@ -3,7 +3,6 @@ package com.mentalmachines.ttime.services;
 import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
-import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.util.Log;
@@ -68,10 +67,7 @@ public class DBCreateStopsRoutes extends IntentService {
     }
 
     void parseRoutesCall(JsonParser parser) throws IOException {
-        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.DB_ROUTE_TABLE) > 0) {
-            Log.d(TAG, "db exists");
-            return;
-        }
+
         final ContentValues cv = new ContentValues();
 
         String mode_name = null;
@@ -104,7 +100,7 @@ public class DBCreateStopsRoutes extends IntentService {
                         token = parser.nextToken();
                         rtType = parser.getValueAsInt();
                     } */else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE_NM.equals(parser.getCurrentName())) {
-                        token = parser.nextToken();
+                        parser.nextToken();
                         if(!parser.getValueAsString().equals("null") && !parser.getValueAsString().isEmpty()) {
                             mode_name = parser.getValueAsString();
                         }
@@ -163,11 +159,10 @@ public class DBCreateStopsRoutes extends IntentService {
 
     void parseStopsCall(String route) throws IOException {
         JsonParser parser = factory.createParser(new URL(STOPS + route));
-        final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
-        //TODO error check that the route isn't already in the db
+        //check that the route isn't already in the db?
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ROUTE_ID, route);
-        String table = DBHelper.STOPS_OUT_TABLE;
+        String table = "";
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -233,7 +228,8 @@ public class DBCreateStopsRoutes extends IntentService {
                                 cv.put(DBHelper.KEY_STOPLN, parser.getValueAsString());
                             } else if (JsonToken.END_OBJECT.equals(token)) {
                                 token = parser.nextToken();
-                                Log.d(TAG, "inserting row into " + table + " " + cv.get(DBHelper.KEY_STOPNM) + ": " + db.insert(table, "", cv));
+                                Log.d(TAG, "inserting unique route and stop " + route + " " +
+                                        cv.get(DBHelper.KEY_STOPNM) + ": " + mDB.insert(table, "", cv));
                                 cv.clear();
                                 cv.put(DBHelper.KEY_ROUTE_ID, route);
                             }

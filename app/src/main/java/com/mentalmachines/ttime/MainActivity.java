@@ -35,7 +35,7 @@ public class MainActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-        /*Log.d(TAG, "starting svc");
+        /* Log.d(TAG, "starting svc");
         startService(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
@@ -83,7 +83,6 @@ public class MainActivity extends AppCompatActivity {
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
-
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
 
@@ -171,19 +170,21 @@ public class MainActivity extends AppCompatActivity {
         if(mDB == null || !mDB.isOpen()) {
             mDB = new DBHelper(this).getReadableDatabase();
         }
-        final String mSelectedRouteId = (String) v.getTag();
-
+        final String routeId = (String) v.getTag();
+        Log.i(TAG, "show route " + routeId);
         Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, SimpleStopAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'",
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
                 null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
         StopData[] inStops = SimpleStopAdapter.makeStopsList(c);
+
         c.close();
         c = mDB.query(DBHelper.STOPS_OUT_TABLE, SimpleStopAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'",
+                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
                 null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
         StopData[] outStops = SimpleStopAdapter.makeStopsList(c);
+
         c.close();
-        Log.d(TAG, "select? " + RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'");
+        //9701, 9702 and 9703 are one way routes
         mRouteFragment = RouteFragment.newInstance(inStops, outStops,
                 ((TextView)v).getText().toString(),
                 v.getTag(R.layout.child_view) == null?
