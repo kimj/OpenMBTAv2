@@ -10,6 +10,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
+import android.widget.ExpandableListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
@@ -32,12 +33,11 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     final static String[] mRouteProjection = new String[] {
             DBHelper.KEY_ROUTE_ID, DBHelper.KEY_ROUTE_NAME
     };
-    public final static String[] mStopProjection = new String[] {
-            DBHelper.KEY_STOPNM, DBHelper.KEY_STOP_ORD
-    };
+
     final static String[] mFavIDProjection = new String[] {
             DBHelper.KEY_ROUTE_ID
     };
+
     final static String[] mFavProjection = new String[] {
             DBHelper.KEY_ROUTE_NAME
     };
@@ -193,6 +193,10 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 //Favorites mode
                 ((TextView) convertView).setText(ctx.getString(R.string.favorites));
             }
+        }
+        if(mMode == SUBWAY || mMode == FAVE) {
+            //this bit will make sure that the group is always expanded
+            ((ExpandableListView)parent).expandGroup(groupPosition);
         }
         return convertView;
     }

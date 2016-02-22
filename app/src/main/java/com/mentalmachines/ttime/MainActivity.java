@@ -12,6 +12,7 @@ import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -27,7 +28,8 @@ public class MainActivity extends AppCompatActivity {
     public static final String TAG = "MainActivity";
     public ExpandableListView mRouteList;
     SQLiteDatabase mDB;
-    String mSelectedRouteId;
+    //String mSelectedRouteId;
+    RouteFragment mRouteFragment;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -72,12 +74,10 @@ public class MainActivity extends AppCompatActivity {
                 previousGroup = groupPosition;
             }
         });
-        //NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
-        //navigationView.setNavigationItemSelectedListener(this);
-        //no more menu? using exp list view
+        mRouteFragment = RouteFragment.newInstance(null, null, getString(R.string.def_text),
+                getResources().getColor(R.color.colorPrimary));
         getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, RouteFragment.newInstance(null, null, getString(R.string.def_text),
-                        getResources().getColor(R.color.colorPrimary)))
+                .replace(R.id.container, mRouteFragment)
                 .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
@@ -134,19 +134,20 @@ public class MainActivity extends AppCompatActivity {
             case R.id.exp_bus:
                 //mRouteList.setVisibility(View.VISIBLE);
                 mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
+                mRouteList.setOnGroupExpandListener(null);
                 break;
             case R.id.exp_lines:
-                //mRouteList.setVisibility(View.VISIBLE);
                 mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
                 mRouteList.expandGroup(0);
+                mRouteList.setOnGroupCollapseListener(faveSubListener);
                 break;
             case R.id.exp_favorite:
-                //mRouteList.setAdapter(new RouteExpandableAdapter(this));
                 final Cursor c = RouteExpandableAdapter.getFavorites(this);
                 if(c.getCount() > 0) {
                     mRouteList.setVisibility(View.VISIBLE);
                     mRouteList.setAdapter(new RouteExpandableAdapter(this, c));
                     mRouteList.expandGroup(0);
+                    mRouteList.setOnGroupCollapseListener(faveSubListener);
                 } else {
                     /* Need to clear the adapter to display the empty view
                     final View emptyV = LayoutInflater.from(this).inflate(R.layout.group_view, null);
@@ -170,7 +171,7 @@ public class MainActivity extends AppCompatActivity {
         if(mDB == null || !mDB.isOpen()) {
             mDB = new DBHelper(this).getReadableDatabase();
         }
-        mSelectedRouteId = (String) v.getTag();
+        final String mSelectedRouteId = (String) v.getTag();
 
         Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, SimpleStopAdapter.mStopProjection,
                 RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'",
@@ -182,11 +183,13 @@ public class MainActivity extends AppCompatActivity {
                 null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
         StopData[] outStops = SimpleStopAdapter.makeStopsList(c);
         c.close();
+        Log.d(TAG, "select? " + RouteExpandableAdapter.stopsSubwayWhereClause + "'" + mSelectedRouteId + "'");
+        mRouteFragment = RouteFragment.newInstance(inStops, outStops,
+                ((TextView)v).getText().toString(),
+                v.getTag(R.layout.child_view) == null?
+                        getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view));
         getSupportFragmentManager().beginTransaction()
-            .replace(R.id.container, RouteFragment.newInstance(inStops, outStops,
-                    ((TextView)v).getText().toString(),
-                    v.getTag(R.layout.child_view) == null?
-                        getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view)))
+            .replace(R.id.container, mRouteFragment)
             .commit();
 
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
@@ -195,17 +198,52 @@ public class MainActivity extends AppCompatActivity {
         //Fab is to switch between inbound and outbound
     }
 
+    /* Showing Route between two Places
+        This click listener is set on the map button next to the route name */
+    /*public void mapRoute(View v) {
+        StringBuilder s = new StringBuilder().append("http://maps.google.com/maps?saddr=");
+        StopData stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        s.append(stop.stopLat).append(",").append(stop.stopLong).append("&daddr=");
+        Log.d(TAG, "first stop " + stop.stopName);
+        stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        s.append(stop.stopLat).append(",").append(stop.stopLong);
+        Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s.toString()));
+        //intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
+        startActivity(intent);
+        Log.d(TAG, "stop " + stop.stopName);
+        *//*StopData stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        StringBuilder s = new StringBuilder().append("geo:=")
+                .append(stop.stopLat).append(",").append(stop.stopLong).append("?q=");
+        stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        s.append(stop.stopLat).append(",").append(stop.stopLong)*//*;
+        startActivity(new Intent(android.content.Intent.ACTION_VIEW,
+                Uri.parse(s.toString())));
+    }*/
+
     public void openMap(View v) {
         //click listener in the route fragment recycler view
-        Uri uri = Uri.parse("geo:0,0?q=22.99948365856307,72.60040283203125(Maninagar)");
+        final StopData stop = (StopData) v.getTag();
+        Log.d(TAG, "stop " + stop.stopName);
+        //geo:0,0?q=lat,lng(label)
+        //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
+        Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
+                + Uri.encode(stop.stopName) + ")");
         Intent intent = new Intent(Intent.ACTION_VIEW, uri);
         startActivity(intent);
     }
 
-    /* Showing Route between to Places,
-        Intent intent = new Intent(Intent.ACTION_VIEW,
-        Uri.parse("http://maps.google.com/maps?saddr="+23.0094408+","+72.5988541+"&
-                            daddr="+22.99948365856307+","+72.60040283203125));
-        startActivity(intent);
-     */
+    ExpandableListView.OnGroupCollapseListener faveSubListener = new ExpandableListView.OnGroupCollapseListener() {
+
+        @Override
+        public void onGroupCollapse(int i) {
+            //this is always zero for favorites and subway
+            if(!mRouteList.isGroupExpanded(i)) {
+                mRouteList.expandGroup(i);
+            }
+        }
+
+    };
+
 }

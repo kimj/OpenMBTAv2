@@ -19,12 +19,18 @@
         android:text="@string/def_text"
         android:textColor="@color/colorPrimary"
         android:textSize="18dp" />
-    <ImageView android:id="@+id/mc_icon"
+    <!--
+    <ImageButton android:id="@+id/mc_map"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginTop="-8dp"
         android:layout_toLeftOf="@id/mc_title"
+        android:src="@android:drawable/ic_menu_mapmode"
+        android:onClick="mapRoute"
         android:visibility="gone"
         android:layout_marginRight="@dimen/def_margin" />
+        This is not quite ready, don't like opening maps/navigation
+        -->
     <CheckBox android:id="@+id/mc_favorite"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -39,8 +45,6 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_below="@id/mc_title"
-        android:layout_marginLeft="16dp"
-        android:layout_marginRight="16dp"
         android:padding="4dp"
         app:layoutManager="LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"

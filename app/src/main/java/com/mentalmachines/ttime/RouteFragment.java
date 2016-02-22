@@ -26,7 +26,7 @@ public class RouteFragment extends Fragment{
     private static final String TAG = "RouteFragment";
 
     boolean mInbound = true;
-    RecyclerView mList;
+    public RecyclerView mList;
     static StopData[] mInStops, mOutStops;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
@@ -50,8 +50,7 @@ public class RouteFragment extends Fragment{
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.route_fragment, container, false);
-
+		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
         final Bundle args = getArguments();
         final TextView titleTV = (TextView)rootView.findViewById(R.id.mc_title);
 
@@ -60,11 +59,10 @@ public class RouteFragment extends Fragment{
         if(mInStops == null) {
 			mList.setVisibility(View.GONE);
             Log.w(TAG, "no stops");
-            ((MainActivity)getActivity()).setMenuItems(false);
-            /*titleTV.setText(args.getString(LINE_NAME));
-            titleTV.setTextColor(args.getInt(TAG));*/
+            titleTV.setText(args.getString(LINE_NAME));
+            titleTV.setTextColor(args.getInt(TAG));
         } else {
-            ((MainActivity)getActivity()).setMenuItems(false);
+            //rootView.findViewById(R.id.mc_map).setVisibility(View.VISIBLE);
             final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
             cb.setVisibility(View.VISIBLE);
             //read and set preference
@@ -72,12 +70,18 @@ public class RouteFragment extends Fragment{
                     getArguments().getString(LINE_NAME), false));
             cb.setOnCheckedChangeListener(favListener);
             //defaulting to inbound
-            titleTV.setText(args.getString(LINE_NAME));
+            final String routeNm = args.getString(LINE_NAME);
+            if(Character.isDigit(routeNm.charAt(0))) {
+                titleTV.setText(getString(R.string.bus_prefix) + args.getString(LINE_NAME));
+            } else {
+                titleTV.setText(args.getString(LINE_NAME));
+            }
+
             titleTV.setTextColor(args.getInt(TAG));
-            getActivity().setTitle(args.getString(LINE_NAME));
+            //TODO use this instead of titleTV
+            //getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
 			mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
-
             //TODO wire up inbound and outbound based on time/previous display
         }
         //Floating Action button switches the display between inbound and outbound

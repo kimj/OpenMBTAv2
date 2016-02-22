@@ -5,21 +5,9 @@
     android:paddingLeft="4dp"
     android:paddingRight="4dp">
     <!-- layout for a stop in a listview -->
-    <TextView
-        android:id="@+id/stop_desc"
+    <ImageButton android:id="@+id/stop_mapbtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:gravity="left"
-        android:padding="18dip"
-        android:text="MBTA stop 1"
-        android:textColor="@color/colorPrimaryDark"
-        android:background="@android:color/transparent"
-        android:textSize="18dp" />
-    <ImageButton
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@+id/stop_desc"
         android:layout_alignParentRight="true"
         android:paddingTop="18dip"
         android:layout_marginRight="18dp"
@@ -27,6 +15,18 @@
         android:src="@android:drawable/ic_menu_compass"
         android:onClick="openMap"
         android:background="@android:color/transparent"  />
+    <TextView
+        android:id="@+id/stop_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@id/stop_mapbtn"
+        android:padding="18dip"
+        android:text="MBTA stop 1"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="@android:color/transparent"
+        android:textSize="18dp" />
     <TextView
         android:id="@+id/stop_eta"
         android:layout_width="wrap_content"

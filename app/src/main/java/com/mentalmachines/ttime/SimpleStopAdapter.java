@@ -17,7 +17,7 @@ import android.widget.TextView;
 
 public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
     public static final String TAG = "SimpleStopAdapter";
-    final StopData[] mItems;
+    final public StopData[] mItems;
     final int mTextColor;
     static Drawable alertDrawable;
     //final int drawableResource;
@@ -71,7 +71,8 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
                 holder.mStopDescription.setCompoundDrawables(
                     alertDrawable, null, null, null );
             }
-                   // + "\nNext scheduled times: ? and ?");
+            holder.mCompass.setTag(mItems[position]);
+                   // TODO disappear this if there is no predictive data for the route
             holder.mETA.setText("Actual time: ?, in ? minutes and ? in ? minutes");
         }
     }
@@ -79,11 +80,13 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public class StopViewHolder extends RecyclerView.ViewHolder {
         public final TextView mStopDescription;
         public final TextView mETA;
+        public final View mCompass;
 
         public StopViewHolder(View itemView) {
             super(itemView);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
+            mCompass = itemView.findViewById(R.id.stop_mapbtn);
         }
     }
 
@@ -106,12 +109,15 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public static StopData[] makeStopsList(Cursor c) {
         if(c.getCount() > 0 && c.moveToFirst()) {
             final StopData[] tmp = new StopData[c.getCount()];
+            StopData data;
             for(int dex = 0; dex < tmp.length; dex++) {
-                tmp[dex].stopName = c.getString(0);
-                tmp[dex].stopId = c.getString(1);
-                tmp[dex].stopLong = c.getString(2);
-                tmp[dex].stopLat = c.getString(3);
-                tmp[dex].stopAlert = c.getString(4);
+                data = new StopData();
+                data.stopName = c.getString(0);
+                data.stopId = c.getString(1);
+                data.stopLong = c.getString(2);
+                data.stopLat = c.getString(3);
+                data.stopAlert = c.getString(4);
+                tmp[dex] = data;
                 c.moveToNext();
             }
             return tmp;

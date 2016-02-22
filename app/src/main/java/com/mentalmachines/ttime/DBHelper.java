@@ -182,7 +182,7 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_STOPID + " TEXT not null,"
             + KEY_STOP_ORD + " INT not null,"
             + KEY_STOPNM + " TEXT not null,"
-            + KEY_ALERT_ID + " NUMERIC not null,"
+            + KEY_ALERT_ID + " NUMERIC,"
             + KEY_STOPLT + " NUMERIC not null,"
             + KEY_STOPLN + " NUMERIC not null);";
 
