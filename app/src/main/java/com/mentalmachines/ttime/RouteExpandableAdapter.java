@@ -214,6 +214,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             final BusData tmp = mBusArrays[groupPosition][childPosition];
             ((TextView)convertView).setText(tmp.routeName);
             convertView.setTag(tmp.routeId);
+            Log.d(TAG, "tagging child view " + tmp.routeId);
         } else if(mMode == SUBWAY) {
             final int color = getBgColor(ctx, mGroupNames[childPosition]);
             ((TextView)convertView).setText(mGroupNames[childPosition]);

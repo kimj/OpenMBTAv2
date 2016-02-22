@@ -56,8 +56,9 @@ public class RouteFragment extends Fragment{
 
 		mList = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
 
-        if(mInStops == null) {
+        if(mInStops == null && mOutStops == null) {
 			mList.setVisibility(View.GONE);
+            getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");
             titleTV.setText(args.getString(LINE_NAME));
             titleTV.setTextColor(args.getInt(TAG));
@@ -81,11 +82,21 @@ public class RouteFragment extends Fragment{
             //TODO use this instead of titleTV
             //getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
-			mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
+            if(mInStops == null || mOutStops == null) {
+                //this is a one way route
+                mList.setAdapter(new SimpleStopAdapter(
+                    mInStops == null? mOutStops:mInStops, args.getInt(TAG)));
+                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+            } else {
+                mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
+                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+                getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
+            }
+
             //TODO wire up inbound and outbound based on time/previous display
         }
         //Floating Action button switches the display between inbound and outbound
-        getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
+
 		return rootView;
 	}
 
