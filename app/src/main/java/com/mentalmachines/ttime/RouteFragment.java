@@ -1,48 +1,44 @@
 package com.mentalmachines.ttime;
 
 import android.animation.Animator;
-import android.animation.AnimatorListenerAdapter;
+import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.view.GestureDetector;
 import android.view.LayoutInflater;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
-import android.widget.ImageView;
 import android.widget.TextView;
+
+import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
 
 public class RouteFragment extends Fragment{
 	/**
 	 * A fragment representing a train or bus line
 	 */
-    private static final String IN_STOPS_LIST = "in";
-    private static final String OUT_STOPS_LIST = "out";
     private static final String LINE_NAME = "line";
     private static final String TAG = "RouteFragment";
-    private static final int SWIPE_VELOCITY = 150;
 
     boolean mInbound = true;
-    RecyclerView mList;
-    String[] mItems;
-
-    ObjectAnimator moveLeft, moveLeft2, moveRight, moveRight2;
+    public RecyclerView mList;
+    static StopData[] mInStops, mOutStops;
+    AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(String[] instops, String[] outstops, String title, int bgColor) {
+	public static RouteFragment newInstance(StopData[] instops, StopData[] outstops, String title, int bgColor) {
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
-		args.putStringArray(IN_STOPS_LIST, instops);
-        args.putStringArray(OUT_STOPS_LIST, outstops);
+        mInStops = instops;
+        mOutStops = outstops;
         args.putString(LINE_NAME, title);
         args.putInt(TAG, bgColor);
 		fragment.setArguments(args);
@@ -54,69 +50,72 @@ public class RouteFragment extends Fragment{
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
-		View rootView = inflater.inflate(R.layout.content_main, container, false);
-        animationSetup(rootView);
+		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
         final Bundle args = getArguments();
-
-        ((TextView)rootView.findViewById(R.id.mc_title)).setText(args.getString(LINE_NAME));
-        ((TextView)rootView.findViewById(R.id.mc_title)).setTextColor(args.getInt(TAG));
-        /* TODO polish this
-        final int d = setUpTitle(lineName, (TextView)rootView.findViewById(R.id.mc_title),
-                (ImageView) rootView.findViewById(R.id.mc_icon));*/
-        //now work the list
-        final String[] listItems = args.getStringArray(IN_STOPS_LIST);
-        //defaulting to inbound
+        final TextView titleTV = (TextView)rootView.findViewById(R.id.mc_title);
 
 		mList = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
 
-        if(listItems == null) {
+        if(mInStops == null) {
 			mList.setVisibility(View.GONE);
             Log.w(TAG, "no stops");
+            titleTV.setText(args.getString(LINE_NAME));
+            titleTV.setTextColor(args.getInt(TAG));
         } else {
-			mList.setVisibility(View.VISIBLE);
-			mList.setAdapter(new SimpleStopAdapter(listItems, args.getInt(TAG)));
-            //TODO wire up inbound and outbound
-        }
-        final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
-        if(listItems != null) {
+            //rootView.findViewById(R.id.mc_map).setVisibility(View.VISIBLE);
+            final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
             cb.setVisibility(View.VISIBLE);
             //read and set preference
             cb.setChecked(PreferenceManager.getDefaultSharedPreferences(getContext()).getBoolean(
                     getArguments().getString(LINE_NAME), false));
             cb.setOnCheckedChangeListener(favListener);
-        }
-
-        //Floating Action button switches between inbound and outbound
-        getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
-        rootView.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return gesture.onTouchEvent(event);
+            //defaulting to inbound
+            final String routeNm = args.getString(LINE_NAME);
+            if(Character.isDigit(routeNm.charAt(0))) {
+                titleTV.setText(getString(R.string.bus_prefix) + args.getString(LINE_NAME));
+            } else {
+                titleTV.setText(args.getString(LINE_NAME));
             }
-        });
+
+            titleTV.setTextColor(args.getInt(TAG));
+            //TODO use this instead of titleTV
+            //getActivity().setTitle(args.getString(LINE_NAME));
+			mList.setVisibility(View.VISIBLE);
+			mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
+            //TODO wire up inbound and outbound based on time/previous display
+        }
+        //Floating Action button switches the display between inbound and outbound
+        getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
 		return rootView;
 	}
 
     View.OnClickListener fabListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            setAndRunAnimation(true);
+            if(moveRight == null) {
+                animationSetup(getView());
+            }
+            mInbound = !mInbound;
+            if(mInbound) {
+                ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+                //mItems = getArguments().getStringArray(IN_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+                ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
+                        getArguments().getString(LINE_NAME));
+                moveRight.start();
+            } else {
+                ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+                //mItems = getArguments().getStringArray(OUT_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+                ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
+                        getArguments().getString(LINE_NAME));
+                moveLeft.start();
+            }
+
         }
     };
 
-    void setAndRunAnimation(boolean right) {
-        mInbound = !mInbound;
-        if(mInbound) {
-            mItems = getArguments().getStringArray(IN_STOPS_LIST);
-        } else {
-            mItems = getArguments().getStringArray(OUT_STOPS_LIST);
-        }
-        if(right) {
-            moveRight.start();
-        } else {
-            moveLeft.start();
-        }
-    }
+    /*  The gesture detector does not play nicely with a scrolling list
 
     final GestureDetector gesture = new GestureDetector(getActivity(),
             new GestureDetector.SimpleOnGestureListener() {
@@ -142,7 +141,7 @@ public class RouteFragment extends Fragment{
                     }
                     return true;
                 }
-            });
+            });*/
 
 
     /**
@@ -150,67 +149,57 @@ public class RouteFragment extends Fragment{
      * the "moveRight" go along with the direction of the FAB
      * the moveLeft are also setup for gesture detectors, swiping changes the list
      */
-    void animationSetup(View screen) {
+    void animationSetup(final View screen) {
+
         final int width = screen.getWidth();
-        moveRight = ObjectAnimator.ofFloat(screen, "translationX", 0, 2 * width);
-        moveRight2 = ObjectAnimator.ofFloat(screen, "translationX", -width, 0);
-        moveRight.addListener(new AnimatorListenerAdapter() {
+        Log.d(TAG, "setting up animations " + width);
+        moveRight = new AnimatorSet();
+        moveRight.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f));
+        moveR2 = new AnimatorSet();
+        moveR2.play(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f))
+                .with(ObjectAnimator.ofFloat(mList, "translationX", -width, 0));
+        moveRight.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) { }
+
             @Override
             public void onAnimationEnd(Animator animation) {
-                mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
-                moveRight2.start();
+                //move right, IN_STOPS_LIST
+                mList.setAdapter(new SimpleStopAdapter(mInStops, getArguments().getInt(TAG)));
+                moveR2.start();
             }
 
-        });
-        moveLeft = ObjectAnimator.ofFloat(screen, "translationX", 0, -width);
-        //instantiate the second animation here, instead of everytime the listener runs
-        moveLeft2 = ObjectAnimator.ofFloat(screen, "translationX", width, 0);
+            @Override
+            public void onAnimationCancel(Animator animator) { }
 
-        moveLeft.addListener(new AnimatorListenerAdapter() {
+            @Override
+            public void onAnimationRepeat(Animator animator) { }
+        });
+
+        moveLeft = new AnimatorSet();
+        moveLeft.play(ObjectAnimator.ofFloat(mList, "translationX", 0, -width))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f));
+        moveL2 = new AnimatorSet();
+        moveL2.play(ObjectAnimator.ofFloat(mList, "translationX", width, 0))
+                .with(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f));
+
+        moveLeft.addListener(new Animator.AnimatorListener() {
+            @Override
+            public void onAnimationStart(Animator animator) { }
+
             @Override
             public void onAnimationEnd(Animator animation) {
-                //after animating current fragment offscreen, hide it
-                mList.setAdapter(new SimpleStopAdapter(mItems, getArguments().getInt(TAG)));
-                //now animate the new fragment on to the screen
-                moveLeft2.start();
+                mList.setAdapter(new SimpleStopAdapter(mOutStops, getArguments().getInt(TAG)));
+                moveL2.start();
             }
-        });
-    }
 
-    /**
-     * Setup up the line name title textview
-     * Return the icon resource needed by the Recycler View
-     * @param titleResource - name string int resource
-      *@param titleTV - the title text field  @return icon drawable resource
-     */
-    int setUpTitle(int titleResource, TextView titleTV, ImageView v) {
-        titleTV.setText(titleResource);
-        switch (titleResource) {
-            case R.string.nm_blue:
-                v.setImageResource(R.drawable.ic_blueline);
-                //TODO, animate into view
-                v.setVisibility(View.VISIBLE);
-                return R.drawable.ic_blueline;
-            case R.string.nm_green:
-                v.setImageResource(R.drawable.ic_greenline);
-                v.setVisibility(View.VISIBLE);
-                return R.drawable.ic_greenline;
-            case R.string.nm_orange:
-                v.setImageResource(R.drawable.ic_orangeline);
-                v.setVisibility(View.VISIBLE);
-                return R.drawable.ic_orangeline;
-            case R.string.nm_red:
-                v.setImageResource(R.drawable.ic_redline);
-                v.setVisibility(View.VISIBLE);
-                return R.drawable.ic_redline;
-            case R.string.nm_silver:
-                v.setImageResource(R.drawable.ic_silverline);
-                v.setVisibility(View.VISIBLE);
-                return R.drawable.ic_silverline;
-            default:
-                //v.setVisibility(View.GONE); NO need
-                return -1;
-        }
+            @Override
+            public void onAnimationCancel(Animator animator) { }
+
+            @Override
+            public void onAnimationRepeat(Animator animator) { }
+        });
     }
 
     final CompoundButton.OnCheckedChangeListener favListener = new CompoundButton.OnCheckedChangeListener() {
@@ -219,7 +208,13 @@ public class RouteFragment extends Fragment{
         public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
             PreferenceManager.getDefaultSharedPreferences(getContext()).edit()
                     .putBoolean(getArguments().getString(LINE_NAME), b).commit();
+            DBHelper.handleFavorite(getContext(), getArguments().getString(LINE_NAME), b);
+            if(getActivity().findViewById(R.id.exp_favorite).getTag() != null) {
+                getActivity().findViewById(R.id.exp_favorite).callOnClick();
+                //problem with zero?
+            }
         }
     };
+
 
 }

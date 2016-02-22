@@ -2,22 +2,26 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingLeft="@dimen/def_padding"
-    android:paddingRight="@dimen/def_padding">
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp">
     <!-- layout for a stop in a listview -->
-    <ImageView android:id="@+id/stop_img"
+    <ImageButton android:id="@+id/stop_mapbtn"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:src="@drawable/ic_silverline"
-        android:layout_centerVertical="true"
-        android:background="@color/colorPrimaryDark" />
+        android:layout_alignParentRight="true"
+        android:paddingTop="18dip"
+        android:layout_marginRight="18dp"
+        android:gravity="right|center_vertical"
+        android:src="@android:drawable/ic_menu_compass"
+        android:onClick="openMap"
+        android:background="@android:color/transparent"  />
     <TextView
         android:id="@+id/stop_desc"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/def_margin"
-        android:layout_toRightOf="@id/stop_img"
-        android:gravity="left"
+        android:layout_marginLeft="8dp"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@id/stop_mapbtn"
         android:padding="18dip"
         android:text="MBTA stop 1"
         android:textColor="@color/colorPrimaryDark"
@@ -28,7 +32,6 @@
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_marginLeft="@dimen/def_margin"
-        android:layout_toRightOf="@id/stop_img"
         android:layout_below="@id/stop_desc"
         android:gravity="left"
         android:padding="18dip"
@@ -36,12 +39,11 @@
         android:textColor="@android:color/black"
         android:background="@android:color/transparent"
         android:textSize="18dp" />
-
-    <ImageView android:id="@+id/divider"
+    <View android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_toRightOf="@id/stop_img"
         android:layout_marginLeft="@dimen/def_margin"
         android:layout_marginRight="@dimen/def_margin"
+        android:layout_below="@id/stop_eta"
         android:background="@color/colorPrimaryDark" />
 </RelativeLayout>

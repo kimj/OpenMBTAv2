@@ -5,21 +5,12 @@
     <string name="def_text">Where To?</string>
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-
-    <string name="nm_blue">Blue Line</string>
-    <string name="nm_green">Green Line</string>
-    <string name="nm_orange">Orange Line</string>
-    <string name="nm_red">Red Line</string>
-    <string name="nm_silver">Silver Line</string>
-
-    <string name="title_bus">Bus</string>
-    <string name="title_subway">Subway</string>
-    <string name="title_commuter_rail">Commuter Rail</string>
-    <string name="title_boat">Boat</string>
-
+    <string name="no_favs">Pick a subway or bus and mark it as a favorite</string>
+    <string name="favorites">Favorites</string>
     <string name="action_alerts">Get Alerts</string>
     <string name="action_settings">Settings</string>
-    
+    <string name="bus_prefix">Bus Route:</string>
+
     <string-array name="transit_methods">
         <item>Bus</item>
         <item>Subway</item>
@@ -27,23 +18,15 @@
         <item>Boat</item>
     </string-array>
 
-    <string-array name="line_group">
-        <item>Blue</item>
-        <item>Green</item>
-        <item>Mattapan</item>
-        <item>Orange</item>
-        <item>Red</item>
-        <item>Silver</item>
-    </string-array>
-
     <string-array name="nav_groups">
+        <item>Silver Line</item>
         <item>Bus 1-50</item>
         <item>Bus 51-99</item>
         <item>Bus 100-199</item>
         <item>Bus 200-399</item>
         <item>Bus 400-599</item>
         <item>Bus 600-750</item>
-        <item>Bus 9000+</item>
+        <item>Bus 9000+, Others</item>
     </string-array>
 
 

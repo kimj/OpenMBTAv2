@@ -5,7 +5,6 @@ import android.content.ContentValues;
 import android.content.Intent;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.util.Log;
 
@@ -16,7 +15,6 @@ import com.mentalmachines.ttime.DBHelper;
 
 import java.io.IOException;
 import java.net.URL;
-import java.util.GregorianCalendar;
 
 /**
  * Created by emezias on 1/11/16.
@@ -26,9 +24,7 @@ public class DBCreateStopsRoutes extends IntentService {
 
     public static final String TAG = "DBCreateStopsRoutes";
     final private static JsonFactory factory = new JsonFactory();
-    //private static JsonParser parser;
-    private static final GregorianCalendar cal = new GregorianCalendar();
-    private static final BitmapFactory.Options opts = new BitmapFactory.Options();
+    SQLiteDatabase mDB;
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
@@ -47,6 +43,7 @@ public class DBCreateStopsRoutes extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         try {
+            mDB = new DBHelper(this).getWritableDatabase();
             //make the network call here in the background
             final Bundle b = intent.getExtras();
             if(b == null) {
@@ -64,9 +61,14 @@ public class DBCreateStopsRoutes extends IntentService {
         }
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(mDB.isOpen()) mDB.close();
+    }
+
     void parseRoutesCall(JsonParser parser) throws IOException {
-        final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
-        if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) > 0) {
+        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.DB_ROUTE_TABLE) > 0) {
             Log.d(TAG, "db exists");
             return;
         }
@@ -138,7 +140,7 @@ public class DBCreateStopsRoutes extends IntentService {
                                 token = parser.nextToken();
                                 //logic to load only buses and subways
                                 if(cv.get(DBHelper.KEY_ROUTE_MODE).equals(DBHelper.BUS_MODE) || cv.get(DBHelper.KEY_ROUTE_MODE).equals(DBHelper.SUBWAY_MODE)) {
-                                    Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + db.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
+                                    Log.d(TAG, "inserting row " + cv.get(DBHelper.KEY_ROUTE_NAME) + ": " + mDB.insert(DBHelper.DB_ROUTE_TABLE, "", cv));
                                     final Intent tnt = new Intent(this, DBCreateStopsRoutes.class);
                                     tnt.putExtra(TAG, cv.getAsString(DBHelper.KEY_ROUTE_ID));
                                     startService(tnt);

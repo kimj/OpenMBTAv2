@@ -39,7 +39,7 @@
             android:visibility="gone"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/def_margin"
-            android:src="@drawable/ic_menu_forward" />
+            android:src="@drawable/ic_menu_back" />
         <!--action button is to switch between inbound and outbound -->
 
     </android.support.design.widget.CoordinatorLayout>
@@ -54,8 +54,7 @@
         <ExpandableListView android:id="@+id/routeNavList"
             android:layout_marginTop="?attr/actionBarSize"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:padding="@dimen/def_padding" />
+            android:layout_height="wrap_content" />
         </android.support.design.widget.NavigationView>
         <!--app:headerLayout="@layout/nav_header_nav" -->
 </android.support.v4.widget.DrawerLayout>
