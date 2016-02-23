@@ -1,9 +1,10 @@
 package com.mentalmachines.ttime.objects;
 
-import java.util.ArrayList;
-
 /**
  * Created by CaptofOuterSpace on 2/5/2016.
+ * There is a gap here, it would help to show the list of affected stops
+ * The stop table only reports the latest, any stop might be affected by more than one alert
+ * This level of detail is not essential to the first release
  */
 public class Alert {
         public int alert_id;
@@ -23,3 +24,6 @@ public class Alert {
         public String effect_start;
         public String effect_end;
 }
+
+
+
