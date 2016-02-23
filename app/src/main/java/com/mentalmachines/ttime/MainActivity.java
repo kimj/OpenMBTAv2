@@ -24,6 +24,7 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
+import com.mentalmachines.ttime.services.CopyDBService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -37,8 +38,8 @@ public class MainActivity extends AppCompatActivity {
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-        /* Log.d(TAG, "starting svc");
-        startService(new Intent(this, CopyDBService.class));*/
+        Log.d(TAG, "starting svc");
+        startService(new Intent(this, CopyDBService.class));
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 

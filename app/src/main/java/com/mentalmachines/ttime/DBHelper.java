@@ -141,7 +141,8 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_ALERT_ID = "alert_id";
     public static final String KEY_EFFECT_NAME = "effect_name";
     public static final String KEY_EFFECT = "effect";
-    public static final String KEY_CAUSE_NAME = "cause_name";
+    //public static final String KEY_CAUSE_NAME = "cause_name";
+    //these are the same...
     public static final String KEY_CAUSE = "cause";
     //public static final String KEY_HEADER_TEXT = "header_text";
     public static final String KEY_SHORT_HEADER_TEXT = "short_header_text";
@@ -160,19 +161,18 @@ public class DBHelper extends SQLiteOpenHelper {
 
     String CREATE_DB_TABLE_ALERTS  = TABLE_PREFIX + DB_ALERTS_TABLE + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ALERT_ID + " INT not null,"
+            + KEY_ALERT_ID + " TEXT not null,"
             + KEY_EFFECT + " TEXT not null,"
-            + KEY_EFFECT_NAME + " TEXT not null,"
-            + KEY_CAUSE_NAME + " TEXT not null,"
-            + KEY_CAUSE + " TEXT not null,"
-            + KEY_SHORT_HEADER_TEXT + " TEXT not null,"
-            + KEY_DESCRIPTION_TEXT + " TEXT not null,"
-            + KEY_SEVERITY + " TEXT not null,"
+            + KEY_EFFECT_NAME + " int not null,"
+            + KEY_CAUSE + " TEXT,"
+            + KEY_SHORT_HEADER_TEXT + " TEXT,"
+            + KEY_DESCRIPTION_TEXT + " TEXT,"
+            + KEY_SEVERITY + " TEXT,"
             + KEY_CREATED_DT + " TEXT not null,"
             + KEY_LAST_MODIFIED_DT + " TEXT not null,"
-            + KEY_SERVICE_EFFECT_TEXT + " TEXT not null,"
-            + KEY_TIMEFRAME_TEXT + " TEXT not null,"
-            + KEY_ALERT_LIFECYCLE + " TEXT not null,"
+            + KEY_SERVICE_EFFECT_TEXT + " TEXT,"
+            + KEY_TIMEFRAME_TEXT + " TEXT,"
+            + KEY_ALERT_LIFECYCLE + " TEXT ,"
             + KEY_EFFECT_PERIOD_START + " TEXT,"
             + KEY_EFFECT_PERIOD_END + " TEXT);";
 

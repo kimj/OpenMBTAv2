@@ -108,20 +108,16 @@ public class GetMBTARequestService extends IntentService {
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ALERT_ID.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         alert = new Alert();
-                        alert.alert_id = parser.getValueAsInt();
+                        alert.alert_id = parser.getValueAsString();
                         cv.put(DBHelper.KEY_ALERT_ID, alert.alert_id);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_NAME.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
-                        alert.effect_name = parser.getValueAsString();
+                        alert.effect_name = parser.getValueAsInt();
                         cv.put(DBHelper.KEY_EFFECT_NAME, alert.effect_name);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         alert.effect = parser.getValueAsString();
                         cv.put(DBHelper.KEY_EFFECT, alert.effect);
-                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CAUSE_NAME.equals(parser.getCurrentName())) {
-                        token = parser.nextToken();
-                        alert.cause_name = parser.getValueAsString();
-                        cv.put(DBHelper.KEY_CAUSE_NAME, alert.cause_name);
                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CAUSE.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         alert.cause = parser.getValueAsString();
@@ -185,16 +181,16 @@ public class GetMBTARequestService extends IntentService {
                                 Log.i(TAG, "adding new alert: " + alert.alert_id +
                                     db.insert(DBHelper.DB_ALERTS_TABLE, "_id", cv));
                         } else {
+                            Log.i(TAG, "skipping existing alert " + alert.alert_id);
                             updateList.add(alert);
                         }
                         cv.clear();
                         // now set the alert id into the stops table
                         token = parser.nextToken();
-                        if (!JsonToken.START_OBJECT.equals(token)) {
+                        if(JsonToken.START_OBJECT.equals(token)) {
                             //maybe the end of the list of objects
-                            break;
+                            Log.i(TAG, "at the service, route stop list");
                         }
-
                         token = parser.nextToken();
                         //affected services holds two arrays
                         if(JsonToken.FIELD_NAME.equals(token) && STOP_LIST_KEY.equals(parser.getCurrentName())) {
@@ -230,12 +226,15 @@ public class GetMBTARequestService extends IntentService {
                     //array of alerts is parsed*
                     }//end while
                 }
+                Log.d(TAG, "no longer true!");
             }
         } //parser closed
         cv.clear();
         String[] selectArgs;
         for(ServiceData setStop: stopsList) {
             //putting alert id into stops table, most recent will be there if there is more than one
+            if(setStop.svc_stop_id == null) break;
+            //alerts can affect an entire route, TODO - handle this
             selectArgs = new String[]{ setStop.svc_stop_id, setStop.svc_route_id};
             cv.put(DBHelper.KEY_ALERT_ID, setStop.alert_id);
             if(DatabaseUtils.queryNumEntries(db, DBHelper.STOPS_INB_TABLE,
@@ -251,13 +250,14 @@ public class GetMBTARequestService extends IntentService {
         } //end stops list, alerts entered for display in the Route Fragment
         //TODO now run through the list of alerts that is already in the table
         //keep two lists and trim the table, remove alerts that no longer return
+        db.close();
     } //end parseAlerts()
 
 
     public class ServiceData {
         public String svc_route_id;
         public String svc_stop_id;
-        public int alert_id;
+        public String alert_id;
     }
 
 }//end class
