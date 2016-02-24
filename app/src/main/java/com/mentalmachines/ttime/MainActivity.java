@@ -238,6 +238,16 @@ public class MainActivity extends AppCompatActivity {
         startActivity(intent);
     }
 
+    public void openAlerts(View v) {
+        //click listener in the route fragment recycler view
+        final String alertId = (String) v.getTag();
+        Log.d(TAG, "open alert " + alertId);
+        Toast.makeText(this, "open alert " + alertId, Toast.LENGTH_SHORT).show();
+        //geo:0,0?q=lat,lng(label)
+        //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
+
+    }
+
     ExpandableListView.OnGroupCollapseListener faveSubListener = new ExpandableListView.OnGroupCollapseListener() {
 
         @Override

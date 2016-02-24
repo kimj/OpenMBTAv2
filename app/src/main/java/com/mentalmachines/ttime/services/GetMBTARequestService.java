@@ -88,7 +88,7 @@ public class GetMBTARequestService extends IntentService {
             if (token == null)
                 break;
             if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ALERTS.equals(parser.getCurrentName())) {
-                //begin with an array named mode
+                //begin with an array named alerts
                 token = parser.nextToken();
                 if (!JsonToken.START_ARRAY.equals(token)) {
                     // bail out, no array, can also show error to user
@@ -155,26 +155,35 @@ public class GetMBTARequestService extends IntentService {
                         alert.alert_lifecycle = parser.getValueAsString();
                         cv.put(DBHelper.KEY_ALERT_LIFECYCLE, alert.alert_lifecycle);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_PERIODS.equals(parser.getCurrentName())) {
-                        //this is an array of json object, effect start and end time
+                        //this is an array with one json object, effect start and end time
+                        //begin with an array named alerts
                         token = parser.nextToken();
-                        if (JsonToken.START_ARRAY.equals(token)) {
+                        if (!JsonToken.START_ARRAY.equals(token)) {
+                            // bail out, no array, can also show error to user
+                            break;
+                        }
+                        token = parser.nextToken();
+                        // each element of the array is an object holding an article/news item so the next token -> start object
+                        if (!JsonToken.START_OBJECT.equals(token)) {
+                            //maybe the end of the list of objects
+                            break;
+                        }
+                        //start arry, start object...
+                        token = parser.nextToken();
+                        Log.i(TAG, "effect periods array");
+                        if(JsonToken.FIELD_NAME.equals(token)
+                                && DBHelper.KEY_EFFECT_PERIOD_START.equals(parser.getCurrentName())) {
                             token = parser.nextToken();
-                            do {
-                                if(JsonToken.START_OBJECT.equals(token)) {
-                                    token = parser.nextToken();
-                                    if(JsonToken.FIELD_NAME.equals(token)
-                                            && DBHelper.KEY_EFFECT_PERIOD_START.equals(parser.getCurrentName())) {
-                                        alert.effect_start = parser.getValueAsString();
-                                        cv.put(DBHelper.KEY_EFFECT_PERIOD_START, alert.effect_start);
-                                    } else if(JsonToken.FIELD_NAME.equals(token)
-                                            && DBHelper.KEY_EFFECT_PERIOD_END.equals(parser.getCurrentName())) {
-                                        alert.effect_end = parser.getValueAsString();
-                                        cv.put(DBHelper.KEY_EFFECT_PERIOD_END, alert.effect_end);
-                                    }
-                                }
-                                token = parser.nextToken();
-                            } while(!JsonToken.END_ARRAY.equals(token));
-                        } //end effect array
+                            alert.effect_start = parser.getValueAsString();
+                            cv.put(DBHelper.KEY_EFFECT_PERIOD_START, alert.effect_start);
+                            Log.i(TAG, "effect periods start: " + alert.effect_start);
+                        } else if(JsonToken.FIELD_NAME.equals(token)
+                                && DBHelper.KEY_EFFECT_PERIOD_END.equals(parser.getCurrentName())) {
+                            token = parser.nextToken();
+                            alert.effect_end = parser.getValueAsString();
+                            cv.put(DBHelper.KEY_EFFECT_PERIOD_END, alert.effect_end);
+                        }
+                        //end effect array, now insert the alert
 
                         if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ALERTS_TABLE,
                                 DBHelper.KEY_ALERT_ID + "=" + Integer.valueOf(alert.alert_id)) == 0) {
@@ -185,50 +194,47 @@ public class GetMBTARequestService extends IntentService {
                             updateList.add(alert);
                         }
                         cv.clear();
-                        // now set the alert id into the stops table
+                        //end effect periods
+                        //TODO handle elevator alerts, identified only with stops, no routes...
+                    } else if (JsonToken.FIELD_NAME.equals(token) && STOP_LIST_KEY.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
-                        if(JsonToken.START_OBJECT.equals(token)) {
+                        if(!JsonToken.START_OBJECT.equals(token)) {
                             //maybe the end of the list of objects
-                            Log.i(TAG, "at the service, route stop list");
+                            break;
                         }
+                        Log.i(TAG, "at the service, route stop list");
                         token = parser.nextToken();
-                        //affected services holds two arrays
-                        if(JsonToken.FIELD_NAME.equals(token) && STOP_LIST_KEY.equals(parser.getCurrentName())) {
+                        ServiceData affectedSvc = null;
+                        if(JsonToken.FIELD_NAME.equals(token) && SERVICES_KEY.equals(parser.getCurrentName())) {
                             token = parser.nextToken();
-                            // now parse the alerts, JSON objects into the data structure and add to the db
-                            //two arrays, services and elevators
-                            ServiceData affectedSvc = null;
-                            if(JsonToken.START_ARRAY.equals(token) && SERVICES_KEY.equals(parser.getCurrentName())) {
-                                token = parser.nextToken();
-                                while (!JsonToken.END_ARRAY.equals(token)) {
-                                    if (token == null) {
-                                        break;
-                                    }
-                                    if(JsonToken.END_OBJECT.equals(token)) {
-                                        stopsList.add(affectedSvc);
-                                        Log.i(TAG, "adding stop to list: " + affectedSvc.svc_stop_id + " alert id:" + affectedSvc.alert_id);
-                                    } else if(JsonToken.START_OBJECT.equals(token)) {
-                                        affectedSvc = new ServiceData();
-                                        affectedSvc.alert_id = alert.alert_id;
-                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_ID.equals((parser.getCurrentName()))) {
-                                        token = parser.nextToken();
-                                        affectedSvc.svc_route_id = parser.getValueAsString();
-                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals((parser.getCurrentName()))) {
-                                        token = parser.nextToken();
-                                        affectedSvc.svc_stop_id = parser.getValueAsString();
-                                    }
-                                    token = parser.nextToken();
+                            //now parse the services objects, skip most fields in each object
+                            while (!JsonToken.END_ARRAY.equals(token)) {
+                                if (token == null) {
+                                    break;
                                 }
-                            } //end services array
+                                if(JsonToken.START_OBJECT.equals(token)) {
+                                    affectedSvc = new ServiceData();
+                                    affectedSvc.alert_id = alert.alert_id;
+                                } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_ID.equals((parser.getCurrentName()))) {
+                                    token = parser.nextToken();
+                                    affectedSvc.svc_route_id = parser.getValueAsString();
+                                } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals((parser.getCurrentName()))) {
+                                    token = parser.nextToken();
+                                    affectedSvc.svc_stop_id = parser.getValueAsString();
+                                } else if(JsonToken.END_OBJECT.equals(token)) {
+                                    stopsList.add(affectedSvc);
+                                    Log.i(TAG, "adding stop to list: " + affectedSvc.svc_stop_id + " alert id:" + affectedSvc.alert_id);
+                                }
+                                token = parser.nextToken();
+                            }//end services array
+                        } //end affected services object
+                    }
 
-                            //TODO handle elevator alerts, identified only with stops, no routes...
-                        }
-                    //array of alerts is parsed*
-                    }//end while
-                }
+                }//end while
+
                 Log.d(TAG, "no longer true!");
             }
-        } //parser closed
+        } //parser closed, now set the alerts into the stops table
         cv.clear();
         String[] selectArgs;
         for(ServiceData setStop: stopsList) {
