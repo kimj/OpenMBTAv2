@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime;
 
+
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -7,6 +8,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -109,7 +112,12 @@ public class MainActivity extends AppCompatActivity {
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_alerts:
-                startActivity(new Intent(this, AlertsFragment.class));
+                AlertsFragment alertsFragment = new AlertsFragment();
+                FragmentManager fragmentManager = getSupportFragmentManager();
+                FragmentTransaction transaction = fragmentManager.beginTransaction();
+                transaction.add(alertsFragment, "AlertsFragment");
+                transaction.addToBackStack(null);
+                transaction.commit();
                 break;
             case R.id.menu_settings:
                 Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();

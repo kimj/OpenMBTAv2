@@ -24,6 +24,7 @@ public class TTimeApp extends Application{
         if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
             Log.i(TAG, "no db");
             startService(new Intent(this, DBCreateStopsRoutes.class));
+            startService(new Intent(this, GetMBTARequestService.class));
         } else {
             Log.i(TAG, "initializing bus routes");
             RouteExpandableAdapter.initBusList(this);
