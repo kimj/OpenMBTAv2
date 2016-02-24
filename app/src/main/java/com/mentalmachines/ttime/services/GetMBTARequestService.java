@@ -3,6 +3,7 @@ package com.mentalmachines.ttime.services;
 import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
+import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
@@ -77,9 +78,11 @@ public class GetMBTARequestService extends IntentService {
     }
 
     void parseAlertsCall(JsonParser parser) throws IOException {
-        final ArrayList<Alert> updateList = new ArrayList<>();
+
         final ArrayList<ServiceData> stopsList = new ArrayList<>();
         final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
+        ArrayList<AlertHolder> alertsInTable = selectAlerts(db);
+        final long timestamp = Long.valueOf(alertsInTable.get(0).lastModified);
         final ContentValues cv = new ContentValues();
         Alert alert = null;
         while (!parser.isClosed()) {
@@ -110,6 +113,7 @@ public class GetMBTARequestService extends IntentService {
                         alert = new Alert();
                         alert.alert_id = parser.getValueAsString();
                         cv.put(DBHelper.KEY_ALERT_ID, alert.alert_id);
+                        Log.i(TAG, "parsing a new alert? " + alert.alert_id);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_EFFECT_NAME.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         alert.effect_name = parser.getValueAsInt();
@@ -136,6 +140,7 @@ public class GetMBTARequestService extends IntentService {
                         cv.put(DBHelper.KEY_SEVERITY, alert.severity);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_CREATED_DT.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
+                        //Let's skip this alert if it already exists in the dabase based on the last timestamp
                         alert.created_dt = parser.getValueAsString();
                         cv.put(DBHelper.KEY_CREATED_DT, alert.created_dt);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_LAST_MODIFIED_DT.equals(parser.getCurrentName())) {
@@ -170,13 +175,12 @@ public class GetMBTARequestService extends IntentService {
                         }
                         //start arry, start object...
                         token = parser.nextToken();
-                        Log.i(TAG, "effect periods array");
                         if(JsonToken.FIELD_NAME.equals(token)
                                 && DBHelper.KEY_EFFECT_PERIOD_START.equals(parser.getCurrentName())) {
                             token = parser.nextToken();
                             alert.effect_start = parser.getValueAsString();
                             cv.put(DBHelper.KEY_EFFECT_PERIOD_START, alert.effect_start);
-                            Log.i(TAG, "effect periods start: " + alert.effect_start);
+                            //Log.i(TAG, "effect periods start: " + alert.effect_start);
                         } else if(JsonToken.FIELD_NAME.equals(token)
                                 && DBHelper.KEY_EFFECT_PERIOD_END.equals(parser.getCurrentName())) {
                             token = parser.nextToken();
@@ -185,13 +189,28 @@ public class GetMBTARequestService extends IntentService {
                         }
                         //end effect array, now insert the alert
 
-                        if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ALERTS_TABLE,
-                                DBHelper.KEY_ALERT_ID + "=" + Integer.valueOf(alert.alert_id)) == 0) {
+                        if(Long.valueOf(alert.created_dt) > timestamp) {
                                 Log.i(TAG, "adding new alert: " + alert.alert_id +
                                     db.insert(DBHelper.DB_ALERTS_TABLE, "_id", cv));
                         } else {
-                            Log.i(TAG, "skipping existing alert " + alert.alert_id);
-                            updateList.add(alert);
+                            //this alert is already in the table
+                            int dex = -1;
+                            for(AlertHolder a: alertsInTable) {
+                                if(a.alert_id.equals(alert.alert_id)) {
+                                    dex = alertsInTable.indexOf(a);
+                                }
+                            }
+                            if(dex >= 0) {
+                                if(alertsInTable.get(dex).lastModified.equals(alert.last_modified_dt)) {
+                                    Log.i(TAG, "no change to existing alert " + alert.alert_id);
+                                } else {
+                                    Log.i(TAG, "updating alert: " + db.update(DBHelper.DB_ALERTS_TABLE, cv,
+                                            DBHelper.KEY_ALERT_ID + " like " + cv.getAsString(DBHelper.KEY_ALERT_ID), null));
+                                }
+                                alertsInTable.remove(dex);
+                                //remove any alert from the existing list that is in this return from the server
+                            }
+
                         }
                         cv.clear();
                         //end effect periods
@@ -202,7 +221,7 @@ public class GetMBTARequestService extends IntentService {
                             //maybe the end of the list of objects
                             break;
                         }
-                        Log.i(TAG, "at the service, route stop list");
+                        //Log.d(TAG, "at the service, route stop list");
                         token = parser.nextToken();
                         ServiceData affectedSvc = null;
                         if(JsonToken.FIELD_NAME.equals(token) && SERVICES_KEY.equals(parser.getCurrentName())) {
@@ -222,8 +241,12 @@ public class GetMBTARequestService extends IntentService {
                                     token = parser.nextToken();
                                     affectedSvc.svc_stop_id = parser.getValueAsString();
                                 } else if(JsonToken.END_OBJECT.equals(token)) {
-                                    stopsList.add(affectedSvc);
-                                    Log.i(TAG, "adding stop to list: " + affectedSvc.svc_stop_id + " alert id:" + affectedSvc.alert_id);
+                                    if(Long.valueOf(alert.last_modified_dt) > timestamp) {
+                                        //no need to add alerts that are already in the stops table
+                                        stopsList.add(affectedSvc);
+                                        Log.i(TAG, "adding stop to list: " + affectedSvc.svc_stop_id + " alert id:" + affectedSvc.alert_id);
+                                    }
+
                                 }
                                 token = parser.nextToken();
                             }//end services array
@@ -231,8 +254,7 @@ public class GetMBTARequestService extends IntentService {
                     }
 
                 }//end while
-
-                Log.d(TAG, "no longer true!");
+                Log.d(TAG, "finished parsing alerts!");
             }
         } //parser closed, now set the alerts into the stops table
         cv.clear();
@@ -254,11 +276,58 @@ public class GetMBTARequestService extends IntentService {
 
             }
         } //end stops list, alerts entered for display in the Route Fragment
-        //TODO now run through the list of alerts that is already in the table
-        //keep two lists and trim the table, remove alerts that no longer return
+        //Now any remaining alerts in the alertsInTable ArrayList have to be deleted from the table
+        if(alertsInTable.size() > 0) {
+            for(AlertHolder oldAlert: alertsInTable) {
+                updateStops(db, oldAlert.alert_id);
+            }
+        }
         db.close();
     } //end parseAlerts()
 
+    void updateStops(SQLiteDatabase db, String alertId){
+        Log.i(TAG, "clearing old alert from stops table " + alertId);
+        Cursor c = db.query(DBHelper.STOPS_INB_TABLE,
+                new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
+                null, null, null, null);
+        final ContentValues cv = new ContentValues();
+        cv.put(DBHelper.KEY_ALERT_ID, "");
+        if(c.moveToFirst()) {
+            db.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
+        }
+        c = db.query(DBHelper.STOPS_OUT_TABLE,
+                new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
+                null, null, null, null);
+        if(c.moveToFirst()) {
+            db.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
+        }
+        c.close();
+    }
+
+    ArrayList<AlertHolder> selectAlerts(SQLiteDatabase db) {
+        final ArrayList<AlertHolder> tmp = new ArrayList<>();
+        final Cursor c = db.query(DBHelper.DB_ALERTS_TABLE,
+                new String[] { DBHelper.KEY_ALERT_ID, DBHelper.KEY_LAST_MODIFIED_DT },
+                null, null, null, null, DBHelper.KEY_LAST_MODIFIED_DT + " desc");
+        if(c.getCount() > 0 && c.moveToFirst()) {
+            AlertHolder alert;
+            do {
+                alert = new AlertHolder();
+                alert.alert_id = c.getString(0);
+                alert.lastModified = c.getString(1);
+                tmp.add(alert);
+            } while(c.moveToNext());
+        }
+        c.close();
+        Log.i(TAG, "Alerts in table " + tmp.size());
+        return tmp;
+    }
+
+    //using this to identify which alerts are new
+    public class AlertHolder {
+        public String lastModified;
+        public String alert_id;
+    }
 
     public class ServiceData {
         public String svc_route_id;
