@@ -19,19 +19,13 @@ public class TTimeApp extends Application{
     public void onCreate() {
         super.onCreate();
         final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
-
-
         if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
             Log.i(TAG, "no db");
             startService(new Intent(this, DBCreateStopsRoutes.class));
-            startService(new Intent(this, GetMBTARequestService.class));
         } else {
             Log.i(TAG, "initializing bus routes");
             RouteExpandableAdapter.initBusList(this);
-            Log.i(TAG, "here goes, fetch alerts!");
-            startService(new Intent(this, GetMBTARequestService.class));
-
         }
-
+        startService(new Intent(this, GetMBTARequestService.class));
     }
 }

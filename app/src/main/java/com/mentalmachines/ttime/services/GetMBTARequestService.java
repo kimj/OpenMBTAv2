@@ -6,6 +6,7 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
+import android.os.Bundle;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -32,14 +33,114 @@ public class GetMBTARequestService extends IntentService {
     public static final String alertsParams ="&include_access_alerts=false&include_service_alerts=true";
     //public static final String alertsParams ="&include_access_alerts=true&include_service_alerts=true";
     public static final String ALERTS = BASE + "alerts" + SUFFIX + alertsParams;
+    //http://realtime.mbta.com/developer/api/v2/alerts?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&include_access_alerts=true&include_service_alerts=true
 
     //JSON keys for the parser
     public static final String STOP_LIST_KEY = "affected_services";
     public static final String SERVICES_KEY = "services";
     public static final String ELEVATORS_KEY = "elevators";
+
+    // JSON constants for predictive times, data is not in SQLite
+    public static final String STOPPARAM = "&stop=";
+    public static final String ROUTEPARAM = "&route=";
+    public static final String STOPVERB = "predictionsbystop";
+    public static final String ROUTEVERB = "predictionsbyroute";
+    public static final String GETSTOPS = BASE + STOPVERB + SUFFIX + STOPPARAM;
+    public static final String GETROUTETIMES = BASE + ROUTEVERB + SUFFIX + ROUTEPARAM;
+    //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
+
+    //Predicted amount of time until the vehicle arrives at the stop, in seconds
+    public static final String TRIP_KEY = "trip";
+
+
+    void getTimesForRoute(String route) throws IOException {
+        final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
+        db.execSQL(DBHelper.dropTimeTable);
+        db.execSQL(DBHelper.CREATE_PRED_TABLE);
+        final ContentValues cv = new ContentValues();
+        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + route));
+        while (!parser.isClosed()) {
+            //start parsing, get the token
+            JsonToken token = parser.nextToken();
+            if (token == null) {
+                break;
+            }
+            //running through while to get to direction array
+            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
+                //no names at the top of this return, straight into objects
+                Log.d(TAG, "direction array");
+                token = parser.nextToken();
+                if(!JsonToken.START_ARRAY.equals(token)) {
+                    break;
+                }
+                int directionId = 0;
+                while(!JsonToken.END_ARRAY.equals(token)) {
+                    token = parser.nextToken();
+                    //most of the data in this array is ignored, just the direction and the stops in the trip array
+                    Log.d(TAG, "trip array");
+                    if(JsonToken.START_OBJECT.equals(token)) {
+                        token = parser.nextToken();
+                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        directionId = parser.getIntValue();
+                    } else if(JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
+                        //array of trips with stops inside
+                        token = parser.nextToken();
+                        if(!JsonToken.START_ARRAY.equals(token)) {
+                            break;
+                        }
+                        //trip array has trips, vehicles and stops
+                        while(!JsonToken.END_ARRAY.equals(token)) {
+                            Log.d(TAG, "stop array");
+                            //getting stops embedded into the trip
+                            token = parser.nextToken();
+                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
+                                //finally at stop array
+                                token = parser.nextToken();
+                                if(!JsonToken.START_ARRAY.equals(token)) {
+                                    break;
+                                }
+                                token = parser.nextToken();
+                                if(!JsonToken.START_OBJECT.equals(token)) {
+                                    break;
+                                }
+                                cv.put(DBHelper.KEY_DIR_ID, directionId);
+                                cv.put(DBHelper.KEY_ROUTE_ID, route);
+                                while(!JsonToken.END_OBJECT.equals(token)) {
+                                    Log.d(TAG, "stop object");
+                                    token = parser.nextToken();
+                                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        cv.put(DBHelper.KEY_STOPID, parser.getValueAsString());
+                                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        cv.put(DBHelper.KEY_SCH_TIME, parser.getValueAsString());
+                                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        cv.put(DBHelper.PRED_TIME, parser.getValueAsString());
+                                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        cv.put(DBHelper.KEY_PREAWAY, parser.getValueAsString());
+                                    }
+                                } //end row data read, cv ready to go into the db
+                                //end object, insert row for this stop
+                                Log.i(TAG, "setting " + route + " time into table: " + db.insert(DBHelper.DB_TABLE_PREDICTION, "_id", cv));
+                                cv.clear();
+                                token = parser.nextToken();
+                            } else {
+                                Log.d(TAG, "not stop");
+                            }
+
+                        }//end trip array
+                    }
+
+                    } //end direction array
+            }
+        }
+    }
+
     // Query TypesSTOP_LIST_KEY
     /*    Routes
-    http://realtime.mbta.com/developer/api/v2/alerts?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&include_access_alerts=true&include_service_alerts=true
     routes list of all routes for which data can be requested
     routesbystop a list of routes that serve a particular stop
     Stops
@@ -68,9 +169,16 @@ public class GetMBTARequestService extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         //make the network call here in the background
-        //final Bundle b = intent.getExtras();
+        final Bundle b = intent.getExtras();
         try {
-            parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
+            if(b == null) {
+                parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
+                Log.d(TAG, "starting svc");
+            } else {
+                getTimesForRoute(b.getString(TAG));
+                Log.d(TAG, "starting svc for route " + b.getString(TAG));
+            }
+
         } catch (IOException e) {
             Log.e(TAG, "problem with alerts call " + e.getMessage());
             e.printStackTrace();

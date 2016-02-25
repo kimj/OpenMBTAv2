@@ -20,6 +20,7 @@ import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -27,6 +28,7 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
+import com.mentalmachines.ttime.services.GetMBTARequestService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -167,7 +169,7 @@ public class MainActivity extends AppCompatActivity {
                     final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
                     if (drawer.isDrawerOpen(GravityCompat.START)) {
                         Toast.makeText(this, getString(R.string.no_favs), Toast.LENGTH_SHORT).show();
-                        ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
+                        drawer.closeDrawer(GravityCompat.START);
                     }
 
 
@@ -181,6 +183,10 @@ public class MainActivity extends AppCompatActivity {
             mDB = new DBHelper(this).getReadableDatabase();
         }
         final String routeId = (String) v.getTag();
+        final Intent tnt = new Intent(this, GetMBTARequestService.class);
+        tnt.putExtra(GetMBTARequestService.TAG, routeId);
+        startService(tnt);
+
         Log.i(TAG, "show route " + routeId);
         Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, SimpleStopAdapter.mStopProjection,
                 RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
@@ -233,28 +239,37 @@ public class MainActivity extends AppCompatActivity {
                 Uri.parse(s.toString())));
     }*/
 
+    /**
+     * This method is set in the layout
+     * It finds the stop on a map, the Stop Data is set as a tag on the view
+     * @param v
+     */
     public void openMap(View v) {
         //click listener in the route fragment recycler view
-        final StopData stop = (StopData) v.getTag();
+        final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
         Log.d(TAG, "stop " + stop.stopName);
         //geo:0,0?q=lat,lng(label)
         //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
-        Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
+        final Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
                 + Uri.encode(stop.stopName) + ")");
-        Intent intent = new Intent(Intent.ACTION_VIEW, uri);
-        startActivity(intent);
+        startActivity(new Intent(Intent.ACTION_VIEW, uri));
     }
 
+    //TBD, open inside the alert
     public void openAlerts(View v) {
         //click listener in the route fragment recycler view
-        final String alertId = (String) v.getTag();
-        Log.d(TAG, "open alert " + alertId);
-        Toast.makeText(this, "open alert " + alertId, Toast.LENGTH_SHORT).show();
+        final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
+        Log.d(TAG, "open alert " + stop.stopAlert);
+        Toast.makeText(this, "open alert " + stop.stopAlert, Toast.LENGTH_SHORT).show();
         //geo:0,0?q=lat,lng(label)
         //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
 
     }
 
+    /**
+     * The favorites and subway have only one group
+     * That group is not allowed to collapse
+     */
     ExpandableListView.OnGroupCollapseListener faveSubListener = new ExpandableListView.OnGroupCollapseListener() {
 
         @Override
