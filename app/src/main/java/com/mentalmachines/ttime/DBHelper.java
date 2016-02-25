@@ -141,9 +141,10 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_ALERT_ID = "alert_id";
     public static final String KEY_EFFECT_NAME = "effect_name";
     public static final String KEY_EFFECT = "effect";
-    public static final String KEY_CAUSE_NAME = "cause_name";
+    //public static final String KEY_CAUSE_NAME = "cause_name";
+    //these are the same...
     public static final String KEY_CAUSE = "cause";
-    public static final String KEY_HEADER_TEXT = "header_text";
+    //public static final String KEY_HEADER_TEXT = "header_text";
     public static final String KEY_SHORT_HEADER_TEXT = "short_header_text";
     public static final String KEY_DESCRIPTION_TEXT = "description_text";
     public static final String KEY_SEVERITY = "severity";
@@ -158,23 +159,22 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String DB_ALERTS_TABLE = "alerts";
 
-    String CREATE_DB_TABLE_ALERTS  = TABLE_PREFIX + DB_ALERTS_TABLE + "("
+    String CREATE_DB_TABLE_ALERTS = "create table " + DB_ALERTS_TABLE + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ALERT_ID + " INT not null,"
-            + KEY_EFFECT_NAME + " TEXT not null,"
-            + KEY_CAUSE_NAME + " TEXT not null,"
-            + KEY_CAUSE + " TEXT not null,"
-            + KEY_HEADER_TEXT + " TEXT not null,"
-            + KEY_SHORT_HEADER_TEXT + " TEXT not null);"
-            + KEY_DESCRIPTION_TEXT + " TEXT not null);"
-            + KEY_SEVERITY + " TEXT not null);"
-            + KEY_CREATED_DT + " TEXT not null);"
-            + KEY_LAST_MODIFIED_DT + " TEXT not null);"
-            + KEY_SERVICE_EFFECT_TEXT + " TEXT not null);"
-            + KEY_TIMEFRAME_TEXT + " TEXT not null);"
-            + KEY_ALERT_LIFECYCLE + " TEXT not null);"
-            + KEY_EFFECT_PERIOD_START + " TEXT not null);"
-            + KEY_EFFECT_PERIOD_END + " TEXT not null);";
+            + KEY_ALERT_ID + " TEXT not null,"
+            + KEY_EFFECT + " TEXT not null,"
+            + KEY_EFFECT_NAME + " int not null,"
+            + KEY_CAUSE + " TEXT,"
+            + KEY_SHORT_HEADER_TEXT + " TEXT,"
+            + KEY_DESCRIPTION_TEXT + " TEXT,"
+            + KEY_SEVERITY + " TEXT,"
+            + KEY_CREATED_DT + " TEXT not null,"
+            + KEY_LAST_MODIFIED_DT + " TEXT not null,"
+            + KEY_SERVICE_EFFECT_TEXT + " TEXT,"
+            + KEY_TIMEFRAME_TEXT + " TEXT,"
+            + KEY_ALERT_LIFECYCLE + " TEXT ,"
+            + KEY_EFFECT_PERIOD_START + " TEXT,"
+            + KEY_EFFECT_PERIOD_END + " TEXT);";
 
     public static final String STOPS_COLS = "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -185,6 +185,24 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ALERT_ID + " NUMERIC,"
             + KEY_STOPLT + " NUMERIC not null,"
             + KEY_STOPLN + " NUMERIC not null);";
+
+    public static final String KEY_PREAWAY = "pre_away";
+    public static final String KEY_SCH_TIME = "sch_arr_dt";
+    //Property of “trip.” String representation of an integer.
+    //Scheduled arrival time at the stop for the trip, in epoch time
+    //Example: “1361989260”
+    public static final String PRED_TIME = "pre_dt";
+    public static final String DB_TABLE_PREDICTION = "timetable";
+    public static final String dropTimeTable = "DROP TABLE IF EXISTS " + DB_TABLE_PREDICTION + ";";
+
+    public static final String CREATE_PRED_TABLE = TABLE_PREFIX + DB_TABLE_PREDICTION + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT not null,"
+            + KEY_STOPID + " TEXT not null,"
+            + KEY_DIR_ID + " NUMERIC not null,"
+            + KEY_SCH_TIME + " NUMERIC not null,"
+            + PRED_TIME + " NUMERIC not null,"
+            + KEY_PREAWAY + " NUMERIC not null);";
 
     //TODO save most recent alert id to the stop table
     // parse alerts in reverse chron order, save alert id to stop table

@@ -53,8 +53,8 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
             do {
                 Alert a = new Alert();
                 a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
-                a.effect_name = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
-                a.cause_name = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE_NAME));
+                a.effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
+                a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
                 alerts.add(a);
             } while (alertsCursor.moveToNext());
             alertsCursor.close();

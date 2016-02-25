@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.fragments;
 
 import android.animation.Animator;
 import android.animation.AnimatorSet;
@@ -16,6 +16,9 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.TextView;
 
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.SimpleStopAdapter;
 import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
 
 public class RouteFragment extends Fragment{

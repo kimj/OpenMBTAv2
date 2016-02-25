@@ -1,12 +1,12 @@
 package com.mentalmachines.ttime;
 
 import android.database.Cursor;
-import android.graphics.drawable.Drawable;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 /**
@@ -19,8 +19,6 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public static final String TAG = "SimpleStopAdapter";
     final public StopData[] mItems;
     final int mTextColor;
-    static Drawable alertDrawable;
-    //final int drawableResource;
 
     //public SimpleStopAdapter(String[] data, int resource) {
     public SimpleStopAdapter(StopData[] data, int textColor) {
@@ -46,10 +44,6 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
 
     @Override
     public StopViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        if(alertDrawable == null) {
-            alertDrawable = parent.getContext().getResources().getDrawable(android.R.drawable.ic_dialog_alert);
-            alertDrawable.setBounds(0, 0, alertDrawable.getIntrinsicWidth(), alertDrawable.getIntrinsicHeight());
-        }
         View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.t_stop, parent, false);
         if(mTextColor > 0) {
@@ -59,19 +53,28 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         return new StopViewHolder(view);
     }
 
-    //all text is dummy data to format the display on the screen
+    /**
+     * Map a stop in mItems to a recycler view entry on the list
+     * The mStopDescription view has a tag holding the parent view group
+     * @param holder, viewholder, required for recycler view
+     * @param position, the position in the list
+     */
     @Override
     public void onBindViewHolder(final StopViewHolder holder, int position) {
         if(mItems == null || mItems.length < position) {
             Log.w(TAG, "bad position sent to adapter " + position);
             holder.mStopDescription.setText("");
         } else {
+            //setting a tag on the parent view for the two buttons to read
+            ((View) holder.mStopDescription.getTag()).setTag(mItems[position]);
             holder.mStopDescription.setText(mItems[position].stopName);
             if(mItems[position].stopAlert != null) {
-                holder.mStopDescription.setCompoundDrawables(
-                    alertDrawable, null, null, null );
+                holder.mAlertBtn.setVisibility(View.VISIBLE);
+                holder.mAlertBtn.setTag(mItems[position].stopAlert);
+            } else {
+                holder.mAlertBtn.setVisibility(View.GONE);
             }
-            holder.mCompass.setTag(mItems[position]);
+            //holder.mCompass.setTag(mItems[position]);
                    // TODO disappear this if there is no predictive data for the route
             holder.mETA.setText("Actual time: ?, in ? minutes and ? in ? minutes");
         }
@@ -80,6 +83,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     public class StopViewHolder extends RecyclerView.ViewHolder {
         public final TextView mStopDescription;
         public final TextView mETA;
+        public final ImageButton mAlertBtn;
         public final View mCompass;
 
         public StopViewHolder(View itemView) {
@@ -87,6 +91,8 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             mCompass = itemView.findViewById(R.id.stop_mapbtn);
+            mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_alert_btn);
+            mStopDescription.setTag(itemView);
         }
     }
 
