@@ -41,7 +41,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     //Stop keys, some duplication with routes
     public static final String KEY_DIR = "direction";
-    //public static final String KEY_DIR_NM = "direction_name";
+    public static final String KEY_DIR_NM = "direction_name";
     public static final String KEY_DIR_ID = "direction_id";
     //Inbound, Outbound, Northbound and Southbound
     public static final String STOP = "stop";
@@ -200,7 +200,7 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ROUTE_ID + " TEXT not null,"
             + KEY_STOPID + " TEXT not null,"
             + KEY_DIR_ID + " NUMERIC not null,"
-            + KEY_SCH_TIME + " NUMERIC not null,"
+            + KEY_SCH_TIME + " NUMERIC,"
             + PRED_TIME + " NUMERIC not null,"
             + KEY_PREAWAY + " NUMERIC not null);";
 

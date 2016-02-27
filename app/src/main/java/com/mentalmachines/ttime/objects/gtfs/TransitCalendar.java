@@ -1,14 +1,6 @@
 package com.mentalmachines.ttime.objects.gtfs;
 
 import android.content.Context;
-import android.util.Log;
-
-import com.mentalmachines.ttime.R;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.util.ArrayList;
 
 public class TransitCalendar {
     public static final String TAG = "TransitCalendar";

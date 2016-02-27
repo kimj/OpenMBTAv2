@@ -7,6 +7,7 @@ import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.text.format.Time;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -26,7 +27,6 @@ import java.util.ArrayList;
 public class GetMBTARequestService extends IntentService {
 
     public static final String TAG = "GetMBTARequestService";
-    final private static JsonFactory factory = new JsonFactory();
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
@@ -38,26 +38,26 @@ public class GetMBTARequestService extends IntentService {
     //JSON keys for the parser
     public static final String STOP_LIST_KEY = "affected_services";
     public static final String SERVICES_KEY = "services";
-    public static final String ELEVATORS_KEY = "elevators";
 
     // JSON constants for predictive times, data is not in SQLite
     public static final String STOPPARAM = "&stop=";
     public static final String ROUTEPARAM = "&route=";
     public static final String STOPVERB = "predictionsbystop";
     public static final String ROUTEVERB = "predictionsbyroute";
-    public static final String GETSTOPS = BASE + STOPVERB + SUFFIX + STOPPARAM;
+    public static final String GETSTOPTIMES = BASE + STOPVERB + SUFFIX + STOPPARAM;
     public static final String GETROUTETIMES = BASE + ROUTEVERB + SUFFIX + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
     //Predicted amount of time until the vehicle arrives at the stop, in seconds
     public static final String TRIP_KEY = "trip";
-
+    final StringBuilder strBuild = new StringBuilder(0);
 
     void getTimesForRoute(String route) throws IOException {
         final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
         db.execSQL(DBHelper.dropTimeTable);
         db.execSQL(DBHelper.CREATE_PRED_TABLE);
         final ContentValues cv = new ContentValues();
+        final Time t = new Time();
         final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + route));
         while (!parser.isClosed()) {
             //start parsing, get the token
@@ -73,70 +73,92 @@ public class GetMBTARequestService extends IntentService {
                 if(!JsonToken.START_ARRAY.equals(token)) {
                     break;
                 }
-                int directionId = 0;
+                int offsetSecs, directionId = 0;
                 while(!JsonToken.END_ARRAY.equals(token)) {
                     token = parser.nextToken();
                     //most of the data in this array is ignored, just the direction and the stops in the trip array
-                    Log.d(TAG, "trip array");
+                    Log.d(TAG, "direction array");
                     if(JsonToken.START_OBJECT.equals(token)) {
                         token = parser.nextToken();
                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         directionId = parser.getIntValue();
+                        Log.d(TAG, "direction id set " + directionId);
                     } else if(JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
-                        //array of trips with stops inside
+                        //array of trips with stops inside, may be several trips returned
                         token = parser.nextToken();
                         if(!JsonToken.START_ARRAY.equals(token)) {
                             break;
                         }
                         //trip array has trips, vehicles and stops
+                        Log.d(TAG, "trip array");
                         while(!JsonToken.END_ARRAY.equals(token)) {
-                            Log.d(TAG, "stop array");
                             //getting stops embedded into the trip
                             token = parser.nextToken();
-                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
-                                //finally at stop array
-                                token = parser.nextToken();
-                                if(!JsonToken.START_ARRAY.equals(token)) {
-                                    break;
-                                }
-                                token = parser.nextToken();
-                                if(!JsonToken.START_OBJECT.equals(token)) {
-                                    break;
-                                }
-                                cv.put(DBHelper.KEY_DIR_ID, directionId);
-                                cv.put(DBHelper.KEY_ROUTE_ID, route);
+                            if(JsonToken.FIELD_NAME.equals(token) && "vehicle".equals(parser.getCurrentName())) {
+                                //may want vehicle_timestamp...
                                 while(!JsonToken.END_OBJECT.equals(token)) {
-                                    Log.d(TAG, "stop object");
                                     token = parser.nextToken();
-                                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
+                                }
+                            } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
+                                //finally at stop array, skip past start array
+                                token = parser.nextToken();
+                                while(!JsonToken.END_ARRAY.equals(token)) {
+                                    //running through the stops
+                                    token = parser.nextToken();
+                                    if(JsonToken.START_OBJECT.equals(token)) {
+                                        token = parser.nextToken();
+                                        cv.put(DBHelper.KEY_DIR_ID, directionId);
+                                        cv.put(DBHelper.KEY_ROUTE_ID, route);
+                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         cv.put(DBHelper.KEY_STOPID, parser.getValueAsString());
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        cv.put(DBHelper.KEY_SCH_TIME, parser.getValueAsString());
-                                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
+                                        t.set(1000*Long.valueOf(parser.getValueAsString()));
+                                        t.normalize(false);
+                                        cv.put(DBHelper.KEY_SCH_TIME, getTime(t));
+                                        Log.d(TAG, "time " + strBuild.toString() + " from " + parser.getValueAsString());
+                                        strBuild.setLength(0);
+                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        cv.put(DBHelper.PRED_TIME, parser.getValueAsString());
+                                        t.set(1000*Long.valueOf(parser.getValueAsString()));
+                                        t.normalize(false);
+                                        cv.put(DBHelper.PRED_TIME, getTime(t));
+                                        Log.d(TAG, "time " + strBuild.toString() + " from " + parser.getValueAsString());
+                                        strBuild.setLength(0);
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        cv.put(DBHelper.KEY_PREAWAY, parser.getValueAsString());
+                                        offsetSecs = parser.getValueAsInt();
+
+                                        if(offsetSecs > 60) {
+                                            strBuild.append(offsetSecs/60).append("m ").append(offsetSecs%60).append("s");
+                                        }
+                                        cv.put(DBHelper.KEY_PREAWAY, strBuild.toString());
+                                        Log.d(TAG, "offset secs? " + offsetSecs + ":" + strBuild.toString());
+                                        strBuild.setLength(0);
+                                    } else if(JsonToken.END_OBJECT.equals(token)) {
+                                        //end of the stop, insert row
+                                        Log.i(TAG, "setting " + route + " time into table: " + db.insert(DBHelper.DB_TABLE_PREDICTION, "_id", cv));
+                                        cv.clear();
                                     }
-                                } //end row data read, cv ready to go into the db
-                                //end object, insert row for this stop
-                                Log.i(TAG, "setting " + route + " time into table: " + db.insert(DBHelper.DB_TABLE_PREDICTION, "_id", cv));
-                                cv.clear();
-                                token = parser.nextToken();
-                            } else {
-                                Log.d(TAG, "not stop");
-                            }
 
-                        }//end trip array
-                    }
+                                } //end while stops
+                                //here we need to change the token from end array in order to continue parsing
+                                token = JsonToken.NOT_AVAILABLE;
 
-                    } //end direction array
-            }
-        }
+                            } //end stop field
+
+
+                        } //end trip array
+                        //here again we need to change the token from end array in order to continue parsing
+                        token = JsonToken.NOT_AVAILABLE;
+                    } //end if field is trip
+
+                } //end direction array
+            } //end direction if condition, need to read both directions
+        } //parser is closed
+        Log.i(TAG, "parser closed, route times complete");
     }
 
     // Query TypesSTOP_LIST_KEY
@@ -306,6 +328,7 @@ public class GetMBTARequestService extends IntentService {
                             for(AlertHolder a: alertsInTable) {
                                 if(a.alert_id.equals(alert.alert_id)) {
                                     dex = alertsInTable.indexOf(a);
+                                    break;
                                 }
                             }
                             if(dex >= 0) {
@@ -441,6 +464,28 @@ public class GetMBTARequestService extends IntentService {
         public String svc_route_id;
         public String svc_stop_id;
         public String alert_id;
+    }
+
+    //utility methods to format times when making a call for prediction data
+    public String getTime (Time t) {
+        strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
+        if(t.hour >= 12) {
+            strBuild.append(" PM");
+        } else {
+            strBuild.append(" AM");
+        }
+        return strBuild.toString();
+    }
+
+    public static String pad(int c) {
+        if (c >= 10) return String.valueOf(c);
+        else return ("0" + String.valueOf(c));
+    }
+
+    public static String hourHandle(int c) {
+        if (c > 12) return String.valueOf(c-12);
+        else if (c == 0) return String.valueOf(12);
+        return String.valueOf(c);
     }
 
 }//end class

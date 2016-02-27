@@ -3,14 +3,6 @@ package com.mentalmachines.ttime.objects.gtfs;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
-import android.util.Log;
-
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.R;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 
 /**
  * The commented fields are not used by the app
