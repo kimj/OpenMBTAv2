@@ -115,11 +115,10 @@ public class MainActivity extends AppCompatActivity {
                 break;*/
             case R.id.menu_alerts:
                 AlertsFragment alertsFragment = new AlertsFragment();
-                FragmentManager fragmentManager = getSupportFragmentManager();
-                FragmentTransaction transaction = fragmentManager.beginTransaction();
-                transaction.add(alertsFragment, "AlertsFragment");
-                transaction.addToBackStack(null);
-                transaction.commit();
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, alertsFragment)
+                        .commit();
+
                 break;
             case R.id.menu_settings:
                 Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
