@@ -15,7 +15,6 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.objects.Alert;
 
 import java.io.IOException;
@@ -219,7 +218,10 @@ public class GetMBTARequestService extends IntentService {
         final ArrayList<ServiceData> stopsList = new ArrayList<>();
         final SQLiteDatabase db = new DBHelper(this).getWritableDatabase();
         ArrayList<AlertHolder> alertsInTable = selectAlerts(db);
-        final long timestamp = Long.valueOf(alertsInTable.get(0).lastModified);
+        long timestamp = -1l;
+        if(alertsInTable.size() > 0){
+            Long.valueOf(alertsInTable.get(0).lastModified);
+        }
         final ContentValues cv = new ContentValues();
         Alert alert = null;
         while (!parser.isClosed()) {

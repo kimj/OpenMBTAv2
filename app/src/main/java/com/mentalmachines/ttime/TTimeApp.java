@@ -26,7 +26,8 @@ public class TTimeApp extends Application{
         } else {
             Log.i(TAG, "initializing bus routes");
             RouteExpandableAdapter.initBusList(this);
+            startService(new Intent(this, GetMBTARequestService.class));
         }
-        startService(new Intent(this, GetMBTARequestService.class));
+
     }
 }

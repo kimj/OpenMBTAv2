@@ -190,9 +190,9 @@ public class DBCreateStopsRoutes extends IntentService {
                         token = parser.nextToken();
                         //Log.d(TAG, "direction name check: " + parser.getValueAsString());
                         if (parser.getValueAsString().equals("1")) {
-                            table = DBHelper.STOPS_OUT_TABLE;
-                        } else {
                             table = DBHelper.STOPS_INB_TABLE;
+                        } else {
+                            table = DBHelper.STOPS_OUT_TABLE;
                         }
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
@@ -230,6 +230,9 @@ public class DBCreateStopsRoutes extends IntentService {
                                 token = parser.nextToken();
                                 Log.d(TAG, "inserting stop " + route + " " +
                                         cv.get(DBHelper.KEY_STOPID) + ": " + mDB.insert(table, "", cv));
+                                if(route.equals("1")) {
+                                    Log.d(TAG, cv.toString());
+                                }
                                 cv.clear();
                                 cv.put(DBHelper.KEY_ROUTE_ID, route);
                             }

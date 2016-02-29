@@ -1,19 +1,17 @@
 package com.mentalmachines.ttime;
 
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -31,8 +29,8 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.CursorRouteAdapter;
-import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
 import com.mentalmachines.ttime.adapter.CursorRouteAdapter.StopData;
+import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.services.GetMBTARequestService;
@@ -45,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
     public String mRouteId;
     String mRouteName;
     int mRouteColor;
+    ProgressDialog mPD = null;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -295,6 +294,12 @@ public class MainActivity extends AppCompatActivity {
     public class CreateRouteFragment extends AsyncTask<Object, Void, CursorRouteAdapter> {
 
         @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+        }
+
+        @Override
         protected CursorRouteAdapter doInBackground(Object... params) {
 
             CursorRouteAdapter rte = new CursorRouteAdapter(          //default direction is inbound
@@ -311,6 +316,9 @@ public class MainActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(CursorRouteAdapter result) {
             super.onPostExecute(result);
+            if(mPD != null && mPD.isShowing()) {
+                mPD.dismiss();
+            }
             if(isCancelled()) {
                 Log.w(TAG, "Task cancelled");
                 return;
