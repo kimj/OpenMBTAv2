@@ -197,7 +197,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String CREATE_PRED_TABLE = TABLE_PREFIX + DB_TABLE_PREDICTION + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ROUTE_ID + " TEXT not null,"
             + KEY_STOPID + " TEXT not null,"
             + KEY_DIR_ID + " NUMERIC not null,"
             + KEY_SCH_TIME + " NUMERIC,"

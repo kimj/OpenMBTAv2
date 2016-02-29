@@ -1,6 +1,12 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.adapter;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -8,6 +14,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 import android.widget.TextView;
+
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.services.GetMBTARequestService;
+
+import java.util.HashMap;
 
 /**
  * Created by emezias on 1/20/16.
@@ -18,14 +30,16 @@ import android.widget.TextView;
 public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
     public static final String TAG = "SimpleStopAdapter";
     final public StopData[] mItems;
-    final int mTextColor;
+    final int mDirectionId, mTextColor;
+    static HashMap<String, String> mTimeMap = null;
+    boolean timesReady = false;
 
     //public SimpleStopAdapter(String[] data, int resource) {
-    public SimpleStopAdapter(StopData[] data, int textColor) {
+    public SimpleStopAdapter(Context ctx, StopData[] data, int textColor, int direction) {
         super();
+        mDirectionId = direction;
         mItems = data;
         mTextColor = textColor;
-        //drawableResource = resource = -1;
     }
 
     @Override
@@ -49,8 +63,12 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         if(mTextColor > 0) {
             ((TextView) view.findViewById(R.id.stop_desc)).setTextColor(mTextColor);
         }
-
         return new StopViewHolder(view);
+    }
+
+    @Override
+    public void onDetachedFromRecyclerView(RecyclerView recyclerView) {
+        super.onDetachedFromRecyclerView(recyclerView);
     }
 
     /**
@@ -76,7 +94,79 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             }
             //holder.mCompass.setTag(mItems[position]);
                    // TODO disappear this if there is no predictive data for the route
-            holder.mETA.setText("Actual time: ?, in ? minutes and ? in ? minutes");
+            if(mTimeMap != null) {
+                holder.mETA.setText(mTimeMap.get(mItems[position].stopId));
+                Log.i(TAG, "set text? " + mItems[position].stopId + ": " + mTimeMap.get(mItems[position].stopId) );
+            } else {
+                holder.mETA.setText("getting schedule data...");
+            }
+
+        }
+    }
+
+    public final static String[] mSchProjection = new String[] {
+            DBHelper.KEY_STOPID, DBHelper.KEY_SCH_TIME, DBHelper.PRED_TIME, DBHelper.KEY_PREAWAY
+    };
+
+
+    /**
+     * This method sets up the times to show in the main activity at each stop on a route
+     * @param context
+     * @param direction, inbound = 1 outbound = 0
+     */
+    public static void pullSchedule(Context context, String direction) {
+        Log.i(TAG, "pull schedule");
+        mTimeMap = null;
+        final SQLiteDatabase db = new DBHelper(context).getReadableDatabase();
+        final Cursor c = db.query(DBHelper.DB_TABLE_PREDICTION,
+                mSchProjection,
+                DBHelper.KEY_DIR_ID + " like "+ direction,
+                null, null, null, DBHelper.KEY_STOPID);
+        // use group by here? is that faster?
+        if(c.moveToFirst()) {
+            String stopId = "";
+            final HashMap<String, String> tmp = new HashMap<>();
+            final StringBuilder schTimes = new StringBuilder(0);
+            final StringBuilder predTimes = new StringBuilder(0);
+            do {
+                if(stopId == c.getString(0)) {
+                    if(c.getString(1) != null) {
+                        schTimes.append(c.getString(1)).append(" ");
+                    }
+                    predTimes.append(c.getString(2)).append(" in ").append(c.getString(3)).append("  ");
+                    Log.i(TAG, "schedule time data?" + c.getString(2) + " in " + c.getString(3));
+                } else {
+                    if(!stopId.isEmpty()) {
+                        //first time through...
+                        if(schTimes.length() > 20) {
+                            tmp.put(stopId, schTimes.toString() + "/n" + predTimes.toString());
+                        } else {
+                            tmp.put(stopId, predTimes.toString());
+                        }
+                    }
+                    stopId = c.getString(0);
+                    Log.i(TAG, "reading times " + stopId);
+                    schTimes.setLength(0);
+                    schTimes.append("Schedule Times: ");
+                    predTimes.setLength(0);
+                    predTimes.append("Actual: ");
+                    if(c.getString(1) != null) {
+                        schTimes.append(c.getString(1)).append(" ");
+                    }
+                    predTimes.append(c.getString(2)).append(" in ").append(c.getString(3)).append("  ");
+                    Log.i(TAG, "schedule time data?" + c.getString(2) + " in " + c.getString(3));
+                }
+
+            } while (c.moveToNext());
+            //end while, hash map is build
+            c.close();
+            db.close();
+            predTimes.setLength(0);
+            schTimes.setLength(0);
+            mTimeMap = tmp;
+            Log.i(TAG, "schedule time data ready");
+        } else {
+            Log.w(TAG, "cursor cannot move to first");
         }
     }
 
@@ -101,10 +191,10 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     };
 
     public static class StopData {
-        String stopName; //to display
-        String stopId; //to check for alerts
-        String stopLat, stopLong; //to open Map
-        String stopAlert = null;
+        public String stopName; //to display
+        public String stopId; //to check for alerts
+        public String stopLat, stopLong; //to open Map
+        public String stopAlert = null;
     }
 
     /**

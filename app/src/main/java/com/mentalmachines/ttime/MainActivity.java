@@ -1,15 +1,20 @@
 package com.mentalmachines.ttime;
 
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -25,7 +30,9 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
+import com.mentalmachines.ttime.adapter.CursorRouteAdapter;
+import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
+import com.mentalmachines.ttime.adapter.CursorRouteAdapter.StopData;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.services.GetMBTARequestService;
@@ -34,9 +41,10 @@ public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     public ExpandableListView mRouteList;
-    SQLiteDatabase mDB;
-    //String mSelectedRouteId;
-    RouteFragment mRouteFragment;
+    //RouteFragment mRouteFragment;
+    public String mRouteId;
+    String mRouteName;
+    int mRouteColor;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -81,21 +89,31 @@ public class MainActivity extends AppCompatActivity {
                 previousGroup = groupPosition;
             }
         });
-        mRouteFragment = RouteFragment.newInstance(null, null, getString(R.string.def_text),
+        getSupportFragmentManager().beginTransaction()
+                .replace(R.id.container, RouteFragment.newInstance(null, getString(R.string.def_text)))
+                .commit();
+        /*mRouteFragment = RouteFragment.newInstance(null, getString(R.string.def_text),
                 getResources().getColor(R.color.colorPrimary));
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, mRouteFragment)
-                .commit();
+                .commit();*/
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-
+        LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady, new IntentFilter(GetMBTARequestService.TAG));
 	}
 
-	@Override
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mScheduleReady);
+
+    }
+
+    @Override
 	public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
 		return super.onCreateOptionsMenu(menu);
@@ -178,36 +196,16 @@ public class MainActivity extends AppCompatActivity {
 
     public void childClick(View v) {
         //click listener set on the child view in the nav drawer
-        if(mDB == null || !mDB.isOpen()) {
-            mDB = new DBHelper(this).getReadableDatabase();
-        }
         final String routeId = (String) v.getTag();
         final Intent tnt = new Intent(this, GetMBTARequestService.class);
         tnt.putExtra(GetMBTARequestService.TAG, routeId);
         startService(tnt);
-
         Log.i(TAG, "show route " + routeId);
-        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE, SimpleStopAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
-                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
-        StopData[] inStops = SimpleStopAdapter.makeStopsList(c);
-
-        c.close();
-        c = mDB.query(DBHelper.STOPS_OUT_TABLE, SimpleStopAdapter.mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
-                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
-        StopData[] outStops = SimpleStopAdapter.makeStopsList(c);
-
-        c.close();
-        //9701, 9702 and 9703 are one way routes
-        mRouteFragment = RouteFragment.newInstance(inStops, outStops,
-                ((TextView)v).getText().toString(),
-                v.getTag(R.layout.child_view) == null?
-                        getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view));
-        getSupportFragmentManager().beginTransaction()
-            .replace(R.id.container, mRouteFragment)
-            .commit();
-
+        mRouteId = (String)v.getTag();
+        mRouteName = ((TextView) v).getText().toString();
+        setTitle(mRouteName);
+        mRouteColor = v.getTag(R.layout.child_view) == null?
+                getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view);
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
@@ -262,7 +260,6 @@ public class MainActivity extends AppCompatActivity {
         Toast.makeText(this, "open alert " + stop.stopAlert, Toast.LENGTH_SHORT).show();
         //geo:0,0?q=lat,lng(label)
         //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
-
     }
 
     /**
@@ -280,5 +277,53 @@ public class MainActivity extends AppCompatActivity {
         }
 
     };
+
+    BroadcastReceiver mScheduleReady = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //the route times are ready. set up the adapter
+            new CreateRouteFragment().execute();
+            Log.d(TAG, "starting async task to get to route fragment");
+        }
+    };
+
+    /**
+     * This will be quick, just want to get the I/O off the main thread
+     * All of the db operations are in the Adapter class
+     * TO move SQL operations off main thread
+     */
+    public class CreateRouteFragment extends AsyncTask<Object, Void, CursorRouteAdapter> {
+
+        @Override
+        protected CursorRouteAdapter doInBackground(Object... params) {
+
+            CursorRouteAdapter rte = new CursorRouteAdapter(          //default direction is inbound
+                    MainActivity.this, mRouteId, 1);
+            Log.d(TAG, "creating adapter " + rte.getItemCount());
+            if(rte.getItemCount() == 0) {
+                rte = new CursorRouteAdapter(          //one way, try outbound
+                        MainActivity.this, mRouteId, 0);
+            }
+            return rte;
+            //CursorRouteAdapter(Context ctx, String routeId, int routeColor, int direction)
+        }
+
+        @Override
+        protected void onPostExecute(CursorRouteAdapter result) {
+            super.onPostExecute(result);
+            if(isCancelled()) {
+                Log.w(TAG, "Task cancelled");
+                return;
+            }
+            //newInstance(CursorRouteAdapter listData, String title, int bgColor) {
+            //mRouteFragment = RouteFragment.newInstance(result, mRouteId, mRouteColor);
+            getSupportFragmentManager().beginTransaction()
+                    .replace(R.id.container, RouteFragment.newInstance(result, mRouteName))
+                    .commit();
+            Log.d(TAG, "show fragment?");
+        }
+    } //end task
+
+
 
 }

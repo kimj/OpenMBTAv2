@@ -5,8 +5,9 @@
     android:onClick="childClick"
     android:layout_marginLeft="@dimen/def_padding"
     android:padding="@dimen/def_margin"
-    android:textColor="@color/solidBlueline"
+    android:textColor="@color/colorPrimary"
     android:text="Wonderland"
+    android:maxLines="5"
     android:textAppearance="@android:style/TextAppearance.Medium">
     <!-- layout for a child in the group in the drawer -->
 </TextView>

@@ -6,6 +6,7 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
+import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
 import com.mentalmachines.ttime.services.DBCreateStopsRoutes;
 import com.mentalmachines.ttime.services.GetMBTARequestService;
 

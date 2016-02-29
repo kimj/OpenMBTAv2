@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.adapter;
 
 import android.app.Activity;
 import android.content.Context;
@@ -12,6 +12,9 @@ import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
+
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
 
 import java.util.ArrayList;
 
@@ -41,7 +44,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     final static String[] mFavProjection = new String[] {
             DBHelper.KEY_ROUTE_NAME
     };
-    final static String stopsSubwayWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
+    public final static String stopsSubwayWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
     final static String modeWhereClause = DBHelper.KEY_ROUTE_MODE + " like ";
     final static String routeWhereClause = DBHelper.KEY_ROUTE_NAME + " like ";
     //here is the actual data to display, along with mGroupNames

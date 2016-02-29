@@ -29,7 +29,7 @@ public class DBCreateStopsRoutes extends IntentService {
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
     public static final String ROUTES = BASE + "routes" + SUFFIX;
     public static final String STOPS = BASE + "stopsbyroute" + SUFFIX + "&route=";
-
+    //http://realtime.mbta.com/developer/api/v2/stopsbyroute?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&route=1
     //required constructor
     public DBCreateStopsRoutes() {
         super(TAG);
@@ -228,8 +228,8 @@ public class DBCreateStopsRoutes extends IntentService {
                                 cv.put(DBHelper.KEY_STOPLN, parser.getValueAsString());
                             } else if (JsonToken.END_OBJECT.equals(token)) {
                                 token = parser.nextToken();
-                                Log.d(TAG, "inserting unique route and stop " + route + " " +
-                                        cv.get(DBHelper.KEY_STOPNM) + ": " + mDB.insert(table, "", cv));
+                                Log.d(TAG, "inserting stop " + route + " " +
+                                        cv.get(DBHelper.KEY_STOPID) + ": " + mDB.insert(table, "", cv));
                                 cv.clear();
                                 cv.put(DBHelper.KEY_ROUTE_ID, route);
                             }

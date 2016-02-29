@@ -3,6 +3,7 @@ package com.mentalmachines.ttime.fragments;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
@@ -17,9 +18,9 @@ import android.widget.CompoundButton;
 import android.widget.TextView;
 
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.SimpleStopAdapter;
-import com.mentalmachines.ttime.SimpleStopAdapter.StopData;
+import com.mentalmachines.ttime.adapter.CursorRouteAdapter;
 
 public class RouteFragment extends Fragment{
 	/**
@@ -30,21 +31,19 @@ public class RouteFragment extends Fragment{
 
     boolean mInbound = true;
     public RecyclerView mList;
-    static StopData[] mInStops, mOutStops;
+    static CursorRouteAdapter mListAdapter;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(StopData[] instops, StopData[] outstops, String title, int bgColor) {
+	public static RouteFragment newInstance(CursorRouteAdapter listData, String title) {
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
-        mInStops = instops;
-        mOutStops = outstops;
         args.putString(LINE_NAME, title);
-        args.putInt(TAG, bgColor);
 		fragment.setArguments(args);
+        mListAdapter = listData;
 		return fragment;
 	}
 
@@ -59,12 +58,12 @@ public class RouteFragment extends Fragment{
 
 		mList = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
 
-        if(mInStops == null && mOutStops == null) {
+        if(mListAdapter == null) {
 			mList.setVisibility(View.GONE);
             getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");
             titleTV.setText(args.getString(LINE_NAME));
-            titleTV.setTextColor(args.getInt(TAG));
+            //titleTV.setTextColor(args.getInt(TAG));
         } else {
             //rootView.findViewById(R.id.mc_map).setVisibility(View.VISIBLE);
             final CheckBox cb = (CheckBox) rootView.findViewById(R.id.mc_favorite);
@@ -80,22 +79,18 @@ public class RouteFragment extends Fragment{
             } else {
                 titleTV.setText(args.getString(LINE_NAME));
             }
-
-            titleTV.setTextColor(args.getInt(TAG));
             //TODO use this instead of titleTV
             //getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
-            if(mInStops == null || mOutStops == null) {
+            if(mListAdapter.isOneWay) {
                 //this is a one way route
-                mList.setAdapter(new SimpleStopAdapter(
-                    mInStops == null? mOutStops:mInStops, args.getInt(TAG)));
+                Log.w(TAG, "one way route");
                 getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             } else {
-                mList.setAdapter(new SimpleStopAdapter(mInStops, args.getInt(TAG)));
-                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+               //getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
                 getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
             }
-
+            mList.setAdapter(mListAdapter);
             //TODO wire up inbound and outbound based on time/previous display
         }
         //Floating Action button switches the display between inbound and outbound
@@ -111,19 +106,19 @@ public class RouteFragment extends Fragment{
             }
             mInbound = !mInbound;
             if(mInbound) {
+                (new ChangeList(true)).execute();
                 ObjectAnimator.ofFloat(view, "rotation", 540f).start();
                 //mItems = getArguments().getStringArray(IN_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
                         getArguments().getString(LINE_NAME));
-                moveRight.start();
             } else {
+                (new ChangeList(false)).execute();
                 ObjectAnimator.ofFloat(view, "rotation", -540f).start();
                 //mItems = getArguments().getStringArray(OUT_STOPS_LIST);
                 ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
                 ((TextView)getActivity().findViewById(R.id.mc_title)).setText(
                         getArguments().getString(LINE_NAME));
-                moveLeft.start();
             }
 
         }
@@ -180,7 +175,8 @@ public class RouteFragment extends Fragment{
             @Override
             public void onAnimationEnd(Animator animation) {
                 //move right, IN_STOPS_LIST
-                mList.setAdapter(new SimpleStopAdapter(mInStops, getArguments().getInt(TAG)));
+                //SimpleStopAdapter.pullSchedule(getContext(), 1+"");
+                mList.setAdapter(mListAdapter);
                 moveR2.start();
             }
 
@@ -204,7 +200,8 @@ public class RouteFragment extends Fragment{
 
             @Override
             public void onAnimationEnd(Animator animation) {
-                mList.setAdapter(new SimpleStopAdapter(mOutStops, getArguments().getInt(TAG)));
+                //SimpleStopAdapter.pullSchedule(getContext(), 0+"");
+                mList.setAdapter(mListAdapter);
                 moveL2.start();
             }
 
@@ -230,5 +227,39 @@ public class RouteFragment extends Fragment{
         }
     };
 
+    /**
+     * This will be quick, just want to get the I/O off the main thread
+     * All of the db operations are in the Adapter class
+     */
+    public class ChangeList extends AsyncTask<Object, Void, CursorRouteAdapter> {
+        final boolean right;
+
+        public ChangeList(boolean b) {
+            right = b;
+        }
+
+        @Override
+        protected CursorRouteAdapter doInBackground(Object... params) {
+            final Bundle args = RouteFragment.this.getArguments();
+            return new CursorRouteAdapter(
+                RouteFragment.this.getActivity(),
+                    ((MainActivity) getActivity()).mRouteId,
+                mInbound? 1: 0);
+            //CursorRouteAdapter(Context ctx, String routeId, int routeColor, int direction)
+        }
+
+        @Override
+        protected void onPostExecute(CursorRouteAdapter result) {
+            super.onPostExecute(result);
+            //newInstance(CursorRouteAdapter listData, String title, int bgColor) {
+            if(isCancelled() || getActivity() == null) return;
+            mListAdapter = result;
+            if(right) {
+                moveRight.start();
+            } else {
+                moveLeft.start();
+            }
+        }
+    }
 
 }
