@@ -267,23 +267,45 @@ public class DBHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    public static void handleFavorite(Context ctx, String routeNm, boolean isFavorite) {
+    public static boolean checkFavorite(Context ctx, String routeNm) {
+        final SQLiteDatabase db = new DBHelper(ctx).getReadableDatabase();
+        final boolean isFavorite = checkFavorite(db, routeNm);
+        db.close();
+        return isFavorite;
+    }
 
-        final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
+    public static boolean checkFavorite(SQLiteDatabase db, String routeNm) {
         final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
-        if(isFavorite && c.getCount() == 0) {
+        final boolean returnVal;
+        if(c.getCount() == 0) {
+            returnVal = false;
+        } else {
+            returnVal = true;
+        }
+        c.close();
+        return returnVal;
+    }
+
+    public static boolean setFavorite(Context ctx, String routeNm) {
+        final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
+        final boolean isFavorite;
+        final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
+        if(c.getCount() > 0) {
+            //not a favorite and found in the table
+            Log.i(TAG, "dropping favorite " + routeNm + db.delete(
+                    FAVS_TABLE, KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
+            isFavorite = false;
+        } else {
             final ContentValues cv = new ContentValues();
             cv.put(KEY_ROUTE_NAME, routeNm);
             Log.i(TAG, "adding favorite " + routeNm + " row:" + db.insert(
                     FAVS_TABLE, "_id", cv));
             cv.clear();
-        } else if(c.getCount() > 0) {
-            //not a favorite and found in the table
-            Log.i(TAG, "dropping favorite " + routeNm + db.delete(
-                    FAVS_TABLE, KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
+            isFavorite = true;
         }
 
-        if(!c.isClosed()) c.close();
+        c.close();
         db.close();
+        return isFavorite;
     }
 }

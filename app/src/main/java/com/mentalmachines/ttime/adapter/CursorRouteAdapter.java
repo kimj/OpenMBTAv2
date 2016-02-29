@@ -1,7 +1,6 @@
 package com.mentalmachines.ttime.adapter;
 
 import android.content.Context;
-import android.content.Intent;
 import android.database.Cursor;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
@@ -15,7 +14,6 @@ import android.widget.TextView;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.services.CopyDBService;
 
 /**
  * Created by emezias on 1/20/16.
@@ -35,11 +33,12 @@ public class CursorRouteAdapter extends RecyclerView.Adapter<CursorRouteAdapter.
     public CursorRouteAdapter(final Context ctx, String routeId, int direction) {
         super();
         final Cursor stopNameCursor, stopTimes;
+/*
         Log.d(TAG, "starting svc");
         ctx.startService(new Intent(ctx, CopyDBService.class));
+*/
         final SQLiteDatabase mDB = new DBHelper(ctx).getReadableDatabase();
         mDirectionId = direction;
-        Log.d(TAG, "direction for this route fragment? " + mDirectionId);
         //remember to mark 1 way routes on the action bar
         if(direction == 1) {
             stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
@@ -57,17 +56,14 @@ public class CursorRouteAdapter extends RecyclerView.Adapter<CursorRouteAdapter.
                 mSchProjection,
                 //DBHelper.KEY_DIR_ID + " like " + direction,
                 null, null, null, null, DBHelper.KEY_STOPID + " ASC");
-        Log.d(TAG, "times for this route? " + stopTimes.getCount());
         mItems = new StopData[stopNameCursor.getCount()];
         int dex = 0;
         if(stopNameCursor.moveToFirst()) {
             do {
-                Log.d(TAG, "direction" + mDirectionId + " dex " + dex +
-                        "stop id" + stopNameCursor.getString(1));
                 mItems[dex++] = makeStop(stopNameCursor, stopTimes);
             } while(stopNameCursor.moveToNext());
         }
-        Log.d(TAG, "creating adapter, " + stopNameCursor.getCount() + " stops");
+        Log.d(TAG, "creating adapter, times for this route?" + stopTimes.getCount() + " stops "+ stopNameCursor.getCount());
         stopNameCursor.close();
         stopTimes.close();
         mDB.close();
@@ -183,7 +179,7 @@ public class CursorRouteAdapter extends RecyclerView.Adapter<CursorRouteAdapter.
         data.stopLat = stopNameCursor.getString(3);
         data.stopAlert = stopNameCursor.getString(4);
         data.predicTimes = getTimes(data.stopId, stopTimes);
-        Log.d(TAG, data.stopId + " predictimes? " + data.predicTimes);
+        //Log.d(TAG, data.stopId + " predictimes? " + data.predicTimes);
         return data;
     }
 

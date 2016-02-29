@@ -44,6 +44,7 @@ public class MainActivity extends AppCompatActivity {
     String mRouteName;
     int mRouteColor;
     ProgressDialog mPD = null;
+    MenuItem mFavoritesAction;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -115,6 +116,10 @@ public class MainActivity extends AppCompatActivity {
     @Override
 	public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
+        if(menu != null) {
+            mFavoritesAction = menu.getItem(0);
+            mFavoritesAction.setVisible(false);
+        }
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -125,11 +130,18 @@ public class MainActivity extends AppCompatActivity {
 		// as you specify a parent activity in AndroidManifest.xml.
 		switch (item.getItemId()) {
             /* TODO move route name, map button and favorite selection up to action bar
-            case R.id.menu_favorites:
-                break;
             case R.id.menu_map:
                 //map menu from the action bar will display the route
                 break;*/
+            case R.id.menu_favorites:
+                if(DBHelper.setFavorite(this, mRouteName)) {
+                    mFavoritesAction.setChecked(true);
+                    mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                } else {
+                    mFavoritesAction.setChecked(false);
+                    mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                }
+                break;
             case R.id.menu_alerts:
                 AlertsFragment alertsFragment = new AlertsFragment();
                 getSupportFragmentManager().beginTransaction()
@@ -142,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
 
-		return super.onOptionsItemSelected(item);
+        return super.onOptionsItemSelected(item);
 	}
 
     @Override
@@ -202,7 +214,12 @@ public class MainActivity extends AppCompatActivity {
         Log.i(TAG, "show route " + routeId);
         mRouteId = (String)v.getTag();
         mRouteName = ((TextView) v).getText().toString();
-        setTitle(mRouteName);
+        if(Character.isDigit(mRouteName.charAt(0))) {
+            setTitle(getString(R.string.bus_prefix) + mRouteName);
+        } else {
+            setTitle(mRouteName);
+        }
+
         mRouteColor = v.getTag(R.layout.child_view) == null?
                 getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view);
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
@@ -282,6 +299,7 @@ public class MainActivity extends AppCompatActivity {
         public void onReceive(Context context, Intent intent) {
             //the route times are ready. set up the adapter
             new CreateRouteFragment().execute();
+            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
             Log.d(TAG, "starting async task to get to route fragment");
         }
     };
@@ -292,12 +310,6 @@ public class MainActivity extends AppCompatActivity {
      * TO move SQL operations off main thread
      */
     public class CreateRouteFragment extends AsyncTask<Object, Void, CursorRouteAdapter> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-        }
 
         @Override
         protected CursorRouteAdapter doInBackground(Object... params) {
@@ -328,7 +340,14 @@ public class MainActivity extends AppCompatActivity {
             getSupportFragmentManager().beginTransaction()
                     .replace(R.id.container, RouteFragment.newInstance(result, mRouteName))
                     .commit();
-            Log.d(TAG, "show fragment?");
+            mFavoritesAction.setVisible(true);
+            mFavoritesAction.setCheckable(true);
+            if(DBHelper.checkFavorite(MainActivity.this, mRouteName)) {
+                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+            } else {
+                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+            }
+            mFavoritesAction.getIcon().invalidateSelf();
         }
     } //end task
 

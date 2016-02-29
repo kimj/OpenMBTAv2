@@ -10,41 +10,11 @@
     android:paddingTop="@dimen/def_margin"
     tools:context=".fragments.RouteFragment"  >
 
-    <TextView android:id="@+id/mc_title"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_margin="@dimen/def_padding"
-        android:gravity="center"
-        android:layout_centerHorizontal="true"
-        android:text="@string/def_text"
-        android:textColor="@color/colorPrimary"
-        android:textSize="18dp" />
-    <!--
-    <ImageButton android:id="@+id/mc_map"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="-8dp"
-        android:layout_toLeftOf="@id/mc_title"
-        android:src="@android:drawable/ic_menu_mapmode"
-        android:onClick="mapRoute"
-        android:visibility="gone"
-        android:layout_marginRight="@dimen/def_margin" />
-        This is not quite ready, don't like opening maps/navigation
-        -->
-    <CheckBox android:id="@+id/mc_favorite"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignTop="@id/mc_favorite"
-        android:layout_marginLeft="@dimen/def_margin"
-        android:layout_toRightOf="@id/mc_title"
-        android:visibility="gone"
-        android:button="@android:drawable/btn_star" />
     <!-- To do text appearance large -->
     <android.support.v7.widget.RecyclerView
         android:id="@+id/mc_routelist"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/mc_title"
         android:padding="4dp"
         app:layoutManager="LinearLayoutManager"
         app:layout_behavior="@string/appbar_scrolling_view_behavior"
