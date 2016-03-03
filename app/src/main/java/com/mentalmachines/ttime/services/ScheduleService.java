@@ -249,9 +249,9 @@ public class ScheduleService extends IntentService {
     public String getTime (Time t) {
         strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
         if(t.hour >= 12) {
-            strBuild.append("PM");
+            strBuild.append("PM ");
         } else {
-            strBuild.append("AM");
+            strBuild.append("AM ");
         }
         return strBuild.toString();
     }
