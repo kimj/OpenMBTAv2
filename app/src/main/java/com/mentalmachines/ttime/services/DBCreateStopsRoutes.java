@@ -211,9 +211,6 @@ public class DBCreateStopsRoutes extends IntentService {
                             token = parser.nextToken();
                             if (token == null) {
                                 break;
-                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOP_ORD.equals(parser.getCurrentName())) {
-                                token = parser.nextToken();
-                                cv.put(DBHelper.KEY_STOP_ORD, parser.getValueAsString());
                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
                                 token = parser.nextToken();
                                 cv.put(DBHelper.KEY_STOPID, parser.getValueAsString());

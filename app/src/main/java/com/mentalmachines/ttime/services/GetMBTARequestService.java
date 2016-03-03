@@ -57,7 +57,7 @@ public class GetMBTARequestService extends IntentService {
     /*    Routes
     routes list of all routes for which data can be requested
     routesbystop a list of routes that serve a particular stop
-    Stops
+    StopData
     stopsbyroute a list of stops for a particular route
     stopsbylocation a list of the stops nearest a particular location
     Schedule

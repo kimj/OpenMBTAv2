@@ -60,7 +60,9 @@ public class CursorRouteAdapter extends RecyclerView.Adapter<CursorRouteAdapter.
         int dex = 0;
         if(stopNameCursor.moveToFirst()) {
             do {
-                mItems[dex++] = makeStop(stopNameCursor, stopTimes);
+                mItems[dex] = makeStop(stopNameCursor, stopTimes);
+                Log.d(TAG, mItems[dex].stopId + " stop index:" + dex);
+                dex++;
             } while(stopNameCursor.moveToNext());
         }
         Log.d(TAG, "creating adapter, times for this route?" + stopTimes.getCount() + " stops "+ stopNameCursor.getCount());

@@ -9,6 +9,7 @@ import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -28,12 +29,13 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.CursorRouteAdapter;
 import com.mentalmachines.ttime.adapter.CursorRouteAdapter.StopData;
 import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
+import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
-import com.mentalmachines.ttime.services.GetMBTARequestService;
+import com.mentalmachines.ttime.objects.Route;
+import com.mentalmachines.ttime.services.ScheduleService;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
     public String mRouteId;
     String mRouteName;
     int mRouteColor;
+    Route mRoute;
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
 
@@ -103,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady, new IntentFilter(GetMBTARequestService.TAG));
+        LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady, new IntentFilter(ScheduleService.TAG));
 	}
 
     @Override
@@ -167,6 +170,14 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mPD != null && mPD.isShowing()) {
+            mPD.dismiss();
+        }
+    }
+
     public void setList(View v) {
         //show either lines or bus expandable list view in the drawer
         switch(v.getId()) {
@@ -208,9 +219,6 @@ public class MainActivity extends AppCompatActivity {
     public void childClick(View v) {
         //click listener set on the child view in the nav drawer
         final String routeId = (String) v.getTag();
-        final Intent tnt = new Intent(this, GetMBTARequestService.class);
-        tnt.putExtra(GetMBTARequestService.TAG, routeId);
-        startService(tnt);
         Log.i(TAG, "show route " + routeId);
         mRouteId = (String)v.getTag();
         mRouteName = ((TextView) v).getText().toString();
@@ -225,6 +233,7 @@ public class MainActivity extends AppCompatActivity {
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+        (new CreateRouteFragment()).execute();
         //Fab is to switch between inbound and outbound
     }
 
@@ -286,10 +295,10 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onGroupCollapse(int i) {
-            //this is always zero for favorites and subway
-            if(!mRouteList.isGroupExpanded(i)) {
-                mRouteList.expandGroup(i);
-            }
+        //this is always zero for favorites and subway
+        if(!mRouteList.isGroupExpanded(i)) {
+            mRouteList.expandGroup(i);
+        }
         }
 
     };
@@ -298,47 +307,21 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             //the route times are ready. set up the adapter
-            new CreateRouteFragment().execute();
-            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-            Log.d(TAG, "starting async task to get to route fragment");
-        }
-    };
-
-    /**
-     * This will be quick, just want to get the I/O off the main thread
-     * All of the db operations are in the Adapter class
-     * TO move SQL operations off main thread
-     */
-    public class CreateRouteFragment extends AsyncTask<Object, Void, CursorRouteAdapter> {
-
-        @Override
-        protected CursorRouteAdapter doInBackground(Object... params) {
-
-            CursorRouteAdapter rte = new CursorRouteAdapter(          //default direction is inbound
-                    MainActivity.this, mRouteId, 1);
-            Log.d(TAG, "creating adapter " + rte.getItemCount());
-            if(rte.getItemCount() == 0) {
-                rte = new CursorRouteAdapter(          //one way, try outbound
-                        MainActivity.this, mRouteId, 0);
-            }
-            return rte;
-            //CursorRouteAdapter(Context ctx, String routeId, int routeColor, int direction)
-        }
-
-        @Override
-        protected void onPostExecute(CursorRouteAdapter result) {
-            super.onPostExecute(result);
             if(mPD != null && mPD.isShowing()) {
                 mPD.dismiss();
             }
-            if(isCancelled()) {
-                Log.w(TAG, "Task cancelled");
+            //quick callback error check
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+                if(MainActivity.this.isDestroyed() || MainActivity.this.isFinishing()) {
+                    return;
+                }
+            } else if(MainActivity.this.isFinishing()) {
                 return;
             }
-            //newInstance(CursorRouteAdapter listData, String title, int bgColor) {
-            //mRouteFragment = RouteFragment.newInstance(result, mRouteId, mRouteColor);
+            mRoute = intent.getExtras().getParcelable(ScheduleService.TAG);
             getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container, RouteFragment.newInstance(result, mRouteName))
+                    .replace(R.id.container,
+                        RouteFragment.newInstance(new SimpleStopAdapter(mRoute, 1), mRouteName))
                     .commit();
             mFavoritesAction.setVisible(true);
             mFavoritesAction.setCheckable(true);
@@ -348,9 +331,41 @@ public class MainActivity extends AppCompatActivity {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_off);
             }
             mFavoritesAction.getIcon().invalidateSelf();
+
         }
+    };
+
+    /**
+     * This will be quick, just want to get the I/O off the main thread
+     * All of the db operations are in the Adapter class
+     * TO move SQL operations off main thread
+     */
+    public class CreateRouteFragment extends AsyncTask<Object, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+            Log.d(TAG, "starting async task to get to route fragment");
+        }
+
+        @Override
+        protected Void doInBackground(Object... params) {
+            //make route, read stops from the DB in the background
+            mRoute = new Route();
+            mRoute.name = mRouteName;
+            mRoute.id = mRouteId;
+            mRoute.setStops(MainActivity.this);
+            Log.i(TAG, "stops check " + mRoute.mInboundStops.size());
+            //after starting the Schedule Service, the app needs to wait for the route update to set the adapter
+            final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+            tnt.putExtra(ScheduleService.TAG, mRoute);
+            startService(tnt);
+            Log.i(TAG, "starting schedule service with id: " + mRouteId);
+            //already registered for broadcast from the schedule service
+            return null;
+        }
+
     } //end task
-
-
 
 }

@@ -3,7 +3,6 @@ package com.mentalmachines.ttime.fragments;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
@@ -13,9 +12,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.CursorRouteAdapter;
+import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 
 public class RouteFragment extends Fragment{
 	/**
@@ -26,14 +24,14 @@ public class RouteFragment extends Fragment{
 
     boolean mInbound = true;
     public RecyclerView mList;
-    static CursorRouteAdapter mListAdapter;
+    static SimpleStopAdapter mListAdapter;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(CursorRouteAdapter listData, String title) {
+	public static RouteFragment newInstance(SimpleStopAdapter listData, String title) {
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
         args.putString(LINE_NAME, title);
@@ -80,22 +78,24 @@ public class RouteFragment extends Fragment{
     View.OnClickListener fabListener = new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if(moveRight == null) {
-                animationSetup(getView());
-            }
-            mInbound = !mInbound;
-            if(mInbound) {
-                (new ChangeList(true)).execute();
-                ObjectAnimator.ofFloat(view, "rotation", 540f).start();
-                //mItems = getArguments().getStringArray(IN_STOPS_LIST);
-                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
-            } else {
-                (new ChangeList(false)).execute();
-                ObjectAnimator.ofFloat(view, "rotation", -540f).start();
-                //mItems = getArguments().getStringArray(OUT_STOPS_LIST);
-                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
-            }
+        if(moveRight == null) {
+            animationSetup(getView());
+        }
+        mInbound = !mInbound;
+        if(mInbound) {
 
+            ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+            //mItems = getArguments().getStringArray(IN_STOPS_LIST);
+            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+            mListAdapter.changeDirection(1);
+            moveRight.start();
+        } else {
+            ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+            //TODO -> call the schedule service to get the latest times
+            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+            mListAdapter.changeDirection(0);
+            moveLeft.start();
+        }
         }
     };
 
@@ -189,10 +189,9 @@ public class RouteFragment extends Fragment{
     }
 
     /**
-     * This will be quick, just want to get the I/O off the main thread
-     * All of the db operations are in the Adapter class
-     */
-    public class ChangeList extends AsyncTask<Object, Void, CursorRouteAdapter> {
+     * This will be a quick call to update the times when the list direction changes
+
+    public class ChangeList extends AsyncTask<Object, Void, SimpleStopAdapter> {
         final boolean right;
 
         public ChangeList(boolean b) {
@@ -200,7 +199,7 @@ public class RouteFragment extends Fragment{
         }
 
         @Override
-        protected CursorRouteAdapter doInBackground(Object... params) {
+        protected SimpleStopAdapter doInBackground(Object... params) {
             final Bundle args = RouteFragment.this.getArguments();
             return new CursorRouteAdapter(
                 RouteFragment.this.getActivity(),
@@ -210,7 +209,7 @@ public class RouteFragment extends Fragment{
         }
 
         @Override
-        protected void onPostExecute(CursorRouteAdapter result) {
+        protected void onPostExecute(SimpleStopAdapter result) {
             super.onPostExecute(result);
             //newInstance(CursorRouteAdapter listData, String title, int bgColor) {
             if(isCancelled() || getActivity() == null) return;
@@ -221,6 +220,6 @@ public class RouteFragment extends Fragment{
                 moveLeft.start();
             }
         }
-    }
+    } */
 
 }

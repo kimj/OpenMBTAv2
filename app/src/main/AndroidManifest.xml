@@ -23,6 +23,7 @@
             </intent-filter>
         </activity>
 
+        <service android:name=".services.ScheduleService"/>
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>

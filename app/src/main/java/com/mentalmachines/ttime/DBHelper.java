@@ -45,7 +45,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_DIR_ID = "direction_id";
     //Inbound, Outbound, Northbound and Southbound
     public static final String STOP = "stop";
-    public static final String KEY_STOP_ORD = "stop_order";
     public static final String KEY_STOPID = "stop_id";
     public static final String KEY_STOPNM = "stop_name";
     public static final String KEY_STOPLT = "stop_lat";
@@ -93,9 +92,9 @@ public class DBHelper extends SQLiteOpenHelper {
     private static final String RTINDEX = "CREATE INDEX RTINDEX ON " + DB_ROUTE_TABLE + "("
             + KEY_ROUTE_ID + ");";
     private static final String STOP_IN_DEX = "CREATE UNIQUE INDEX STOP_IN_DEX ON " + STOPS_INB_TABLE + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_STOP_ORD + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
     private static final String STOP_OUT_DEX = "CREATE UNIQUE INDEX STOP_OUT_DEX ON " + STOPS_OUT_TABLE + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_STOP_ORD + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
     //these are created AFTER tables are loaded to speed through loading up these big tables
     public static final String WEEKDAY_DEX_B_IN = "CREATE UNIQUE INDEX WDAY_DEX_B_IN ON " + WEEKDAY_TABLE_BUS_IN + "("
             + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
@@ -180,7 +179,6 @@ public class DBHelper extends SQLiteOpenHelper {
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_ROUTE_ID + " TEXT not null,"
             + KEY_STOPID + " TEXT not null,"
-            + KEY_STOP_ORD + " INT not null,"
             + KEY_STOPNM + " TEXT not null,"
             + KEY_ALERT_ID + " NUMERIC,"
             + KEY_STOPLT + " NUMERIC not null,"
