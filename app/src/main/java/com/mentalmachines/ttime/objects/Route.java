@@ -38,13 +38,13 @@ public class Route implements Parcelable {
         final SQLiteDatabase mDB = new DBHelper(ctx).getReadableDatabase();
         Cursor stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
                 RouteExpandableAdapter.stopsSubwayWhereClause + "'" + id + "'",
-                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+                null, null, null, "_id ASC");
         mInboundStops = makeStops(stopNameCursor);
         Log.d(TAG, "inbound stop count for route: " + name + " " + stopNameCursor.getCount());
         //direction == 1) {
         stopNameCursor = mDB.query(DBHelper.STOPS_OUT_TABLE, mStopProjection,
                 RouteExpandableAdapter.stopsSubwayWhereClause + "'" + id + "'",
-                null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+                null, null, null, "_id ASC");
         mOutboundStops = makeStops(stopNameCursor);
         Log.d(TAG, "outbound stop count for route: " + name + " " + stopNameCursor.getCount());
         if (!stopNameCursor.isClosed()) {

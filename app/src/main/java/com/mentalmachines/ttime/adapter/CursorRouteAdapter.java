@@ -43,13 +43,13 @@ public class CursorRouteAdapter extends RecyclerView.Adapter<CursorRouteAdapter.
         if(direction == 1) {
             stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
                     RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
-                    null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+                    null, null, null, null);
             isOneWay = setOneWay(mDB, DBHelper.STOPS_OUT_TABLE, routeId);
 
         } else {
             stopNameCursor = mDB.query(DBHelper.STOPS_OUT_TABLE, mStopProjection,
                     RouteExpandableAdapter.stopsSubwayWhereClause + "'" + routeId + "'",
-                    null, null, null, DBHelper.KEY_STOP_ORD + " ASC");
+                    null, null, null, null);
             isOneWay = setOneWay(mDB, DBHelper.STOPS_INB_TABLE, routeId);
         }
         stopTimes = mDB.query(DBHelper.DB_TABLE_PREDICTION,
