@@ -55,17 +55,16 @@ public class ScheduleService extends IntentService {
      */
     @Override
     protected void onHandleIntent(Intent intent) {
-        //make the network call here in the background
+        //make the route here in the background
+        //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
+        searchRoute = new Route();
+        searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
+        searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
+        searchRoute.setStops(this);
+        Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
         try {
-            if(b == null) {
-                Log.e(TAG, "no route passed to schedule service");
-            } else {
-                searchRoute = b.getParcelable(TAG);
-                Log.d(TAG, "starting svc for route " + searchRoute.name);
-                Log.d(TAG, "route stops?" + searchRoute.mInboundStops.size());
-                getTimesForRoute(searchRoute.id);
-            }
+            getTimesForRoute(searchRoute.id);
 
         } catch (IOException e) {
             Log.e(TAG, "problem with alerts call " + e.getMessage());
@@ -208,7 +207,7 @@ public class ScheduleService extends IntentService {
                                             if(offsetSecs > 60) {
                                                 strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s");
                                             } else {
-                                                strBuild.append("0m ").append(offsetSecs).append("s");
+                                                strBuild.append(offsetSecs).append("s");
                                             }
                                             stop.predicTimes = strBuild.toString();
                                             strBuild.setLength(0);

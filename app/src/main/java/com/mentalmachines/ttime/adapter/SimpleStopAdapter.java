@@ -20,7 +20,7 @@ import com.mentalmachines.ttime.objects.StopData;
 
 public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
     public static final String TAG = "SimpleStopAdapter";
-    public static Route mRoute;
+    public Route mRoute;
     public int mDirectionId;
     final public boolean isOneWay;
 
@@ -43,6 +43,14 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
      */
     public void changeDirection(int dir) {
         mDirectionId = dir;
+        Log.d(TAG, "change dir");
+        notifyDataSetChanged();
+    }
+
+    public void resetRoute(Route r) {
+        mRoute = r;
+        Log.d(TAG, "change to " + r.name);
+        notifyDataSetChanged();
     }
 
     @Override

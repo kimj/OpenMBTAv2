@@ -8,7 +8,6 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -16,6 +15,7 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -29,23 +29,23 @@ import android.widget.ExpandableListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.CursorRouteAdapter.StopData;
 import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
 import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
+import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.services.ScheduleService;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
     public ExpandableListView mRouteList;
-    //RouteFragment mRouteFragment;
+    RouteFragment mRouteFragment;
     public String mRouteId;
     String mRouteName;
     int mRouteColor;
-    Route mRoute;
+    //Route mRoute;
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
 
@@ -92,14 +92,11 @@ public class MainActivity extends AppCompatActivity {
                 previousGroup = groupPosition;
             }
         });
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, RouteFragment.newInstance(null, getString(R.string.def_text)))
-                .commit();
-        /*mRouteFragment = RouteFragment.newInstance(null, getString(R.string.def_text),
-                getResources().getColor(R.color.colorPrimary));
+
+        mRouteFragment = RouteFragment.newInstance(null, getString(R.string.def_text));
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, mRouteFragment)
-                .commit();*/
+                .commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
@@ -113,7 +110,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mScheduleReady);
-
     }
 
     @Override
@@ -176,6 +172,10 @@ public class MainActivity extends AppCompatActivity {
         if(mPD != null && mPD.isShowing()) {
             mPD.dismiss();
         }
+        //just in case
+        if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
+            ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+        }
     }
 
     public void setList(View v) {
@@ -210,10 +210,8 @@ public class MainActivity extends AppCompatActivity {
                         Toast.makeText(this, getString(R.string.no_favs), Toast.LENGTH_SHORT).show();
                         drawer.closeDrawer(GravityCompat.START);
                     }
-
-
                 }
-        }
+        } //end switch
     }
 
     public void childClick(View v) {
@@ -233,7 +231,12 @@ public class MainActivity extends AppCompatActivity {
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-        (new CreateRouteFragment()).execute();
+        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+        final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+        tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mRouteName);
+        tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
+        startService(tnt);
+        Log.i(TAG, "starting schedule service with id: " + mRouteId);
         //Fab is to switch between inbound and outbound
     }
 
@@ -310,6 +313,7 @@ public class MainActivity extends AppCompatActivity {
             if(mPD != null && mPD.isShowing()) {
                 mPD.dismiss();
             }
+            Log.d(TAG, "schedule ready");
             //quick callback error check
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
                 if(MainActivity.this.isDestroyed() || MainActivity.this.isFinishing()) {
@@ -318,54 +322,29 @@ public class MainActivity extends AppCompatActivity {
             } else if(MainActivity.this.isFinishing()) {
                 return;
             }
-            mRoute = intent.getExtras().getParcelable(ScheduleService.TAG);
-            getSupportFragmentManager().beginTransaction()
-                    .replace(R.id.container,
-                        RouteFragment.newInstance(new SimpleStopAdapter(mRoute, 1), mRouteName))
-                    .commit();
-            mFavoritesAction.setVisible(true);
-            mFavoritesAction.setCheckable(true);
+            final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
+
+            if(mFavoritesAction.isVisible()) {
+                //route fragment is already up!
+                Log.d(TAG, "reset Route");
+                mRouteFragment.mListAdapter.resetRoute(r);
+                ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+            } else {
+                mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), mRouteName);
+                getSupportFragmentManager().beginTransaction()
+                        .replace(R.id.container, mRouteFragment)
+                        .commit();
+                mFavoritesAction.setVisible(true);
+                mFavoritesAction.setCheckable(true);
+            }
+
             if(DBHelper.checkFavorite(MainActivity.this, mRouteName)) {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_on);
             } else {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_off);
             }
             mFavoritesAction.getIcon().invalidateSelf();
-
         }
     };
-
-    /**
-     * This will be quick, just want to get the I/O off the main thread
-     * All of the db operations are in the Adapter class
-     * TO move SQL operations off main thread
-     */
-    public class CreateRouteFragment extends AsyncTask<Object, Void, Void> {
-
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-            Log.d(TAG, "starting async task to get to route fragment");
-        }
-
-        @Override
-        protected Void doInBackground(Object... params) {
-            //make route, read stops from the DB in the background
-            mRoute = new Route();
-            mRoute.name = mRouteName;
-            mRoute.id = mRouteId;
-            mRoute.setStops(MainActivity.this);
-            Log.i(TAG, "stops check " + mRoute.mInboundStops.size());
-            //after starting the Schedule Service, the app needs to wait for the route update to set the adapter
-            final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
-            tnt.putExtra(ScheduleService.TAG, mRoute);
-            startService(tnt);
-            Log.i(TAG, "starting schedule service with id: " + mRouteId);
-            //already registered for broadcast from the schedule service
-            return null;
-        }
-
-    } //end task
 
 }

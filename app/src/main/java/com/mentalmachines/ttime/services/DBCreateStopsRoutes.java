@@ -23,7 +23,6 @@ public class DBCreateStopsRoutes extends IntentService {
 
     public static final String TAG = "DBCreateStopsRoutes";
     final private static JsonFactory factory = new JsonFactory();
-    SQLiteDatabase mDB;
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
@@ -42,7 +41,6 @@ public class DBCreateStopsRoutes extends IntentService {
     @Override
     protected void onHandleIntent(Intent intent) {
         try {
-            mDB = new DBHelper(this).getWritableDatabase();
             //make the network call here in the background
             final Bundle b = intent.getExtras();
             if(b == null) {
@@ -60,16 +58,9 @@ public class DBCreateStopsRoutes extends IntentService {
         }
     }
 
-    @Override
-    public void onDestroy() {
-        super.onDestroy();
-        if(mDB.isOpen()) mDB.close();
-    }
-
     void parseRoutesCall(JsonParser parser) throws IOException {
-
+        final SQLiteDatabase mDB = new DBHelper(this).getWritableDatabase();
         final ContentValues cv = new ContentValues();
-
         String mode_name = null;
         //int rtType = -1;
         while (!parser.isClosed()) {
@@ -155,9 +146,11 @@ public class DBCreateStopsRoutes extends IntentService {
                 }
             }
         }
+        mDB.close();
     } //end routes
 
     void parseStopsCall(String route) throws IOException {
+        final SQLiteDatabase mDB = new DBHelper(this).getWritableDatabase();
         JsonParser parser = factory.createParser(new URL(STOPS + route));
         //check that the route isn't already in the db?
         final ContentValues cv = new ContentValues();
@@ -238,8 +231,8 @@ public class DBCreateStopsRoutes extends IntentService {
                 }
             }
         }
+        mDB.close();
     }
-
 
 }//end class
 

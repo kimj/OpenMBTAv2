@@ -3,17 +3,22 @@ package com.mentalmachines.ttime.fragments;
 import android.animation.Animator;
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
+import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
+import com.mentalmachines.ttime.services.ScheduleService;
 
 public class RouteFragment extends Fragment{
 	/**
@@ -24,7 +29,7 @@ public class RouteFragment extends Fragment{
 
     boolean mInbound = true;
     public RecyclerView mList;
-    static SimpleStopAdapter mListAdapter;
+    public static SimpleStopAdapter mListAdapter;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
@@ -46,16 +51,15 @@ public class RouteFragment extends Fragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
-        final Bundle args = getArguments();
+        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
+        swipeViewGroup.setOnRefreshListener(refreshList);
+        swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.solidSilverline, R.color.colorPrimaryDark);
 
-		mList = (RecyclerView) rootView.findViewById(R.id.mc_routelist);
-
+        mList = (RecyclerView) rootView.findViewById(R.id.route_list);
         if(mListAdapter == null) {
 			mList.setVisibility(View.GONE);
             getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");
-            //titleTV.setText(args.getString(LINE_NAME));
-            //todo
         } else {
             //getActivity().setTitle(args.getString(LINE_NAME));
 			mList.setVisibility(View.VISIBLE);
@@ -71,19 +75,32 @@ public class RouteFragment extends Fragment{
             //TODO wire up inbound and outbound based on time/previous display
         }
         //Floating Action button switches the display between inbound and outbound
-
 		return rootView;
 	}
 
-    View.OnClickListener fabListener = new View.OnClickListener() {
+    SwipeRefreshLayout.OnRefreshListener refreshList = new SwipeRefreshLayout.OnRefreshListener() {
+
         @Override
-        public void onClick(View view) {
+        public void onRefresh() {
+            Log.d(TAG, "on refresh");
+            final Context ctx = getContext();
+            final Intent tnt = new Intent(ctx, ScheduleService.class);
+            tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
+            tnt.putExtra(DBHelper.KEY_ROUTE_ID, mListAdapter.mRoute.id);
+            ctx.startService(tnt);
+            //the main activity broadcast receiver will reload the data into the adapter and list
+        }
+    };
+
+
+    View.OnClickListener fabListener = new View.OnClickListener() {
+    @Override
+    public void onClick(View view) {
         if(moveRight == null) {
             animationSetup(getView());
         }
         mInbound = !mInbound;
         if(mInbound) {
-
             ObjectAnimator.ofFloat(view, "rotation", 540f).start();
             //mItems = getArguments().getStringArray(IN_STOPS_LIST);
             ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
@@ -136,7 +153,7 @@ public class RouteFragment extends Fragment{
     void animationSetup(final View screen) {
 
         final int width = screen.getWidth();
-        Log.d(TAG, "setting up animations " + width);
+        //Log.d(TAG, "setting up animations " + width);
         moveRight = new AnimatorSet();
         moveRight.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
                 .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f));
