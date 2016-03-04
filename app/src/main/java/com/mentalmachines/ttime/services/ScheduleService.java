@@ -69,6 +69,7 @@ public class ScheduleService extends IntentService {
         } catch (IOException e) {
             Log.e(TAG, "problem with alerts call " + e.getMessage());
             e.printStackTrace();
+            endService();
         }
     }
 
@@ -81,13 +82,15 @@ public class ScheduleService extends IntentService {
         final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + route));
         while (!parser.isClosed()) {
             //start parsing, get the token
-            //Log.i(TAG, "parsing route");
             JsonToken token = parser.nextToken();
             if (token == null) {
                 break;
             }
-            //running through while to get to direction array
-            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
+            //running through while to get to direction array, "error" key comes up first
+            if (JsonToken.FIELD_NAME.equals(token) && "error".equals(parser.getCurrentName())) {
+                //This route is done for the night or the server is hosed -> something is wrong
+                parser.close();
+            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
                 //no names at the top of this return, straight into objects
                 //Log.d(TAG, "direction");
                 token = parser.nextToken();
@@ -107,7 +110,7 @@ public class ScheduleService extends IntentService {
                     if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         directionId = Integer.valueOf(parser.getValueAsString());
-                        Log.d(TAG, "direction id set " + directionId);
+                        //Log.d(TAG, "direction id set " + directionId);
                     } else if(JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
                         //array of trips with stops inside, may be several trips returned
                         token = parser.nextToken();
@@ -115,7 +118,7 @@ public class ScheduleService extends IntentService {
                             break;
                         }
                         //trip array has trips, vehicles and stops
-                        Log.d(TAG, "trip array");
+                        //Log.d(TAG, "trip array");
                         while(!JsonToken.END_ARRAY.equals(token)) {
                             //getting stops embedded into the trip
                             token = parser.nextToken();
@@ -139,7 +142,6 @@ public class ScheduleService extends IntentService {
                                             //skip this object
                                             stop = null;
                                         } else {
-                                            Log.i(TAG, " stop id: " + value);
                                             if(directionId == 0) {
                                                 for(dex = 0; dex < searchRoute.mOutboundStops.size(); dex++) {
                                                 //for(StopData stopData: searchRoute.mOutboundStops) {
@@ -157,7 +159,7 @@ public class ScheduleService extends IntentService {
                                                     }
                                                 }
                                             }
-                                            Log.i(TAG, "stop set here" + stop.stopId + ":" + stop.stopName);
+                                            //Log.i(TAG, "stop set here" + stop.stopId + ":" + stop.stopName);
                                         }
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
@@ -173,7 +175,7 @@ public class ScheduleService extends IntentService {
                                                 value = stop.schedTimes;
                                                 stop.schedTimes = value + ", " + getTime(t);
                                             }
-                                            Log.i(TAG, "stop schedule" + stop.schedTimes);
+                                            //Log.i(TAG, "stop schedule" + stop.schedTimes);
                                         }
 
                                         strBuild.setLength(0);
@@ -192,7 +194,7 @@ public class ScheduleService extends IntentService {
                                                 value = stop.predicTimes;
                                                 stop.predicTimes = value + ", " + getTime(t);
                                             }
-                                            Log.i(TAG, "stop predicTimes" + stop.predicTimes);
+                                            //Log.i(TAG, "stop predicTimes" + stop.predicTimes);
                                             strBuild.setLength(0);
                                         }
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
@@ -239,6 +241,10 @@ public class ScheduleService extends IntentService {
         } //parser is closed
         Log.i(TAG, "parser closed, times complete");
         //This part wraps things up and sends a message back to the activity
+        endService();
+    }
+
+    void endService() {
         final Intent returnResults = new Intent(TAG);
         returnResults.putExtra(TAG, searchRoute);
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);

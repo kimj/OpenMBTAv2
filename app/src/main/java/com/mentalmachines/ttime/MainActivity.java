@@ -6,7 +6,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.database.Cursor;
+import android.database.DatabaseUtils;
+import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -35,16 +37,18 @@ import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.ScheduleService;
 
 public class MainActivity extends AppCompatActivity {
 
     public static final String TAG = "MainActivity";
-    public ExpandableListView mRouteList;
+    SQLiteDatabase mDB;
+    ExpandableListView mDrawerList;
     RouteFragment mRouteFragment;
-    public String mRouteId;
+    String mRouteId;
     String mRouteName;
-    int mRouteColor;
+    int mRouteColor, routeMode;
     //Route mRoute;
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
@@ -67,32 +71,30 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
-        ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
+        final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
-        mRouteList = (ExpandableListView) findViewById(R.id.routeNavList);
-        mRouteList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
+        mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
+        mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
         //shows the subway lines and sets the background on the view as selected
-        mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
-        mRouteList.expandGroup(0);
-        //allow only one open group
-        mRouteList.setOnGroupExpandListener(new ExpandableListView.OnGroupExpandListener() {
-            // Keep track of previous expanded group
-            int previousGroup = -1;
-
-            @Override
-            public void onGroupExpand(int groupPosition) {
-                // Collapse previous parent if expanded.
-                if ((previousGroup != -1) && (groupPosition != previousGroup)) {
-                    mRouteList.collapseGroup(previousGroup);
-                }
-                previousGroup = groupPosition;
-            }
-        });
-
+        mDB = new DBHelper(this).getWritableDatabase();
+        final Intent tnt = new Intent(this, NavDrawerTask.class);
+        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.FAVS_TABLE) == 0) {
+            Log.i(TAG, "no favorites");
+            routeMode = RouteExpandableAdapter.SUBWAY;
+            tnt.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
+            findViewById(R.id.exp_lines).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
+        } else {
+            routeMode = RouteExpandableAdapter.FAVE;
+            findViewById(R.id.exp_favorite).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
+        }
+        final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
+        mgr.registerReceiver(mNavDataReady, new IntentFilter(NavDrawerTask.TAG));
+        startService(tnt);
+        Log.d(TAG, "starting service");
         mRouteFragment = RouteFragment.newInstance(null, getString(R.string.def_text));
         getSupportFragmentManager().beginTransaction()
                 .replace(R.id.container, mRouteFragment)
@@ -103,13 +105,15 @@ public class MainActivity extends AppCompatActivity {
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-        LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady, new IntentFilter(ScheduleService.TAG));
+        mgr.registerReceiver(mScheduleReady, new IntentFilter(ScheduleService.TAG));
 	}
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        if(mDB != null && mDB.isOpen()) mDB.close();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mScheduleReady);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mNavDataReady);
     }
 
     @Override
@@ -133,7 +137,7 @@ public class MainActivity extends AppCompatActivity {
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_favorites:
-                if(DBHelper.setFavorite(this, mRouteName)) {
+                if(DBHelper.setFavorite(this, mRouteName, mRouteId)) {
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                 } else {
@@ -178,42 +182,55 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    /**
+     * This is a click listener on the 3 tabs in the nav drawer
+     * @param v
+     */
     public void setList(View v) {
-        //show either lines or bus expandable list view in the drawer
+        //show either subway, favorites or bus expandable list view in the drawer
+        v.setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         switch(v.getId()) {
             case R.id.exp_bus:
-                //mRouteList.setVisibility(View.VISIBLE);
-                mRouteList.setAdapter(new RouteExpandableAdapter(this, true));
-                mRouteList.setOnGroupExpandListener(null);
+                final Intent tnt = new Intent(this, NavDrawerTask.class);
+                routeMode = RouteExpandableAdapter.BUS;
+                tnt.putExtra(NavDrawerTask.TAG, DBHelper.BUS_MODE);
+                startService(tnt);
+                mDrawerList.setOnGroupExpandListener(null);
+                findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
+                findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
             case R.id.exp_lines:
-                mRouteList.setAdapter(new RouteExpandableAdapter(this, false));
-                mRouteList.expandGroup(0);
-                mRouteList.setOnGroupCollapseListener(faveSubListener);
+                final Intent svc = new Intent(this, NavDrawerTask.class);
+                svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
+                mDrawerList.setOnGroupCollapseListener(faveSubListener);
+                findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
+                findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
             case R.id.exp_favorite:
-                final Cursor c = RouteExpandableAdapter.getFavorites(this);
-                if(c.getCount() > 0) {
-                    mRouteList.setVisibility(View.VISIBLE);
-                    mRouteList.setAdapter(new RouteExpandableAdapter(this, c));
-                    mRouteList.expandGroup(0);
-                    mRouteList.setOnGroupCollapseListener(faveSubListener);
-                } else {
-                    /* Need to clear the adapter to display the empty view
-                    final View emptyV = LayoutInflater.from(this).inflate(R.layout.group_view, null);
-                    ((TextView) emptyV).setText(getString(R.string.no_favs));
-                    ((TextView) emptyV).setTextColor(getResources().getColor(R.color.colorPrimary));
-                    emptyV.setBackgroundResource(android.R.color.white);*/
-                    //mRouteList.setVisibility(View.GONE);
+                //default
+                if(DatabaseUtils.queryNumEntries(mDB, DBHelper.FAVS_TABLE) == 0) {
+                    Log.i(TAG, "no favorites");
                     final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
                     if (drawer.isDrawerOpen(GravityCompat.START)) {
                         Toast.makeText(this, getString(R.string.no_favs), Toast.LENGTH_SHORT).show();
                         drawer.closeDrawer(GravityCompat.START);
                     }
+                } else {
+                    findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
+                    findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
+                    routeMode = RouteExpandableAdapter.FAVE;
+                    //no extras for Favorites service
+                    startService(new Intent(this, NavDrawerTask.class));
+                    mDrawerList.setOnGroupCollapseListener(faveSubListener);
                 }
+
         } //end switch
     }
 
+    /**
+     * This is a click listener on the nav drawer. Chooses a route, shows it in a RouteFragment
+     * @param v
+     */
     public void childClick(View v) {
         //click listener set on the child view in the nav drawer
         final String routeId = (String) v.getTag();
@@ -231,12 +248,17 @@ public class MainActivity extends AppCompatActivity {
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-        final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
-        tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mRouteName);
-        tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
-        startService(tnt);
-        Log.i(TAG, "starting schedule service with id: " + mRouteId);
+        if(TTimeApp.checkNetwork(this)) {
+            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+            final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+            tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mRouteName);
+            tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
+            startService(tnt);
+            Log.i(TAG, "starting schedule service with id: " + mRouteId);
+        } else {
+            Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
+        }
+
         //Fab is to switch between inbound and outbound
     }
 
@@ -298,14 +320,18 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void onGroupCollapse(int i) {
-        //this is always zero for favorites and subway
-        if(!mRouteList.isGroupExpanded(i)) {
-            mRouteList.expandGroup(i);
+        //group is always zero for favorites and subway, allow only one open group
+            if(!mDrawerList.isGroupExpanded(i)) {
+            mDrawerList.expandGroup(i);
         }
         }
 
     };
 
+    /**
+     * This receiver gets the Route object back from the ScheduleService IntentService class
+     * Either creates a new RouteFragment or resets the data in the recycler view of the fragment
+     */
     BroadcastReceiver mScheduleReady = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
@@ -344,6 +370,52 @@ public class MainActivity extends AppCompatActivity {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_off);
             }
             mFavoritesAction.getIcon().invalidateSelf();
+        }
+    };
+
+    /**
+     * This receiver sets the adapter based on the drawer header view selection
+     * The possible values are subway, bus or favorites -> favorites is the default
+     */
+    BroadcastReceiver mNavDataReady = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            final Bundle b = intent.getExtras();
+            if(b == null) {
+                Log.e(TAG, "Error reading routes and stops");
+                //TODO report error to user?
+                return;
+            }
+            else {
+                //show the right list after the I/O is done in the bg
+                switch (routeMode) {
+                    case RouteExpandableAdapter.FAVE:
+                        mDrawerList.setAdapter(new RouteExpandableAdapter(
+                                b.getStringArray(DBHelper.KEY_ROUTE_NAME),
+                                b.getStringArray(DBHelper.KEY_ROUTE_ID),
+                                RouteExpandableAdapter.FAVE));
+                        mDrawerList.expandGroup(0);
+                        break;
+                    case RouteExpandableAdapter.BUS:
+                        mDrawerList.setAdapter(new RouteExpandableAdapter(
+                                b.getStringArray(DBHelper.KEY_ROUTE_NAME),
+                                b.getStringArray(DBHelper.KEY_ROUTE_ID),
+                                context));
+                        break;
+                    case RouteExpandableAdapter.SUBWAY:
+                        mDrawerList.setAdapter(new RouteExpandableAdapter(
+                                b.getStringArray(DBHelper.KEY_ROUTE_NAME),
+                                b.getStringArray(DBHelper.KEY_ROUTE_ID),
+                                RouteExpandableAdapter.SUBWAY));
+                        mDrawerList.expandGroup(0);
+                        break;
+                }
+
+                if(routeMode != RouteExpandableAdapter.BUS) {
+                    mDrawerList.expandGroup(0);
+                    //it the list has only one group
+                }
+            }
         }
     };
 

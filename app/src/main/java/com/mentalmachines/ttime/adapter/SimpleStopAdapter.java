@@ -97,26 +97,37 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             s = null;
         }
         ((View) holder.mStopDescription.getTag()).setTag(s);
-        setView(holder, s);
+        setView(holder, s, position);
     }
 
-    void setView(StopViewHolder holder, StopData s) {
+    void setView(StopViewHolder holder, StopData s, int position) {
         if(s == null) {
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
         } else {
             holder.mStopDescription.setText(s.stopName);
-            if(s.schedTimes == null || s.schedTimes.isEmpty()) {
-                holder.mETA.setText(s.predicTimes);
-            } else {
-                holder.mETA.setText(s.schedTimes + "\n" + s.predicTimes);
-            }
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
                 holder.mAlertBtn.setTag(s.stopAlert);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
+            }
+            //This part gets tricky, put two stop fields into one text view
+            if(s.schedTimes == null || s.schedTimes.isEmpty()) {
+                if(s.predicTimes == null || s.predicTimes.isEmpty()) {
+                    //error on server can leave the stop time fields blank
+                    if(position == 0) {
+                        //show this once, not on every
+                        holder.mETA.setText(R.string.noSched);
+                    } else {
+                        holder.mETA.setText("");
+                    }
+                } else {
+                    holder.mETA.setText(s.predicTimes);
+                }
+            } else {
+                holder.mETA.setText(s.schedTimes + "\n" + s.predicTimes);
             }
         }
     }

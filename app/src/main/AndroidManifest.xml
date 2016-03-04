@@ -22,7 +22,7 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
+        <service android:name=".services.NavDrawerTask"/>
         <service android:name=".services.ScheduleService"/>
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>

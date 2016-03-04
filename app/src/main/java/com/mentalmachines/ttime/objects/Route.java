@@ -8,7 +8,6 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
 
 import java.util.ArrayList;
 
@@ -25,6 +24,7 @@ public class Route implements Parcelable {
             DBHelper.KEY_STOPNM, DBHelper.KEY_STOPID,
             DBHelper.KEY_STOPLN, DBHelper.KEY_STOPLT, DBHelper.KEY_ALERT_ID
     };
+    public final static String routeStopsWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
 
     public Route() { }
 
@@ -37,13 +37,13 @@ public class Route implements Parcelable {
     public void setStops(Context ctx) {
         final SQLiteDatabase mDB = new DBHelper(ctx).getReadableDatabase();
         Cursor stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + id + "'",
+                routeStopsWhereClause + "'" + id + "'",
                 null, null, null, "_id ASC");
         mInboundStops = makeStops(stopNameCursor);
         Log.d(TAG, "inbound stop count for route: " + name + " " + stopNameCursor.getCount());
         //direction == 1) {
         stopNameCursor = mDB.query(DBHelper.STOPS_OUT_TABLE, mStopProjection,
-                RouteExpandableAdapter.stopsSubwayWhereClause + "'" + id + "'",
+                routeStopsWhereClause + "'" + id + "'",
                 null, null, null, "_id ASC");
         mOutboundStops = makeStops(stopNameCursor);
         Log.d(TAG, "outbound stop count for route: " + name + " " + stopNameCursor.getCount());

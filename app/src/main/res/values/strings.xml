@@ -11,6 +11,7 @@
     <string name="action_settings">Settings</string>
     <string name="bus_prefix">Bus Route: </string>
     <string name="loading">Loading, please wait</string>
+    <string name="noSched">Schedule info n/a</string>
 
     <string-array name="transit_methods">
         <item>Bus</item>

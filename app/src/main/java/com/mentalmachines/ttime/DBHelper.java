@@ -21,6 +21,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     String CREATE_FAVS_TABLE  = TABLE_PREFIX + FAVS_TABLE + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT unique not null, "
             + KEY_ROUTE_NAME + " TEXT unique not null);";
 
     //Route table keys
@@ -284,7 +285,7 @@ public class DBHelper extends SQLiteOpenHelper {
         return returnVal;
     }
 
-    public static boolean setFavorite(Context ctx, String routeNm) {
+    public static boolean setFavorite(Context ctx, String routeNm, String routeId) {
         final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
         final boolean isFavorite;
         final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
@@ -296,6 +297,7 @@ public class DBHelper extends SQLiteOpenHelper {
         } else {
             final ContentValues cv = new ContentValues();
             cv.put(KEY_ROUTE_NAME, routeNm);
+            cv.put(KEY_ROUTE_ID, routeId);
             Log.i(TAG, "adding favorite " + routeNm + " row:" + db.insert(
                     FAVS_TABLE, "_id", cv));
             cv.clear();

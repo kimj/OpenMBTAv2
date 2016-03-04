@@ -14,9 +14,11 @@ import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.services.ScheduleService;
 
@@ -51,9 +53,6 @@ public class RouteFragment extends Fragment{
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
 		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
-        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
-        swipeViewGroup.setOnRefreshListener(refreshList);
-        swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.solidSilverline, R.color.colorPrimaryDark);
 
         mList = (RecyclerView) rootView.findViewById(R.id.route_list);
         if(mListAdapter == null) {
@@ -61,7 +60,7 @@ public class RouteFragment extends Fragment{
             getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");
         } else {
-            //getActivity().setTitle(args.getString(LINE_NAME));
+            //there is a route
 			mList.setVisibility(View.VISIBLE);
             if(mListAdapter.isOneWay) {
                 //this is a one way route
@@ -72,7 +71,10 @@ public class RouteFragment extends Fragment{
                 getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
             }
             mList.setAdapter(mListAdapter);
-            //TODO wire up inbound and outbound based on time/previous display
+            //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
+            final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
+            swipeViewGroup.setOnRefreshListener(refreshList);
+            swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.solidSilverline, R.color.colorPrimaryDark);
         }
         //Floating Action button switches the display between inbound and outbound
 		return rootView;
@@ -83,19 +85,29 @@ public class RouteFragment extends Fragment{
         @Override
         public void onRefresh() {
             Log.d(TAG, "on refresh");
-            final Context ctx = getContext();
+            reloadTimes();
+        }
+    };
+
+    public void reloadTimes() {
+        final Context ctx = getContext();
+        if(TTimeApp.checkNetwork(ctx)) {
+            //the main activity broadcast receiver will reload the data into the adapter and list
             final Intent tnt = new Intent(ctx, ScheduleService.class);
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
             tnt.putExtra(DBHelper.KEY_ROUTE_ID, mListAdapter.mRoute.id);
             ctx.startService(tnt);
-            //the main activity broadcast receiver will reload the data into the adapter and list
+        } else {
+            Toast.makeText(ctx, "check network", Toast.LENGTH_SHORT).show();
         }
-    };
+    }
 
 
     View.OnClickListener fabListener = new View.OnClickListener() {
     @Override
     public void onClick(View view) {
+        reloadTimes();
+        //make sure the times are fresh when switching directions
         if(moveRight == null) {
             animationSetup(getView());
         }
@@ -115,35 +127,6 @@ public class RouteFragment extends Fragment{
         }
         }
     };
-
-    /*  The gesture detector does not play nicely with a scrolling list
-
-    final GestureDetector gesture = new GestureDetector(getActivity(),
-            new GestureDetector.SimpleOnGestureListener() {
-
-                @Override
-                public boolean onDown(MotionEvent e) {
-                    return true;
-                }
-
-                @Override
-                public boolean onFling(MotionEvent start, MotionEvent finish, float velocityX, float velocityY) {
-                    //Log.d(TAG,"on fling");
-                    super.onFling(start, finish, velocityX, velocityY);
-                    if (Math.abs(velocityX) < SWIPE_VELOCITY) {
-                        return false;
-                    }
-                    if(start.getRawX() < finish.getRawX()) {
-                        //swipe is going from left to right
-                        setAndRunAnimation(true);
-                    } else {
-                        //swipe is from right to left
-                        setAndRunAnimation(false);
-                    }
-                    return true;
-                }
-            });*/
-
 
     /**
      * these animations run when switching between inbound and outbound
@@ -205,38 +188,34 @@ public class RouteFragment extends Fragment{
         });
     }
 
-    /**
-     * This will be a quick call to update the times when the list direction changes
+    /*  REMINDER
+    gesture detector does not play nicely with a scrolling list
+    RecyclerView has it's own left/right item animations that are not easy to override
 
-    public class ChangeList extends AsyncTask<Object, Void, SimpleStopAdapter> {
-        final boolean right;
+    final GestureDetector gesture = new GestureDetector(getActivity(),
+            new GestureDetector.SimpleOnGestureListener() {
 
-        public ChangeList(boolean b) {
-            right = b;
-        }
+                @Override
+                public boolean onDown(MotionEvent e) {
+                    return true;
+                }
 
-        @Override
-        protected SimpleStopAdapter doInBackground(Object... params) {
-            final Bundle args = RouteFragment.this.getArguments();
-            return new CursorRouteAdapter(
-                RouteFragment.this.getActivity(),
-                    ((MainActivity) getActivity()).mRouteId,
-                mInbound? 1: 0);
-            //CursorRouteAdapter(Context ctx, String routeId, int routeColor, int direction)
-        }
-
-        @Override
-        protected void onPostExecute(SimpleStopAdapter result) {
-            super.onPostExecute(result);
-            //newInstance(CursorRouteAdapter listData, String title, int bgColor) {
-            if(isCancelled() || getActivity() == null) return;
-            mListAdapter = result;
-            if(right) {
-                moveRight.start();
-            } else {
-                moveLeft.start();
-            }
-        }
-    } */
+                @Override
+                public boolean onFling(MotionEvent start, MotionEvent finish, float velocityX, float velocityY) {
+                    //Log.d(TAG,"on fling");
+                    super.onFling(start, finish, velocityX, velocityY);
+                    if (Math.abs(velocityX) < SWIPE_VELOCITY) {
+                        return false;
+                    }
+                    if(start.getRawX() < finish.getRawX()) {
+                        //swipe is going from left to right
+                        setAndRunAnimation(true);
+                    } else {
+                        //swipe is from right to left
+                        setAndRunAnimation(false);
+                    }
+                    return true;
+                }
+            });*/
 
 }
