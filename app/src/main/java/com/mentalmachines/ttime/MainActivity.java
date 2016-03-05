@@ -203,6 +203,7 @@ public class MainActivity extends AppCompatActivity {
                 final Intent svc = new Intent(this, NavDrawerTask.class);
                 svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
                 startService(svc);
+                routeMode = RouteExpandableAdapter.SUBWAY;
                 mDrawerList.setOnGroupCollapseListener(faveSubListener);
                 findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
