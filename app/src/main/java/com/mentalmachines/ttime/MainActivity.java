@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
         mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
         mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
         //shows the subway lines and sets the background on the view as selected
-        mDB = new DBHelper(this).getWritableDatabase();
+        mDB = new DBHelper(this).getReadableDatabase();
         final Intent tnt = new Intent(this, NavDrawerTask.class);
         if(DatabaseUtils.queryNumEntries(mDB, DBHelper.FAVS_TABLE) == 0) {
             Log.i(TAG, "no favorites");

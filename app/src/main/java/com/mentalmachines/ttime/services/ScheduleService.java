@@ -76,7 +76,7 @@ public class ScheduleService extends IntentService {
     void getTimesForRoute(String route) throws IOException {
         //add times to the stops in mInbound and searchRoute.mOutboundStops
         final Time t = new Time();
-        String value;
+        String value = "";
         StopData stop = null;
         int dex = -1;
         final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + route));
@@ -152,7 +152,6 @@ public class ScheduleService extends IntentService {
                                                 }
                                             } else {
                                                 for(dex = 0; dex < searchRoute.mInboundStops.size(); dex++) {
-                                                    //for(StopData stopData: searchRoute.mOutboundStops) {
                                                     if(searchRoute.mInboundStops.get(dex).stopId.equals(value)) {
                                                         stop = searchRoute.mInboundStops.get(dex);
                                                         break;
@@ -170,63 +169,57 @@ public class ScheduleService extends IntentService {
                                             t.set(1000 * Long.valueOf(value));
                                             t.normalize(false);
                                             if(stop.schedTimes.isEmpty()) {
-                                                stop.schedTimes = "Schedule: " + getTime(t);
+                                                stop.schedTimes = getTime(t);
                                             } else {
-                                                value = stop.schedTimes;
-                                                stop.schedTimes = value + ", " + getTime(t);
+                                                stop.schedTimes = stop.schedTimes + ", " + getTime(t);
                                             }
-                                            //Log.i(TAG, "stop schedule" + stop.schedTimes);
+                                            strBuild.setLength(0);
+                                            Log.i(TAG, "stop schedule" + stop.schedTimes);
                                         }
 
-                                        strBuild.setLength(0);
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         value = parser.getValueAsString();
                                         if(stop == null || value.isEmpty() || value == null) {
                                             Log.w(TAG, "skipping prediction time field");
-                                            //this is not possible...
                                         } else {
                                             t.set(1000 * Long.valueOf(value));
                                             t.normalize(false);
-                                            if(stop.predicTimes.isEmpty()) {
-                                                stop.predicTimes = "Actual: " + getTime(t);
-                                            } else {
-                                                value = stop.predicTimes;
-                                                stop.predicTimes = value + ", " + getTime(t);
-                                            }
-                                            //Log.i(TAG, "stop predicTimes" + stop.predicTimes);
-                                            strBuild.setLength(0);
+                                            getTime(t);
+                                            //predicted time is now set into the string builder
                                         }
+                                        //This time will go into the stop field below with the pre away key to put min/sec with the time
+
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         value = parser.getValueAsString();
                                         if(stop == null || value.isEmpty() || value == null) {
                                             Log.w(TAG, "skipping seconds prediction field");
-                                            //this is not possible...
+                                            //this is not possible... pred time always has the away key
                                         } else {
                                             offsetSecs = Integer.valueOf(value);
-                                            strBuild.append(stop.predicTimes);
+                                            strBuild.append(" (");
                                             if(offsetSecs > 60) {
-                                                strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s");
+                                                strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s").append(")");;
                                             } else {
-                                                strBuild.append(offsetSecs).append("s");
+                                                strBuild.append(offsetSecs).append("s").append(")");;
                                             }
-                                            stop.predicTimes = strBuild.toString();
+                                            if(!stop.predicTimes.isEmpty()) {
+                                                stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
+                                            } else {
+                                                stop.predicTimes = strBuild.toString();
+                                            }
+                                            //Log.d(TAG, stop.stopId + " stop predicTimes" + stop.predicTimes);
                                             strBuild.setLength(0);
                                             //risky? proper order?
                                         }
 
-                                    } else if(JsonToken.END_OBJECT.equals(token)) {
+                                    } /*else if(JsonToken.END_OBJECT.equals(token)) {
                                         //end of the stop, insert row
                                         if(stop != null) {
                                             Log.d(TAG, "stop object complete " + stop.stopId);
-                                            /*if(directionId == 0) {
-                                                searchRoute.mOutboundStops.set(dex, stop);
-                                            } else {
-                                                searchRoute.mInboundStops.set(dex, stop);
-                                            }*/
                                         }
-                                    }
+                                    }*/
 
                                 } //end while stops
                                 //here we need to change the token from end array in order to continue parsing
@@ -254,9 +247,9 @@ public class ScheduleService extends IntentService {
     public String getTime (Time t) {
         strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
         if(t.hour >= 12) {
-            strBuild.append("PM ");
+            strBuild.append("PM");
         } else {
-            strBuild.append("AM ");
+            strBuild.append("AM");
         }
         return strBuild.toString();
     }
