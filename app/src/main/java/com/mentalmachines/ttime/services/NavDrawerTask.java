@@ -30,7 +30,7 @@ public class NavDrawerTask extends IntentService {
     protected void onHandleIntent(Intent intent) {
         //Log.d(TAG, "starting Drawer adapter data service");
         final Intent tnt = new Intent(TAG);
-        final SQLiteDatabase db = new DBHelper(this).getReadableDatabase();
+        final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
         final Bundle b = intent.getExtras();
         final Cursor c;
         if(b == null) {
@@ -69,7 +69,7 @@ public class NavDrawerTask extends IntentService {
         if(!c.isClosed()) {
             c.close();
         }
-        db.close();
+        DBHelper.close(db);
         LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
     }
 

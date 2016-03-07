@@ -248,7 +248,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
     }
 
-    public DBHelper(Context context) {
+    public DBHelper(Context context, boolean ignore) {
         super(context, DBNAME, null, DB_VERSION);
     }
 
@@ -267,9 +267,9 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public static boolean checkFavorite(Context ctx, String routeNm) {
-        final SQLiteDatabase db = new DBHelper(ctx).getReadableDatabase();
+        final SQLiteDatabase db = DBHelper.getHelper(ctx).getReadableDatabase();
         final boolean isFavorite = checkFavorite(db, routeNm);
-        db.close();
+        DBHelper.close(db);
         return isFavorite;
     }
 
@@ -286,7 +286,7 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public static boolean setFavorite(Context ctx, String routeNm, String routeId) {
-        final SQLiteDatabase db = new DBHelper(ctx).getWritableDatabase();
+        final SQLiteDatabase db = DBHelper.getHelper(ctx).getWritableDatabase();
         final boolean isFavorite;
         final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         if(c.getCount() > 0) {
@@ -305,7 +305,33 @@ public class DBHelper extends SQLiteOpenHelper {
         }
 
         c.close();
-        db.close();
+        DBHelper.close(db);
         return isFavorite;
+    }
+
+    //This junk manages db concurrency, many reads and one write
+    private static volatile DBHelper instance;
+    private static volatile int sHelpers = 0;
+
+    /**
+     * DBHelper is a singleton, the app has one db connection, DBHelper
+     * @param context
+     * @return
+     */
+    public static DBHelper getHelper(Context context){
+        if(instance == null)
+            instance = new DBHelper(context, true);
+        sHelpers++;
+        return instance;
+    }
+
+    /**
+     * Closing through this class will insure that parallel threads do not stop on each other
+     * @param db
+     */
+    public static void close(SQLiteDatabase db) {
+        if(--sHelpers == 0) {
+            db.close();
+        }
     }
 }

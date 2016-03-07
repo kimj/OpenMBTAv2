@@ -99,6 +99,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
             s = null;
         }
         ((View) holder.mStopDescription.getTag()).setTag(s);
+        //put the stop object on the view as a tag for onClick methods to use
         setView(holder, s, position);
     }
 
@@ -111,7 +112,6 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
 
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
-                holder.mAlertBtn.setTag(s.stopAlert);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
             }

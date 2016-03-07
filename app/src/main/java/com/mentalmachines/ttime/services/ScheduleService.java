@@ -62,7 +62,7 @@ public class ScheduleService extends IntentService {
         searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
         searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
         searchRoute.setStops(this);
-        Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
+        //Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
         try {
             getTimesForRoute(searchRoute.id);
 

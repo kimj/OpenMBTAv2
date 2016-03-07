@@ -35,7 +35,7 @@ public class Route implements Parcelable {
      * @param ctx, needed to build the database
      */
     public void setStops(Context ctx) {
-        final SQLiteDatabase mDB = new DBHelper(ctx).getReadableDatabase();
+        final SQLiteDatabase mDB = DBHelper.getHelper(ctx).getReadableDatabase();
         Cursor stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
                 routeStopsWhereClause + "'" + id + "'",
                 null, null, null, "_id ASC");
@@ -50,7 +50,7 @@ public class Route implements Parcelable {
         if (!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        mDB.close();
+        DBHelper.close(mDB);
     }
 
     /**
@@ -58,7 +58,7 @@ public class Route implements Parcelable {
      *
      * @return the list of stop data to be displayed
      */
-    public ArrayList<StopData> makeStops(Cursor stopNameCursor) {
+    public static ArrayList<StopData> makeStops(Cursor stopNameCursor) {
         if (stopNameCursor.getCount() > 0 && stopNameCursor.moveToFirst()) {
             ArrayList<StopData> stopList = new ArrayList<>(stopNameCursor.getCount());
             StopData data;
@@ -74,7 +74,7 @@ public class Route implements Parcelable {
             } while (stopNameCursor.moveToNext());
             return stopList;
         }
-        Log.w(TAG, "empty cursor for route: " + name);
+        Log.w(TAG, "empty cursor for route");
         return null;
     }
 

@@ -22,8 +22,15 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        <activity
+            android:name="com.mentalmachines.ttime.StopDetailActivity"
+            android:screenOrientation="portrait"
+            android:label="@string/app_name"
+            android:theme="@style/AppTheme.NoActionBar"/>
+
         <service android:name=".services.NavDrawerTask"/>
         <service android:name=".services.ScheduleService"/>
+        <service android:name=".services.StopService"/>
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>

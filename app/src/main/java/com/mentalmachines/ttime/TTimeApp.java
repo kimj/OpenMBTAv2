@@ -23,7 +23,7 @@ public class TTimeApp extends Application{
     public void onCreate() {
         super.onCreate();
         if(checkNetwork(this)) {
-            final SQLiteDatabase db = new DBHelper(this).getReadableDatabase();
+            final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
             if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
                 Log.i(TAG, "no db");
                 startService(new Intent(this, DBCreateStopsRoutes.class));
@@ -31,7 +31,7 @@ public class TTimeApp extends Application{
                 Log.i(TAG, "get alerts");
                 startService(new Intent(this, GetMBTARequestService.class));
             }
-            db.close();
+            DBHelper.close(db);
         } else {
             Log.e(TAG, "network error, app services not started");
         }

@@ -1,6 +1,5 @@
 package com.mentalmachines.ttime;
 
-
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -10,6 +9,7 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
@@ -28,6 +28,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ExpandableListView;
+import android.widget.PopupMenu;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -39,11 +40,12 @@ import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.ScheduleService;
+import com.mentalmachines.ttime.services.StopService;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
 
     public static final String TAG = "MainActivity";
-    SQLiteDatabase mDB;
+    //SQLiteDatabase mDB;
     ExpandableListView mDrawerList;
     RouteFragment mRouteFragment;
     String mRouteId;
@@ -52,11 +54,13 @@ public class MainActivity extends AppCompatActivity {
     //Route mRoute;
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
+    boolean noFaves = true;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
+        new CheckFavesTable().execute();
         /*Log.d(TAG, "starting svc");
         startService(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -80,9 +84,9 @@ public class MainActivity extends AppCompatActivity {
         mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
         mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
         //shows the subway lines and sets the background on the view as selected
-        mDB = new DBHelper(this).getReadableDatabase();
+
         final Intent tnt = new Intent(this, NavDrawerTask.class);
-        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.FAVS_TABLE) == 0) {
+        if(noFaves) {
             Log.i(TAG, "no favorites");
             routeMode = RouteExpandableAdapter.SUBWAY;
             tnt.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
@@ -111,7 +115,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        if(mDB != null && mDB.isOpen()) mDB.close();
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mScheduleReady);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mNavDataReady);
     }
@@ -140,9 +143,11 @@ public class MainActivity extends AppCompatActivity {
                 if(DBHelper.setFavorite(this, mRouteName, mRouteId)) {
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                    noFaves = false;
                 } else {
                     mFavoritesAction.setChecked(false);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                    noFaves = true;
                 }
                 break;
             case R.id.menu_alerts:
@@ -209,8 +214,8 @@ public class MainActivity extends AppCompatActivity {
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
             case R.id.exp_favorite:
-                //default
-                if(DatabaseUtils.queryNumEntries(mDB, DBHelper.FAVS_TABLE) == 0) {
+                //boolean is tracking changes based on favorite button clicks in the Route fragment
+                if(noFaves) {
                     Log.i(TAG, "no favorites");
                     final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
                     if (drawer.isDrawerOpen(GravityCompat.START)) {
@@ -294,14 +299,12 @@ public class MainActivity extends AppCompatActivity {
      * @param v
      */
     public void openMap(View v) {
+        PopupMenu popup = new PopupMenu(v.getContext(), v);
+        popup.inflate(R.menu.stop_popup);
+        popup.setOnMenuItemClickListener(this);
+        popup.show();
         //click listener in the route fragment recycler view
-        final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
-        Log.d(TAG, "stop " + stop.stopName);
-        //geo:0,0?q=lat,lng(label)
-        //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
-        final Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
-                + Uri.encode(stop.stopName) + ")");
-        startActivity(new Intent(Intent.ACTION_VIEW, uri));
+        findViewById(R.id.container).setTag(((ViewGroup) v.getParent()).getTag());
     }
 
     //TBD, open inside the alert
@@ -351,6 +354,14 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
+            //DEBUGGGING
+            /*if(r.mInboundStops != null && r.mInboundStops.get(0) != null) {
+                final Intent tnt = new Intent(getBaseContext(), StopService.class);
+                tnt.putExtra(StopService.TAG, r.mInboundStops.get(0));
+                getBaseContext().startService(tnt);
+                Log.d(TAG, "debug, start svc: " + r.mInboundStops.get(0).stopName);
+            }*/
+            //CREATING LIST DETAIL PAGE
 
             if(mFavoritesAction.isVisible()) {
                 //route fragment is already up!
@@ -421,4 +432,42 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+        final StopData stop = (StopData) findViewById(R.id.container).getTag();
+        switch (menuItem.getItemId()) {
+            case R.id.stop_detail:
+                Intent tnt = new Intent(this, StopService.class);
+                tnt.putExtra(StopService.TAG, stop);
+                startActivity(new Intent(this, StopDetailActivity.class));
+                startService(tnt);
+                //stop detail registers a receiver to get the stopDetail object it needs
+                break;
+            case R.id.stop_location:
+                //Log.d(TAG, "stop " + stop.stopName);
+                //geo:0,0?q=lat,lng(label)
+                //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
+                final Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
+                        + Uri.encode(stop.stopName) + ")");
+                startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                break;
+        }
+        return false;
+    }
+
+    class CheckFavesTable extends AsyncTask <Void, Void, Void> {
+
+        @Override
+        protected Void doInBackground(Void... voids) {
+            final SQLiteDatabase db = DBHelper.getHelper(MainActivity.this).getReadableDatabase();
+            if(DatabaseUtils.queryNumEntries(db, DBHelper.FAVS_TABLE) == 0) {
+                Log.i(TAG, "no favorites");
+                noFaves = true;
+            } else {
+                noFaves = false;
+            }
+            DBHelper.close(db);
+            return null;
+        }
+    }
 }

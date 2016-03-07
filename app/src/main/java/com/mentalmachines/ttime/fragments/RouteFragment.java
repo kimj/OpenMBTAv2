@@ -74,7 +74,7 @@ public class RouteFragment extends Fragment{
             //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
             final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
             swipeViewGroup.setOnRefreshListener(refreshList);
-            swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.solidSilverline, R.color.colorPrimaryDark);
+            swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         }
         //Floating Action button switches the display between inbound and outbound
 		return rootView;
@@ -92,6 +92,7 @@ public class RouteFragment extends Fragment{
     public void reloadTimes() {
         final Context ctx = getContext();
         if(TTimeApp.checkNetwork(ctx)) {
+            ((SwipeRefreshLayout)getActivity().findViewById(R.id.route_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
             final Intent tnt = new Intent(ctx, ScheduleService.class);
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
