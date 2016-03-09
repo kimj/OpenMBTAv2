@@ -95,8 +95,11 @@ public class StopService extends IntentService {
             Log.d(TAG, "stops to parse? " + nearby.size());
             for(StopData stop: nearby) {
                 parseStop(stop);
-                Log.i(TAG, "parser closed, times complete");
+                if(stop.schedTimes.isEmpty()) {
+                    stop.schedTimes = getString(R.string.noSched);
+                }
             }
+
             //This part wraps things up and sends a message back to the activity with data for the stop detail
             endService(nearby);
 

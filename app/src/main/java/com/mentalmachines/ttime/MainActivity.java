@@ -14,6 +14,8 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -99,10 +101,23 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mgr.registerReceiver(mNavDataReady, new IntentFilter(NavDrawerTask.TAG));
         startService(tnt);
         Log.d(TAG, "starting service");
-        mRouteFragment = RouteFragment.newInstance(null, getString(R.string.def_text));
-        getSupportFragmentManager().beginTransaction()
-                .replace(R.id.container, mRouteFragment)
-                .commit();
+        final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+
+        if(savedInstanceState == null) {
+            tx.add(RouteFragment.newInstance(null, getString(R.string.def_text)), TAG);
+        } else {
+            Route r = savedInstanceState.getParcelable(DBHelper.KEY_ROUTE);
+            mRouteId = r.id;
+            mRouteName = r.name;
+            mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
+            tx.add(mRouteFragment, r.name);
+            if(mFavoritesAction != null) {
+                mFavoritesAction.setVisible(true);
+                mFavoritesAction.setCheckable(true);
+            }
+
+        }
+        tx.commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
@@ -185,6 +200,17 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
             ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
         }
+    }
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putParcelable(DBHelper.KEY_ROUTE, mRouteFragment.mListAdapter.mRoute);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
     }
 
     /**
@@ -365,10 +391,30 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 mRouteFragment.mListAdapter.resetRoute(r);
                 ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
             } else {
-                mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), mRouteName);
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, mRouteFragment)
-                        .commit();
+                final FragmentManager mgr = getSupportFragmentManager();
+
+                if(mgr.findFragmentByTag(r.name) != null) {
+                    RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
+                    if(mRouteFragment == null) {
+                        Log.d(TAG, "find, show");
+                        mgr.beginTransaction().show(frag).commit();
+                    } else {
+                        Log.d(TAG, "find, hide and show");
+                        mgr.beginTransaction().hide(mRouteFragment).show(frag).commit();
+                        mRouteFragment = frag;
+                    }
+                } else {
+                    if(mRouteFragment == null) {
+                        Log.d(TAG, "new, show");
+                        mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
+                        mgr.beginTransaction().add(R.id.container, mRouteFragment, r.name).commit();
+                    } else {
+                        Log.d(TAG, "new, hide and show");
+                        RouteFragment frag = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
+                        mgr.beginTransaction().hide(mRouteFragment).add(R.id.container, frag, r.name).commit();
+                        mRouteFragment = frag;
+                    }
+                }
                 mFavoritesAction.setVisible(true);
                 mFavoritesAction.setCheckable(true);
             }

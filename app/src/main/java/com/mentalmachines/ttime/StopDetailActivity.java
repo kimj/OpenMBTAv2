@@ -35,8 +35,8 @@ public class StopDetailActivity extends AppCompatActivity {
         setContentView(R.layout.activity_stops);
         final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-        if(getActionBar() != null) {
-            getActionBar().setDisplayHomeAsUpEnabled(true);
+        if(getSupportActionBar() != null) {
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
         LocalBroadcastManager.getInstance(this).registerReceiver(mDetailsUpdated,
