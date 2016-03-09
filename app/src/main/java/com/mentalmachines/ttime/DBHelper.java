@@ -51,9 +51,10 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_STOPLT = "stop_lat";
     public static final String KEY_STOPLN = "stop_lon";
 
+    public static final String KEY_TRIP = "trip";
     public static final String KEY_TRIP_ID = "trip_id";
     public static final String KEY_TRIP_SIGN = "trip_headsign";
-    //public static final String KEY_DIR_ID = "direction_id";
+    public static final String KEY_VEHICLE = "vehicle";
     public static final String KEY_ARR_TIME = "arrival_time";
     public static final String KEY_DEP_TIME = "departure_time";
 

@@ -38,7 +38,6 @@ public class StopService extends IntentService {
     public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
 
-    public static final String TRIP_KEY = "trip";
     final StringBuilder strBuild = new StringBuilder(0);
 
     //required, empty constructor, builds intents
@@ -92,7 +91,7 @@ public class StopService extends IntentService {
         tmp.clear();
         //cleanup completed
         try {
-            Log.d(TAG, "stops to parse? " + nearby.size());
+            //Log.d(TAG, "stops to parse? " + nearby.size());
             for(StopData stop: nearby) {
                 parseStop(stop);
                 if(stop.schedTimes.isEmpty()) {
@@ -157,7 +156,7 @@ public class StopService extends IntentService {
                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
                                 //no names at the top of this return, straight into objects
                                 //direction, begin array, begin object
-                                Log.d(TAG, "direction array");
+                                //Log.d(TAG, "direction array");
                                 token = parser.nextToken();
                                 if (!JsonToken.START_ARRAY.equals(token)) {
                                     break;
@@ -171,13 +170,12 @@ public class StopService extends IntentService {
                                         directionNm = parser.getValueAsString();
                                         Log.d(TAG, "direction id set " + directionNm);
 
-                                    } else if (JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
+                                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
                                         //array of trips with stops inside, may be several trips returned
                                         token = parser.nextToken();
                                         if (!JsonToken.START_ARRAY.equals(token)) {
                                             break;
                                         }
-                                        //trip array has trips, vehicles and stops
                                         //Log.d(TAG, "trip array");
                                         while (!JsonToken.END_ARRAY.equals(token)) {
                                             //running through the trips, read the trip array into times

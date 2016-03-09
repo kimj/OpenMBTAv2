@@ -1,7 +1,6 @@
 package com.mentalmachines.ttime.adapter;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +11,7 @@ import android.widget.TextView;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.objects.Route;
 
 import java.util.ArrayList;
 
@@ -31,7 +31,9 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     public static final int FAVE = 2;
 
     public final int mMode;
+    //subway/favorites children arrays -> route names and ids, bus group names
     public final String[] rtNames, rtIds, busGroups;
+    //route names and ids for bus groups
     int[][] busChildren = null;
 
     public RouteExpandableAdapter(String[] names, String[] ids, int mode) {
@@ -66,8 +68,9 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             return busChildren[groupPosition].length;
         } else if(rtNames != null) {
             return rtNames.length;
-        } else return 0;
-        //if the db is initializing, these can be null
+        }
+        return 0;
+        //if the db is initializing, these might be null
 
     }
 
@@ -107,31 +110,27 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             convertView = LayoutInflater.from(ctx).inflate(R.layout.group_view, null);
         }
         //Group position zero has the silver line bg, merges selected button into the list
-        if(mMode == BUS) {
-            if(groupPosition == 0) {
-                ((TextView) convertView).setTextColor(
-                        ctx.getResources().getColor(R.color.solidSilverline));
-                convertView.setBackgroundResource(R.color.silverlineBG);
-            } else {
-                ((TextView) convertView).setTextColor(
-                        ctx.getResources().getColor(R.color.solidBusYellow));
-                convertView.setBackgroundResource(android.R.color.white);
-            }
-            ((TextView) convertView).setText(busGroups[groupPosition]);
+        if(groupPosition > 0) {
+            convertView.setBackgroundResource(R.drawable.bg_mattapanroute);
+            //Only bus mode has more than one group
         } else {
-            ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
-            convertView.setBackgroundResource(R.color.silverlineBG);
-            if(mMode == SUBWAY) {
+            convertView.setBackgroundResource(R.drawable.bg_silverroute);
+        }
+        switch(mMode) {
+            case BUS:
+                ((TextView) convertView).setText(busGroups[groupPosition]);
+                break;
+            case SUBWAY:
                 ((TextView) convertView).setText(DBHelper.SUBWAY_MODE);
-            } else {
-                //Favorites mode
+                ((ExpandableListView)parent).expandGroup(groupPosition);
+                //TODO this goes in strings
+                break;
+            case FAVE:
                 ((TextView) convertView).setText(ctx.getString(R.string.favorites));
-            }
+                ((ExpandableListView)parent).expandGroup(groupPosition);
+                break;
         }
-        if(mMode == SUBWAY || mMode == FAVE) {
-            //this bit will make sure that the group is always expanded
-            ((ExpandableListView)parent).expandGroup(groupPosition);
-        }
+
         return convertView;
     }
 
@@ -144,34 +143,58 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             convertView = LayoutInflater.from(ctx).inflate(
                     R.layout.child_view, null);
         }
-        if(mMode == BUS) {
-            if(busChildren[groupPosition] == null) {
-                busChildren[groupPosition] = getChildren(groupPosition);
-            }
-            ((TextView)convertView).setText(rtNames[busChildren[groupPosition][childPosition]]);
-            convertView.setTag(rtIds[busChildren[groupPosition][childPosition]]);
-            //Log.d(TAG, "tagging child view " + tmp.routeId);
-        } else {
-            ((TextView)convertView).setText(rtNames[childPosition]);
-            convertView.setTag(rtIds[childPosition]);
-            if(mMode == SUBWAY) {
-                final int color = getBgColor(ctx, rtNames[childPosition]);
-                ((TextView) convertView).setTextColor(Color.BLACK);
-                convertView.setBackgroundColor(color);
-                convertView.setTag(R.layout.child_view, color);
-            } else {
-                //must be favorites
-                ((TextView) convertView).setText(rtNames[childPosition]);
-                ((TextView) convertView).setTextColor(ctx.getResources().getColor(R.color.colorPrimary));
-
-            }
+        switch (mMode) {
+            case BUS:
+                if(busChildren[groupPosition] == null) {
+                    busChildren[groupPosition] = getChildren(groupPosition);
+                }
+                final int rtIndex = busChildren[groupPosition][childPosition];
+                convertView.setTag(rtIds[rtIndex]);
+                colorView((TextView) convertView, rtNames[rtIndex]);
+                break;
+            case SUBWAY:
+            case FAVE:
+                colorView((TextView) convertView, rtNames[childPosition]);
+                convertView.setTag(rtIds[childPosition]);
+                break;
         }
+
         return convertView;
     }
 
     @Override
     public boolean isChildSelectable(int groupPosition, int childPosition) {
         return true;
+    }
+
+    /**
+     * This method will set the background drawable of a textview based on the (route) name string passed in
+     * @param tv
+     * @param routeNm - if this is a bus, it will set a prefix
+     */
+    public static void colorView(TextView tv, String routeNm) {
+        if(routeNm.contains("Green")) {
+            tv.setBackgroundResource(R.drawable.bg_greenroute);
+            tv.setText(routeNm);
+        } else if(routeNm.contains("Blue")) {
+            tv.setBackgroundResource(R.drawable.bg_blueroute);
+            tv.setText(routeNm);
+        } else if(routeNm.contains("Orange")) {
+            tv.setBackgroundResource(R.drawable.bg_orangeroute);
+            tv.setText(routeNm);
+        } else if(routeNm.contains("Red")) {
+            tv.setBackgroundResource(R.drawable.bg_redroute);
+            tv.setText(routeNm);
+        } else if(routeNm.contains("Silver")) {
+            tv.setBackgroundResource(R.drawable.bg_silverroute);
+            tv.setText(routeNm);
+        } else if(routeNm.contains("Mattapan")) {
+            tv.setBackgroundResource(R.drawable.bg_mattapanroute);
+            tv.setText(routeNm);
+        } else {
+            tv.setBackgroundResource(R.drawable.bg_busroute);
+            tv.setText(Route.readableName(tv.getContext(), routeNm));
+        }
     }
 
     int[] getChildren(int grpIndex) {
@@ -257,22 +280,6 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         tmp.clear();
         Log.d(TAG, "returning next array, size is " + childIndices.length);
         return childIndices;
-    }
-
-    public static int getBgColor(Context ctx, String route) {
-        if(route.contains("Green")) {
-            return ctx.getResources().getColor(R.color.greenlineBG);
-        } else if(route.contains("Blue")) {
-            return ctx.getResources().getColor(R.color.bluelineBG);
-        } else if(route.contains("Orange")) {
-            return ctx.getResources().getColor(R.color.orangelineBG);
-        } else if(route.contains("Red")) {
-            return ctx.getResources().getColor(R.color.redlineBG);
-        } /* See if this is needed...
-        else if(route.contains("Silver")) {
-            return ctx.getResources().getColor(R.color.silverlineBG);
-        }*/
-        return ctx.getResources().getColor(R.color.busYellowBG);
     }
 
 }

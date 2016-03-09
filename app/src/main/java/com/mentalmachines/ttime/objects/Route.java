@@ -17,8 +17,7 @@ public class Route implements Parcelable {
     public int type;
     //public String mode_name;
     //skipping
-    public String id;
-    public String name;
+    public String id, name;
     public ArrayList<StopData> mInboundStops, mOutboundStops;
 
     public final static String[] mStopProjection = new String[]{

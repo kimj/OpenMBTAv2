@@ -42,8 +42,6 @@ public class ScheduleService extends IntentService {
     public static final String GETROUTETIMES = BASE + ROUTEVERB + SUFFIX + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
-    //Predicted amount of time until the vehicle arrives at the stop, in seconds
-    public static final String TRIP_KEY = "trip";
     final StringBuilder strBuild = new StringBuilder(0);
 
     //required, empty constructor, builds intents
@@ -128,7 +126,7 @@ public class ScheduleService extends IntentService {
                         token = parser.nextToken();
                         directionId = Integer.valueOf(parser.getValueAsString());
                         //Log.d(TAG, "direction id set " + directionId);
-                    } else if(JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
+                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
                         //array of trips with stops inside, may be several trips returned
                         token = parser.nextToken();
                         if(!JsonToken.START_ARRAY.equals(token)) {
@@ -139,11 +137,9 @@ public class ScheduleService extends IntentService {
                         while(!JsonToken.END_ARRAY.equals(token)) {
                             //getting stops embedded into the trip
                             token = parser.nextToken();
-                            if(JsonToken.FIELD_NAME.equals(token) && "vehicle".equals(parser.getCurrentName())) {
+                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_VEHICLE.equals(parser.getCurrentName())) {
                                 //may want vehicle_timestamp...
-                                while(!JsonToken.END_OBJECT.equals(token)) {
-                                    token = parser.nextToken();
-                                }
+                                parser.skipChildren();
                             } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
                                 //finally at stop array, skip past start array
                                 token = parser.nextToken();

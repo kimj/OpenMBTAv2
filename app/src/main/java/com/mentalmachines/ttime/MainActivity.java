@@ -54,7 +54,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     RouteFragment mRouteFragment;
     String mRouteId;
     String mRouteName;
-    int mRouteColor, routeMode;
+    int routeMode;
     //Route mRoute;
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
@@ -273,9 +273,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mRouteId = (String)v.getTag();
         mRouteName = Route.readableName(this, ((TextView) v).getText().toString());
         setTitle(mRouteName);
-
-        mRouteColor = v.getTag(R.layout.child_view) == null?
-                getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view);
+        v.setSelected(true);
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
@@ -398,20 +396,17 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 if(mgr.findFragmentByTag(r.name) != null) {
                     RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
                     if(mRouteFragment == null) {
-                        Log.d(TAG, "find, show");
                         mgr.beginTransaction().show(frag).commit();
                     } else {
-                        Log.d(TAG, "find, hide and show");
                         mgr.beginTransaction().hide(mRouteFragment).show(frag).commit();
                     }
                     mRouteFragment = frag;
                 } else {
                     if(mRouteFragment == null) {
-                        Log.d(TAG, "new, add");
                         mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
                         mgr.beginTransaction().add(R.id.container, mRouteFragment, r.name).commit();
                     } else {
-                        Log.d(TAG, "new, hide and add");
+                        //Log.d(TAG, "new, hide and add");
                         RouteFragment frag = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
                         mgr.beginTransaction().hide(mRouteFragment).add(R.id.container, frag, r.name).commit();
                         mRouteFragment = frag;
@@ -470,7 +465,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
                 if(routeMode != RouteExpandableAdapter.BUS) {
                     mDrawerList.expandGroup(0);
-                    //it the list has only one group
+                    //here the list has only one group
                 }
             }
         }
