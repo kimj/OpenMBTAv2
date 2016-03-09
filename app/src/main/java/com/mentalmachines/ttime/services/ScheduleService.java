@@ -2,6 +2,8 @@ package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.format.Time;
@@ -61,11 +63,26 @@ public class ScheduleService extends IntentService {
         searchRoute = new Route();
         searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
         searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
-        searchRoute.setStops(this);
+        final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
+        searchRoute.setStops(db);
+        if(searchRoute.name == null) {
+            final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, new String[]{DBHelper.KEY_ROUTE_NAME},
+                    Route.routeStopsWhereClause + "'" + searchRoute.id + "'", null,
+                    null, null, null);
+            if(c.moveToFirst()) {
+                searchRoute.name = c.getString(0);
+                c.close();
+            } else {
+                Log.e(TAG, "bad route id? " + searchRoute.id);
+                db.close();
+                endService();
+                return;
+            }
+        }
+        db.close();
         //Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
         try {
             getTimesForRoute(searchRoute.id);
-
         } catch (IOException e) {
             Log.e(TAG, "problem with alerts call " + e.getMessage());
             e.printStackTrace();

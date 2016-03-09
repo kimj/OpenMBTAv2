@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
@@ -12,6 +13,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.FragmentManager;
@@ -47,7 +49,7 @@ import com.mentalmachines.ttime.services.StopService;
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
 
     public static final String TAG = "MainActivity";
-    //SQLiteDatabase mDB;
+    SharedPreferences mPrefs;
     ExpandableListView mDrawerList;
     RouteFragment mRouteFragment;
     String mRouteId;
@@ -59,8 +61,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     boolean noFaves = true;
 
 	@Override
-	protected void onCreate(Bundle savedInstanceState) {
-		super.onCreate(savedInstanceState);
+	protected void onCreate(Bundle b) {
+		super.onCreate(b);
 		setContentView(R.layout.activity_main);
         new CheckFavesTable().execute();
         /*Log.d(TAG, "starting svc");
@@ -101,23 +103,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mgr.registerReceiver(mNavDataReady, new IntentFilter(NavDrawerTask.TAG));
         startService(tnt);
         Log.d(TAG, "starting service");
-        final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
 
-        if(savedInstanceState == null) {
-            tx.add(RouteFragment.newInstance(null, getString(R.string.def_text)), TAG);
-        } else {
-            Route r = savedInstanceState.getParcelable(DBHelper.KEY_ROUTE);
-            mRouteId = r.id;
-            mRouteName = r.name;
-            mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
-            tx.add(mRouteFragment, r.name);
-            if(mFavoritesAction != null) {
-                mFavoritesAction.setVisible(true);
-                mFavoritesAction.setCheckable(true);
-            }
-
-        }
-        tx.commit();
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
@@ -200,17 +186,33 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
             ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
         }
-    }
-
-    @Override
-    protected void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-        outState.putParcelable(DBHelper.KEY_ROUTE, mRouteFragment.mListAdapter.mRoute);
+        //persist the view
+        //save the routeName and ID, call the route prediction times again when user gets back
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).commit();
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+        if(mPrefs.getString(DBHelper.KEY_ROUTE_ID, null) == null) {
+            tx.add(RouteFragment.newInstance(null, getString(R.string.def_text)), TAG).commit();
+        } else {
+            mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
+            if(TTimeApp.checkNetwork(this)) {
+                mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+                final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+                tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
+                startService(tnt);
+                Log.i(TAG, "starting schedule service with id: " + mRouteId);
+            } else {
+                Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
     }
 
     /**
@@ -385,7 +387,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }*/
             //CREATING LIST DETAIL PAGE
 
-            if(mFavoritesAction.isVisible()) {
+            if(mFavoritesAction.isVisible() && r.name.equals(mRouteName)) {
                 //route fragment is already up!
                 Log.d(TAG, "reset Route");
                 mRouteFragment.mListAdapter.resetRoute(r);
@@ -401,15 +403,15 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     } else {
                         Log.d(TAG, "find, hide and show");
                         mgr.beginTransaction().hide(mRouteFragment).show(frag).commit();
-                        mRouteFragment = frag;
                     }
+                    mRouteFragment = frag;
                 } else {
                     if(mRouteFragment == null) {
-                        Log.d(TAG, "new, show");
+                        Log.d(TAG, "new, add");
                         mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
                         mgr.beginTransaction().add(R.id.container, mRouteFragment, r.name).commit();
                     } else {
-                        Log.d(TAG, "new, hide and show");
+                        Log.d(TAG, "new, hide and add");
                         RouteFragment frag = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
                         mgr.beginTransaction().hide(mRouteFragment).add(R.id.container, frag, r.name).commit();
                         mRouteFragment = frag;

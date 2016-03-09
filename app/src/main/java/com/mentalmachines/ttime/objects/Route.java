@@ -33,17 +33,16 @@ public class Route implements Parcelable {
      * method creates the stop list shown in the route fragment and adapters
      * db operations, keep off main thread
      *
-     * @param ctx, needed to build the database
+     * @param db, the database, query the route tables, inbound and outbound stops
      */
-    public void setStops(Context ctx) {
-        final SQLiteDatabase mDB = DBHelper.getHelper(ctx).getReadableDatabase();
-        Cursor stopNameCursor = mDB.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
+    public void setStops(SQLiteDatabase db) {
+        Cursor stopNameCursor = db.query(DBHelper.STOPS_INB_TABLE, mStopProjection,
                 routeStopsWhereClause + "'" + id + "'",
                 null, null, null, "_id ASC");
         mInboundStops = makeStops(stopNameCursor);
         Log.d(TAG, "inbound stop count for route: " + name + " " + stopNameCursor.getCount());
         //direction == 1) {
-        stopNameCursor = mDB.query(DBHelper.STOPS_OUT_TABLE, mStopProjection,
+        stopNameCursor = db.query(DBHelper.STOPS_OUT_TABLE, mStopProjection,
                 routeStopsWhereClause + "'" + id + "'",
                 null, null, null, "_id ASC");
         mOutboundStops = makeStops(stopNameCursor);
@@ -51,7 +50,7 @@ public class Route implements Parcelable {
         if (!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        DBHelper.close(mDB);
+        DBHelper.close(db);
     }
 
     /**
