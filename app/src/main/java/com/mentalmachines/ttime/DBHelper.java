@@ -30,7 +30,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_ROUTE_ID = "route_id";
     public static final String KEY_ROUTE_NAME = "route_name";
     //public static final String KEY_ROUTE_TYPE = "route_type";
-    public static final String ROUTE = "route";
+    public static final String KEY_ROUTE = "route";
     public static final String BUS_MODE = "Bus";
     public static final String SUBWAY_MODE = "Subway";
 

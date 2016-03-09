@@ -4,11 +4,11 @@
     tools:context="com.mentalmachines.ttime.MainActivity" >
     <item
         android:id="@+id/stop_detail"
-        android:title="@string/stopMap"
+        android:title="@string/stopDetail"
         app:showAsAction="always"/>
     <item
         android:id="@+id/stop_location"
-        android:title="@string/stopDetail"
+        android:title="@string/stopMap"
         app:showAsAction="always"/>
 
 </menu>

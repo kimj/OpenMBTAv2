@@ -23,9 +23,9 @@
             </intent-filter>
         </activity>
         <activity
+            android:parentActivityName=".MainActivity"
             android:name="com.mentalmachines.ttime.StopDetailActivity"
             android:screenOrientation="portrait"
-            android:label="@string/app_name"
             android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".services.NavDrawerTask"/>

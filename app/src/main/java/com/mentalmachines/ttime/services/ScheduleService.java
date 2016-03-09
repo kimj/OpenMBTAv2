@@ -200,9 +200,9 @@ public class ScheduleService extends IntentService {
                                             offsetSecs = Integer.valueOf(value);
                                             strBuild.append(" (");
                                             if(offsetSecs > 60) {
-                                                strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s").append(")");;
+                                                strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s").append(")");
                                             } else {
-                                                strBuild.append(offsetSecs).append("s").append(")");;
+                                                strBuild.append(offsetSecs).append("s").append(")");
                                             }
                                             if(!stop.predicTimes.isEmpty()) {
                                                 stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();

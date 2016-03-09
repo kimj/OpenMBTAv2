@@ -243,12 +243,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
         mRouteId = (String)v.getTag();
-        mRouteName = ((TextView) v).getText().toString();
-        if(Character.isDigit(mRouteName.charAt(0))) {
-            setTitle(getString(R.string.bus_prefix) + mRouteName);
-        } else {
-            setTitle(mRouteName);
-        }
+        mRouteName = Route.readableName(this, ((TextView) v).getText().toString());
+        setTitle(mRouteName);
 
         mRouteColor = v.getTag(R.layout.child_view) == null?
                 getResources().getColor(R.color.solidBusYellow):(int)v.getTag(R.layout.child_view);

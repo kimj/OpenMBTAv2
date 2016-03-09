@@ -8,6 +8,7 @@ import android.os.Parcelable;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
 
 import java.util.ArrayList;
 
@@ -116,4 +117,11 @@ public class Route implements Parcelable {
             return new Route[size];
         }
     };
+
+    public static String readableName(Context ctx, String routeName) {
+        if(Character.isDigit(routeName.charAt(0))) {
+            return (ctx.getString(R.string.bus_prefix) + routeName);
+        }
+        return routeName;
+    }
 }

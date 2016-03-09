@@ -96,7 +96,7 @@ public class DBCreateStopsRoutes extends IntentService {
                             mode_name = parser.getValueAsString();
                         }
 
-                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.ROUTE.equals(parser.getCurrentName())) {
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE.equals(parser.getCurrentName())) {
                         //this is an array of routes
                         token = parser.nextToken();
                         if (!JsonToken.START_ARRAY.equals(token)) {

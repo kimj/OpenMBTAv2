@@ -34,7 +34,7 @@ public class StopService extends IntentService {
 
     //JSON constants for predictive times, data is not in SQLite
     public static final String STOPPARAM = "&stop=";
-    public static final String STOPVERB = "predictionsbystop";
+    public static final String STOPVERB = "schedulebystop";
     public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
 
@@ -92,133 +92,136 @@ public class StopService extends IntentService {
         tmp.clear();
         //cleanup completed
         try {
-            getTimesForStop(nearby);
+            Log.d(TAG, "stops to parse? " + nearby.size());
+            for(StopData stop: nearby) {
+                parseStop(stop);
+                Log.i(TAG, "parser closed, times complete");
+            }
+            //This part wraps things up and sends a message back to the activity with data for the stop detail
+            endService(nearby);
 
         } catch (IOException e) {
-            Log.e(TAG, "problem with alerts call " + e.getMessage());
+            Log.e(TAG, "problem with stop service " + e.getMessage());
             e.printStackTrace();
             endService(null);
         }
     }
 
-    void getTimesForStop(ArrayList<StopData> stopsToShow) throws IOException {
+    void parseStop(StopData stop) throws IOException {
         //add schedule times and direction to the stops
         final Time t = new Time();
-        String value = "", routeName = "", tripName = "";
-        JsonParser parser;
-        Log.d(TAG, "stops to parse? " + stopsToShow.size());
-        for(StopData stop: stopsToShow) {
-            parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
-            while (!parser.isClosed()) {
-                //start parsing, get the token
-                JsonToken token = parser.nextToken();
-                if (token == null) {
+        String routeName = "", directionNm = "";
+        final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
+        Log.d(TAG, "stops call? " + GETSTOPTIMES + stop.stopId);
+
+        while (!parser.isClosed()) {
+            //start parsing, get the token
+            JsonToken token = parser.nextToken();
+            if (token == null) {
+                Log.e(TAG, "null token");
+                break;
+            }
+            //running through tokens to get to direction array, "error" key comes up before any other
+            if (JsonToken.FIELD_NAME.equals(token) && "error".equals(parser.getCurrentName())) {
+                //This route is done for the night or the server is hosed -> something is wrong
+                parser.close();
+                Log.w(TAG, "error reading " + stop.stopName);
+                token = null;
+            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE.equals(parser.getCurrentName())) {
+                token = parser.nextToken();
+                if (!JsonToken.START_ARRAY.equals(token)) {
+                    Log.e(TAG, "mode parsing error after stop id and name");
                     break;
                 }
-                //running through tokens to get to direction array, "error" key comes up before any other
-                if (JsonToken.FIELD_NAME.equals(token) && "error".equals(parser.getCurrentName())) {
-                    //This route is done for the night or the server is hosed -> something is wrong
-                    parser.close();
-                    Log.w(TAG, "error reading " + stop.stopName);
-                    token = null;
-                } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
-                    //Some stops might have multiple routes
+
+                while (!JsonToken.END_ARRAY.equals(token)) {
+                    //the array can be empty if the stop is closed
                     token = parser.nextToken();
-                    routeName = parser.getValueAsString();
-                    //Log.d(TAG, "stop's route " + routeName);
-                } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
-                    //no names at the top of this return, straight into objects
-                    Log.d(TAG, "direction array");
-                    token = parser.nextToken();
-                    if(!JsonToken.START_ARRAY.equals(token)) {
-                        break;
-                    }
-                    String directionNm = "";
-                    while(true) {
+                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
-                        if (token == null) {
+                        if (!JsonToken.START_ARRAY.equals(token)) {
+                            Log.e(TAG, "mode parsing error after stop id and name");
                             break;
                         }
-                        //direction array, read the trips
-                        if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
-                            token = parser.nextToken();
-                            directionNm = parser.getValueAsString();
-                            Log.d(TAG, "direction id set " + directionNm);
-                            token = parser.nextToken();
-                        }
 
-                        if(JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
-                            //array of trips with stops inside, may be several trips returned
+                        while (!JsonToken.END_ARRAY.equals(token)) {
                             token = parser.nextToken();
-                            if(!JsonToken.START_ARRAY.equals(token)) {
-                                break;
-                            }
-                            //trip array has trips, vehicles and stops
-                            //Log.d(TAG, "trip array");
-                            while(!JsonToken.END_ARRAY.equals(token)) {
-                                //running through the stops
+                            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
+                                //Some stops might have multiple routes
                                 token = parser.nextToken();
-                                /*if(JsonToken.START_OBJECT.equals(token)) {
-                                    token = parser.nextToken();
+                                routeName = Route.readableName(this, parser.getValueAsString());
+                                //Log.d(TAG, "stop's route " + routeName);
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
+                                //no names at the top of this return, straight into objects
+                                //direction, begin array, begin object
+                                Log.d(TAG, "direction array");
+                                token = parser.nextToken();
+                                if (!JsonToken.START_ARRAY.equals(token)) {
+                                    break;
                                 }
-
-                                if(JsonToken.FIELD_NAME.equals(token) && "trip_id".equals(parser.getCurrentName())) {
+                                //direction array, then read the trips array
+                                while (!JsonToken.END_ARRAY.equals(token)) {
                                     token = parser.nextToken();
-                                }*/
 
-                                if(JsonToken.FIELD_NAME.equals(token) && "trip_name".equals(parser.getCurrentName())) {
-                                    token = parser.nextToken();
-                                    if(tripName.isEmpty()) {
-                                        tripName = parser.getValueAsString();
-                                    }
+                                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        directionNm = parser.getValueAsString();
+                                        Log.d(TAG, "direction id set " + directionNm);
+
+                                    } else if (JsonToken.FIELD_NAME.equals(token) && TRIP_KEY.equals(parser.getCurrentName())) {
+                                        //array of trips with stops inside, may be several trips returned
+                                        token = parser.nextToken();
+                                        if (!JsonToken.START_ARRAY.equals(token)) {
+                                            break;
+                                        }
+                                        //trip array has trips, vehicles and stops
+                                        //Log.d(TAG, "trip array");
+                                        while (!JsonToken.END_ARRAY.equals(token)) {
+                                            //running through the trips, read the trip array into times
+                                            token = parser.nextToken();
+
+                                            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
+                                                token = parser.nextToken();
+                                                t.set(1000 * Long.valueOf(parser.getValueAsString()));
+                                                t.normalize(false);
+                                                getTime(t);
+                                                //put the scheduled time into the string builder
+                                            } else if (JsonToken.END_OBJECT.equals(token)) {
+                                                //end of the trip, add in String
+                                                if (!stop.schedTimes.isEmpty()) {
+                                                    stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
+                                                } else {
+                                                    strBuild.insert(0, getString(R.string.scheduled));
+                                                    stop.schedTimes = strBuild.toString();
+                                                }
+                                                if (stop.predicTimes.isEmpty()) {
+                                                    stop.predicTimes = routeName + ": " + directionNm;
+                                                }
+                                                strBuild.setLength(0);
+                                                //Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);
+                                            } //end object
+
+                                        }//trip array end
+                                        token = JsonToken.NOT_AVAILABLE;
+                                        //ending the trip array should not end the  parsing
+                                    }//trip field
+
                                 }
+                                token = JsonToken.NOT_AVAILABLE;
 
-                                if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
-                                    token = parser.nextToken();
-                                    value = parser.getValueAsString();
-                                    if(value == null || value.isEmpty()) {
-                                        Log.w(TAG, "bad time field " + stop.stopName + " " + stop.stopId);
-                                    } else {
-                                        t.set(1000 * Long.valueOf(value));
-                                        t.normalize(false);
-                                        getTime(t);
-                                        Log.d(TAG, "time parsed: " + strBuild.toString());
-                                        //appends to String builder
-                                    }
-                                }
+                            }//end dir field
 
-                                /*if(JsonToken.FIELD_NAME.equals(token) && "sch_dep_dt".equals(parser.getCurrentName())) {
-                                    token = parser.nextToken();
-                                }*/
+                        }//route array end
+                        token = JsonToken.NOT_AVAILABLE;
+                    }
+                } //end mode array, end array token
 
-                                if(JsonToken.END_OBJECT.equals(token)) {
-                                    //end of the trip, add in String
-                                    if(!stop.schedTimes.isEmpty()) {
-                                        stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
-                                    } else {
-                                        strBuild.insert(0, getString(R.string.scheduled));
-                                        stop.schedTimes = strBuild.toString();
-                                    }
+            } //array following stop name inside here
 
-                                    if(stop.predicTimes.isEmpty()) {
-                                        stop.predicTimes = routeName + ": " + directionNm + "\n" + tripName;
-                                    }
-                                    strBuild.setLength(0);
-                                    tripName = "";
-                                    value = "";
-                                    Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);
-                                } //end object
-                            } //end trip array
-
-                        } //end if field is trip
-                    } //end direction array
-                } //end direction if condition, need to read both directions
-            } //parser is closed
-            Log.i(TAG, "parser closed, times complete");
+        } //parser is closed
+        if (stop.schedTimes.isEmpty()) {
+            Log.e(TAG, "error with stop detail, no trips or times");
         }
-
-        //This part wraps things up and sends a message back to the activity with data for the stop detail
-        endService(stopsToShow);
     }
 
     void endService(ArrayList<StopData> nearby) {

@@ -16,11 +16,11 @@ import com.mentalmachines.ttime.objects.StopData;
  * scheduled time and estimated next arrival
  */
 
-public class StopFragmentAdapter extends RecyclerView.Adapter<StopFragmentAdapter.StopViewHolder> {
-    public static final String TAG = "StopFragmentAdapter";
+public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.StopViewHolder> {
+    public static final String TAG = "StopDetailAdapter";
     final StopData[] items;
 
-    public StopFragmentAdapter(StopData[] stopList) {
+    public StopDetailAdapter(StopData[] stopList) {
         super();
         items = stopList;
     }
@@ -58,10 +58,12 @@ public class StopFragmentAdapter extends RecyclerView.Adapter<StopFragmentAdapte
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
         } else {
+            //alert header text gets set in the alert field instead of the alert id
             holder.mStopDescription.setText(s.stopName);
-            holder.mETA.setText(s.predicTimes + "\n" + s.schedTimes);
+            holder.mETA.setText(s.schedTimes);
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
+                holder.mAlertBtn.setTag(s.stopAlert);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
             }
@@ -72,15 +74,15 @@ public class StopFragmentAdapter extends RecyclerView.Adapter<StopFragmentAdapte
         public final TextView mStopDescription;
         public final TextView mETA;
         public final ImageButton mAlertBtn;
-        public final View mCompass;
+        //public final View mCompass;
         //set a tag on the parent view for the two buttons to read
         public StopViewHolder(View itemView) {
             super(itemView);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
-            mCompass = itemView.findViewById(R.id.stop_mapbtn);
             mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_alert_btn);
-            mStopDescription.setTag(itemView);
+            //mStopDescription.setTag(itemView);
+            itemView.findViewById(R.id.stop_mapbtn).setVisibility(View.GONE);
         }
     }
 }

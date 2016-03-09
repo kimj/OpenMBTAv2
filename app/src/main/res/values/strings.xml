@@ -15,7 +15,7 @@
     <string name="scheduled">Scheduled:</string>
     <string name="actual">Actual:</string>
     <string name="stopMap">Map Stop</string>
-    <string name="stopDetail">View Details</string>
+    <string name="stopDetail">View Schedule</string>
 
     <string-array name="transit_methods">
         <item>Bus</item>
