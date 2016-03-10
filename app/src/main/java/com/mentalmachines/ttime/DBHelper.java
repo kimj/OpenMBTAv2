@@ -309,14 +309,14 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     //This junk manages db concurrency, many reads and one write
-    private static volatile DBHelper instance;
+    private static DBHelper instance;
 
     /**
      * DBHelper is a singleton, the app has one db connection, DBHelper
      * @param context
      * @return
      */
-    public static DBHelper getHelper(Context context){
+    public static synchronized DBHelper getHelper(Context context){
         if(instance == null) {
             instance = new DBHelper(context);
         }
