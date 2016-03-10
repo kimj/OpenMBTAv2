@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime;
 
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -28,6 +29,7 @@ public class StopDetailActivity extends AppCompatActivity {
     private static final String TAG = "StopDetailActivity";
     public RecyclerView mList;
     public StopList mStopDetail;
+    ProgressDialog mProgress = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,7 +47,16 @@ public class StopDetailActivity extends AppCompatActivity {
         final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)findViewById(R.id.route_swipe);
         swipeViewGroup.setOnRefreshListener(refreshList);
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
-        swipeViewGroup.setRefreshing(true);
+        //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
+        mProgress = ProgressDialog.show(this, "", getString(R.string.loading), true, true);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        if(mProgress != null && mProgress.isShowing()) {
+            mProgress.cancel();
+        }
     }
 
     @Override
@@ -92,12 +103,14 @@ public class StopDetailActivity extends AppCompatActivity {
     };
 
     public void reloadTimes() {
+        Log.d(TAG, "reload times");
         if(TTimeApp.checkNetwork(this)) {
             ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
             final Intent tnt = new Intent(this, StopService.class);
             tnt.putExtra(StopService.TAG, mStopDetail.mainStop);
             startService(tnt);
+
         } else {
             Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
         }
@@ -107,6 +120,9 @@ public class StopDetailActivity extends AppCompatActivity {
         @Override
         public void onReceive(Context context, Intent intent) {
             Log.d(TAG, "service completed");
+            if(mProgress != null && mProgress.isShowing()) {
+                mProgress.cancel();
+            }
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
             setList();
         }

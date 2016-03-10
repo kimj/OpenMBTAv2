@@ -49,7 +49,6 @@ public class Route implements Parcelable {
         if (!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        DBHelper.close(db);
     }
 
     /**

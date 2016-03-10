@@ -53,6 +53,7 @@
 
         <ExpandableListView android:id="@+id/routeNavList"
             android:layout_marginTop="?attr/actionBarSize"
+            android:background="@android:color/transparent"
             android:layout_width="match_parent"
             android:layout_height="wrap_content" />
         </android.support.design.widget.NavigationView>

@@ -187,7 +187,7 @@ public class ScheduleService extends IntentService {
                                                 stop.schedTimes = stop.schedTimes + ", " + getTime(t);
                                             }
                                             strBuild.setLength(0);
-                                            Log.i(TAG, "stop schedule" + stop.schedTimes);
+                                            //Log.d(TAG, "stop schedule " + stop.schedTimes);
                                         }
 
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {

@@ -87,7 +87,6 @@ public class StopService extends IntentService {
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        DBHelper.close(db);
         tmp.clear();
         //cleanup completed
         try {

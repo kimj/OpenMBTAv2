@@ -31,11 +31,17 @@ public class TTimeApp extends Application{
                 Log.i(TAG, "get alerts");
                 startService(new Intent(this, GetMBTARequestService.class));
             }
-            DBHelper.close(db);
         } else {
             Log.e(TAG, "network error, app services not started");
         }
+    }
 
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        //http://touchlabblog.tumblr.com/post/24474750219/single-sqlite-connection
+        DBHelper.getHelper(this).close();
+        //end app, finally close helper
     }
 
     /**

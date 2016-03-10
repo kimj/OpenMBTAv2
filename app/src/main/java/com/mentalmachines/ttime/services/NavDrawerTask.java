@@ -69,7 +69,6 @@ public class NavDrawerTask extends IntentService {
         if(!c.isClosed()) {
             c.close();
         }
-        DBHelper.close(db);
         LocalBroadcastManager.getInstance(this).sendBroadcast(tnt);
     }
 

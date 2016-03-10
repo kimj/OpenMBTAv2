@@ -146,13 +146,12 @@ public class DBCreateStopsRoutes extends IntentService {
                 }
             }
         }
-        DBHelper.close(mDB);
     } //end routes
 
     void parseStopsCall(String route) throws IOException {
         final SQLiteDatabase mDB = DBHelper.getHelper(this).getWritableDatabase();
         JsonParser parser = factory.createParser(new URL(STOPS + route));
-        //check that the route isn't already in the db?
+        //check that the route isn't already in the mDB?
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ROUTE_ID, route);
         String table = "";
@@ -231,7 +230,7 @@ public class DBCreateStopsRoutes extends IntentService {
                 }
             }
         }
-        DBHelper.close(mDB);
+
     }
 
 }//end class

@@ -203,7 +203,7 @@ public class DBHelper extends SQLiteOpenHelper {
             + PRED_TIME + " NUMERIC not null,"
             + KEY_PREAWAY + " NUMERIC not null);";
 
-    //TODO save most recent alert id to the stop table
+    // alert ids are saved to the stop table
     // parse alerts in reverse chron order, save alert id to stop table
     //check the stop table alert is still valid, else look for other alert id for stop
 
@@ -249,7 +249,7 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
     }
 
-    public DBHelper(Context context, boolean ignore) {
+    public DBHelper(Context context) {
         super(context, DBNAME, null, DB_VERSION);
     }
 
@@ -270,7 +270,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public static boolean checkFavorite(Context ctx, String routeNm) {
         final SQLiteDatabase db = DBHelper.getHelper(ctx).getReadableDatabase();
         final boolean isFavorite = checkFavorite(db, routeNm);
-        DBHelper.close(db);
         return isFavorite;
     }
 
@@ -306,13 +305,11 @@ public class DBHelper extends SQLiteOpenHelper {
         }
 
         c.close();
-        DBHelper.close(db);
         return isFavorite;
     }
 
     //This junk manages db concurrency, many reads and one write
     private static volatile DBHelper instance;
-    private static volatile int sHelpers = 0;
 
     /**
      * DBHelper is a singleton, the app has one db connection, DBHelper
@@ -320,19 +317,10 @@ public class DBHelper extends SQLiteOpenHelper {
      * @return
      */
     public static DBHelper getHelper(Context context){
-        if(instance == null)
-            instance = new DBHelper(context, true);
-        sHelpers++;
+        if(instance == null) {
+            instance = new DBHelper(context);
+        }
         return instance;
     }
 
-    /**
-     * Closing through this class will insure that parallel threads do not stop on each other
-     * @param db
-     */
-    public static void close(SQLiteDatabase db) {
-        if(--sHelpers == 0) {
-            db.close();
-        }
-    }
 }

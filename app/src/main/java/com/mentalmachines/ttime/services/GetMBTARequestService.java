@@ -46,7 +46,7 @@ public class GetMBTARequestService extends IntentService {
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
     final StringBuilder strBuild = new StringBuilder(0);
-    SQLiteDatabase db;
+    SQLiteDatabase mDB;
 
 
     //required constructor
@@ -65,10 +65,10 @@ public class GetMBTARequestService extends IntentService {
         try {
             if(b == null) {
                 Log.d(TAG, "starting alerts svc");
-                db = DBHelper.getHelper(this).getWritableDatabase();
+                mDB = DBHelper.getHelper(this).getWritableDatabase();
                 parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
             } else {
-                Log.e(TAG, "starting svc for route " + b.getString(TAG));
+                Log.e(TAG, "not starting svc for route " + b.getString(TAG));
                 //getTimesForRoute(b.getString(TAG));
             }
 
@@ -105,7 +105,7 @@ public class GetMBTARequestService extends IntentService {
                     //maybe the end of the list of objects
                     break;
                 }
-                // now parse the alerts, JSON objects into the data structure and add to the db
+                // now parse the alerts, JSON objects into the data structure and add to the mDB
                 while (true) {
                     token = parser.nextToken();
                     if (token == null) {
@@ -190,12 +190,12 @@ public class GetMBTARequestService extends IntentService {
                             cv.put(DBHelper.KEY_EFFECT_PERIOD_END, alert.effect_end);
                         }
                         //end effect array, now insert the alert
-                        if(db == null || !db.isOpen()) {
-                            db = DBHelper.getHelper(this).getWritableDatabase();
+                        if(mDB == null || !mDB.isOpen()) {
+                            mDB = DBHelper.getHelper(this).getWritableDatabase();
                         }
                         if(Long.valueOf(alert.created_dt) > timestamp) {
                                 Log.i(TAG, "loading new alert: " + alert.alert_id +
-                                    db.insert(DBHelper.DB_ALERTS_TABLE, "_id", cv));
+                                        mDB.insert(DBHelper.DB_ALERTS_TABLE, "_id", cv));
                         } else {
                             //this alert is already in the table
                             int dex = -1;
@@ -207,7 +207,7 @@ public class GetMBTARequestService extends IntentService {
                             }
                             if(dex >= 0) {
                                 if(!alertsInTable.get(dex).lastModified.equals(alert.last_modified_dt)) {
-                                    Log.i(TAG, "updating alert: " + db.update(DBHelper.DB_ALERTS_TABLE, cv,
+                                    Log.i(TAG, "updating alert: " + mDB.update(DBHelper.DB_ALERTS_TABLE, cv,
                                             DBHelper.KEY_ALERT_ID + " like " + cv.getAsString(DBHelper.KEY_ALERT_ID), null));
                                 }
                                 alertsInTable.remove(dex);
@@ -271,16 +271,16 @@ public class GetMBTARequestService extends IntentService {
             //alerts can affect an entire route, TODO - handle this
             selectArgs = new String[]{ setStop.svc_stop_id, setStop.svc_route_id};
             cv.put(DBHelper.KEY_ALERT_ID, setStop.alert_id);
-            c = db.query(DBHelper.STOPS_INB_TABLE,
+            c = mDB.query(DBHelper.STOPS_INB_TABLE,
                     new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs,
                     null, null, null);
             if(c.getCount() == 0) {
                 //not inbound
                 Log.i(TAG, "setting alertid on stop: " + alert.alert_id +
-                        db.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
+                        mDB.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
             } else {
                 Log.i(TAG, "setting alertid on stop: " + alert.alert_id +
-                        db.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
+                        mDB.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
 
             }
         } //end stops list, alerts entered for display in the Route Fragment
@@ -294,30 +294,30 @@ public class GetMBTARequestService extends IntentService {
 
     void updateStops(String alertId){
         Log.i(TAG, "clearing old alert from stops table " + alertId);
-        Cursor c = db.query(DBHelper.STOPS_INB_TABLE,
+        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE,
                 new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
                 null, null, null, null);
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ALERT_ID, "");
         if(c.moveToFirst()) {
-            db.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
+            mDB.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
         }
-        c = db.query(DBHelper.STOPS_OUT_TABLE,
+        c = mDB.query(DBHelper.STOPS_OUT_TABLE,
                 new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
                 null, null, null, null);
         if(c.moveToFirst()) {
-            db.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
+            mDB.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
         }
-        Log.i(TAG, "deleting from Alerts table: " + db.delete(DBHelper.DB_ALERTS_TABLE, DBHelper.KEY_ALERT_ID + " like " + alertId, null));
+        Log.i(TAG, "deleting from Alerts table: " + mDB.delete(DBHelper.DB_ALERTS_TABLE, DBHelper.KEY_ALERT_ID + " like " + alertId, null));
         c.close();
     }
 
     ArrayList<AlertHolder> selectAlerts() {
         final ArrayList<AlertHolder> tmp = new ArrayList<>();
-        if(db == null || !db.isOpen()) {
-            db = DBHelper.getHelper(this).getWritableDatabase();
+        if(mDB == null || !mDB.isOpen()) {
+            mDB = DBHelper.getHelper(this).getWritableDatabase();
         }
-        final Cursor c = db.query(DBHelper.DB_ALERTS_TABLE,
+        final Cursor c = mDB.query(DBHelper.DB_ALERTS_TABLE,
                 new String[] { DBHelper.KEY_ALERT_ID, DBHelper.KEY_LAST_MODIFIED_DT },
                 null, null, null, null, DBHelper.KEY_LAST_MODIFIED_DT + " desc");
         if(c.getCount() > 0 && c.moveToFirst()) {

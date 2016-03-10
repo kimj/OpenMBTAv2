@@ -37,7 +37,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
-import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
@@ -52,8 +51,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     SharedPreferences mPrefs;
     ExpandableListView mDrawerList;
     RouteFragment mRouteFragment;
-    String mRouteId;
-    String mRouteName;
+    String mRouteId, mRouteName;
     int routeMode;
     //Route mRoute;
     ProgressDialog mPD = null;
@@ -88,7 +86,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
         mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
         //shows the subway lines and sets the background on the view as selected
-
+        mDrawerList.setOnGroupCollapseListener(faveSubListener);
         final Intent tnt = new Intent(this, NavDrawerTask.class);
         if(noFaves) {
             Log.i(TAG, "no favorites");
@@ -197,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         super.onResume();
         mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-        if(mPrefs.getString(DBHelper.KEY_ROUTE_ID, null) == null) {
-            tx.add(RouteFragment.newInstance(null, getString(R.string.def_text)), TAG).commit();
+        if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+            tx.add(RouteFragment.newInstance(null), TAG).commit();
         } else {
             mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
             if(TTimeApp.checkNetwork(this)) {
@@ -210,7 +208,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             } else {
                 Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
             }
-
         }
 
     }
@@ -228,7 +225,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 routeMode = RouteExpandableAdapter.BUS;
                 tnt.putExtra(NavDrawerTask.TAG, DBHelper.BUS_MODE);
                 startService(tnt);
-                mDrawerList.setOnGroupExpandListener(null);
                 findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
@@ -237,7 +233,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
                 startService(svc);
                 routeMode = RouteExpandableAdapter.SUBWAY;
-                mDrawerList.setOnGroupCollapseListener(faveSubListener);
                 findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
@@ -256,7 +251,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     routeMode = RouteExpandableAdapter.FAVE;
                     //no extras for Favorites service
                     startService(new Intent(this, NavDrawerTask.class));
-                    mDrawerList.setOnGroupCollapseListener(faveSubListener);
                 }
 
         } //end switch
@@ -271,9 +265,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
         mRouteId = (String)v.getTag();
-        mRouteName = Route.readableName(this, ((TextView) v).getText().toString());
-        setTitle(mRouteName);
+        mRouteName = ((TextView) v).getText().toString();
+        setTitle(Route.readableName(this, mRouteName));
         v.setSelected(true);
+        if(mDrawerList.getTag() != null) {
+            ((View)mDrawerList.getTag()).setSelected(false);
+        }
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
@@ -287,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         } else {
             Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
         }
-
+        mDrawerList.setTag(v);
         //Fab is to switch between inbound and outbound
     }
 
@@ -348,9 +345,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         @Override
         public void onGroupCollapse(int i) {
         //group is always zero for favorites and subway, allow only one open group
-            if(!mDrawerList.isGroupExpanded(i)) {
-            mDrawerList.expandGroup(i);
-        }
+            if(routeMode == RouteExpandableAdapter.BUS) {
+                return;
+            } else {
+                if(!mDrawerList.isGroupExpanded(i)) {
+                    mDrawerList.expandGroup(i);
+                }
+            } //don't collapse favorites or subways
         }
 
     };
@@ -376,6 +377,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 return;
             }
             final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
+
             //DEBUGGGING
             /*if(r.mInboundStops != null && r.mInboundStops.get(0) != null) {
                 final Intent tnt = new Intent(getBaseContext(), StopService.class);
@@ -390,10 +392,25 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 Log.d(TAG, "reset Route");
                 mRouteFragment.mListAdapter.resetRoute(r);
                 ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+                if(!mRouteFragment.mListAdapter.isOneWay) {
+                    //this is a one way route
+                    Log.d(TAG, "stting button viz");
+                    findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+                }
             } else {
+                mFavoritesAction.setVisible(true);
+                mFavoritesAction.setCheckable(true);
+                if(DBHelper.checkFavorite(context, r.name)) {
+                    mFavoritesAction.setChecked(true);
+                } else {
+                    mFavoritesAction.setChecked(false);
+                }
+                setTitle(Route.readableName(context, r.name));
+                mRouteId = r.id;
+                mRouteName = r.name;
                 final FragmentManager mgr = getSupportFragmentManager();
-
                 if(mgr.findFragmentByTag(r.name) != null) {
+                    Log.d(TAG, "fragment is showing");
                     RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
                     if(mRouteFragment == null) {
                         mgr.beginTransaction().show(frag).commit();
@@ -401,24 +418,26 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                         mgr.beginTransaction().hide(mRouteFragment).show(frag).commit();
                     }
                     mRouteFragment = frag;
+                    mRouteFragment.onResume();
                 } else {
+                    Log.d(TAG, "new fragment");
                     if(mRouteFragment == null) {
-                        mRouteFragment = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
+                        mRouteFragment = RouteFragment.newInstance(r);
                         mgr.beginTransaction().add(R.id.container, mRouteFragment, r.name).commit();
                     } else {
-                        //Log.d(TAG, "new, hide and add");
-                        RouteFragment frag = RouteFragment.newInstance(new SimpleStopAdapter(r, 1), r.name);
+                        RouteFragment frag = RouteFragment.newInstance(r);
                         mgr.beginTransaction().hide(mRouteFragment).add(R.id.container, frag, r.name).commit();
                         mRouteFragment = frag;
                     }
                 }
-                mFavoritesAction.setVisible(true);
-                mFavoritesAction.setCheckable(true);
+
             }
 
             if(DBHelper.checkFavorite(MainActivity.this, mRouteName)) {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                Log.d(TAG, "is a favorite");
             } else {
+                Log.d(TAG, "not favorited");
                 mFavoritesAction.setIcon(android.R.drawable.star_big_off);
             }
             mFavoritesAction.getIcon().invalidateSelf();
@@ -505,7 +524,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             } else {
                 noFaves = false;
             }
-            DBHelper.close(db);
             return null;
         }
     }

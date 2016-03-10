@@ -48,7 +48,7 @@ public class CopyDBService extends IntentService {
                 outStream.write(tmp); //write that byte
                 tmp = inStream.read();
             }
-            Log.d(TAG, "db file: " + outFile.getName());
+            Log.d(TAG, "mDB file: " + outFile.getName());
             //Toast.makeText(this, "database copy to sdcard complete", Toast.LENGTH_SHORT).show();
         } catch (FileNotFoundException e) {
             e.printStackTrace();

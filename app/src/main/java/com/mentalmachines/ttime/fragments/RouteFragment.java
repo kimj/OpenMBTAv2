@@ -20,30 +20,32 @@ import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
+import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.services.ScheduleService;
 
 public class RouteFragment extends Fragment{
 	/**
 	 * A fragment representing a train or bus line
 	 */
-    private static final String LINE_NAME = "line";
     private static final String TAG = "RouteFragment";
 
     boolean mInbound = true;
     public RecyclerView mList;
-    public static SimpleStopAdapter mListAdapter;
+    public SimpleStopAdapter mListAdapter;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
 	/**
 	 * Returns a new instance of this fragment
      * sets the route stops and route name
 	 */
-	public static RouteFragment newInstance(SimpleStopAdapter listData, String title) {
+	public static RouteFragment newInstance(Route route) {
+        if(route == null) {
+            return new RouteFragment();
+        }
 		RouteFragment fragment = new RouteFragment();
 		Bundle args = new Bundle();
-        args.putString(LINE_NAME, title);
+        args.putParcelable(TAG, route);
 		fragment.setArguments(args);
-        mListAdapter = listData;
 		return fragment;
 	}
 
@@ -55,30 +57,40 @@ public class RouteFragment extends Fragment{
 		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
 
         mList = (RecyclerView) rootView.findViewById(R.id.route_list);
-        if(mListAdapter == null) {
-			mList.setVisibility(View.GONE);
+        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
+        swipeViewGroup.setOnRefreshListener(refreshList);
+        swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
+        //Floating Action button switches the display between inbound and outbound
+		return rootView;
+	}
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "route resume");
+
+        if(!getArguments().containsKey(TAG)) {
+            mList.setVisibility(View.GONE);
+            getView().findViewById(R.id.route_empty).setVisibility(View.VISIBLE);
             getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");
         } else {
             //there is a route
-			mList.setVisibility(View.VISIBLE);
+            final Route r = getArguments().getParcelable(TAG);
+            mListAdapter = new SimpleStopAdapter(r, 1);
+            mList.setVisibility(View.VISIBLE);
             if(mListAdapter.isOneWay) {
                 //this is a one way route
                 Log.w(TAG, "one way route");
                 getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             } else {
-               //getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
                 getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
             }
             mList.setAdapter(mListAdapter);
             //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
-            final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
-            swipeViewGroup.setOnRefreshListener(refreshList);
-            swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         }
-        //Floating Action button switches the display between inbound and outbound
-		return rootView;
-	}
+    }
 
     SwipeRefreshLayout.OnRefreshListener refreshList = new SwipeRefreshLayout.OnRefreshListener() {
 
