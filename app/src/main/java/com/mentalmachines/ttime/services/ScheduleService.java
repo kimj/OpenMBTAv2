@@ -32,14 +32,10 @@ public class ScheduleService extends IntentService {
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
     public static final String SUFFIX = "?api_key=3G91jIONLkuTMXbnbF7Leg&format=json";
-    public static final String alertsParams ="&include_access_alerts=false&include_service_alerts=false";
 
     //JSON constants for predictive times, data is not in SQLite
-    public static final String STOPPARAM = "&stop=";
     public static final String ROUTEPARAM = "&route=";
-    public static final String STOPVERB = "predictionsbystop";
     public static final String ROUTEVERB = "predictionsbyroute";
-    public static final String GETSTOPTIMES = BASE + STOPVERB + SUFFIX + STOPPARAM;
     public static final String GETROUTETIMES = BASE + ROUTEVERB + SUFFIX + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
@@ -78,7 +74,7 @@ public class ScheduleService extends IntentService {
                 return;
             }
         }
-        db.close();
+
         //Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
         try {
             getTimesForRoute(searchRoute.id);

@@ -53,7 +53,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
     @Override
     public void onBindViewHolder(final StopViewHolder holder, int position) {
         StopData s = items[position];
-        if(s == null) {
+        if(s == null || s.schedTimes.isEmpty()) {
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
