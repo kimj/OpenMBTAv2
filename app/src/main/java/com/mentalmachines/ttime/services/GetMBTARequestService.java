@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Alert;
 
 import java.io.IOException;
@@ -47,11 +48,20 @@ public class GetMBTARequestService extends IntentService {
 
     final StringBuilder strBuild = new StringBuilder(0);
     SQLiteDatabase mDB;
+    Cursor c;
 
 
     //required constructor
     public GetMBTARequestService() {
         super(TAG);
+    }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        if(c != null && !c.isClosed()) {
+            c.close();
+        }
     }
 
     /**
@@ -65,7 +75,7 @@ public class GetMBTARequestService extends IntentService {
         try {
             if(b == null) {
                 Log.d(TAG, "starting alerts svc");
-                mDB = DBHelper.getHelper(this).getWritableDatabase();
+                mDB = TTimeApp.sHelper.getWritableDatabase();
                 parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
             } else {
                 Log.e(TAG, "not starting svc for route " + b.getString(TAG));
@@ -190,8 +200,8 @@ public class GetMBTARequestService extends IntentService {
                             cv.put(DBHelper.KEY_EFFECT_PERIOD_END, alert.effect_end);
                         }
                         //end effect array, now insert the alert
-                        if(mDB == null || !mDB.isOpen()) {
-                            mDB = DBHelper.getHelper(this).getWritableDatabase();
+                        if(!mDB.isOpen()) {
+                            mDB = TTimeApp.sHelper.getWritableDatabase();
                         }
                         if(Long.valueOf(alert.created_dt) > timestamp) {
                                 Log.i(TAG, "loading new alert: " + alert.alert_id +
@@ -264,13 +274,14 @@ public class GetMBTARequestService extends IntentService {
         } //parser closed, now set the alerts into the stops table
         cv.clear();
         String[] selectArgs;
-        Cursor c;
+
         for(ServiceData setStop: stopsList) {
             //putting alert id into stops table, most recent will be there if there is more than one
             if(setStop.svc_stop_id == null) break;
             //alerts can affect an entire route, TODO - handle this
             selectArgs = new String[]{ setStop.svc_stop_id, setStop.svc_route_id};
             cv.put(DBHelper.KEY_ALERT_ID, setStop.alert_id);
+            if(!mDB.isOpen()) TTimeApp.sHelper.getReadableDatabase();
             c = mDB.query(DBHelper.STOPS_INB_TABLE,
                     new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs,
                     null, null, null);
@@ -293,31 +304,42 @@ public class GetMBTARequestService extends IntentService {
     } //end parseAlerts()
 
     void updateStops(String alertId){
+        /**
+         * This code is crashing if it is still running at launch when the user changes directions on the displayed route
+         */
+        if(!mDB.isOpen()) {
+            mDB = TTimeApp.sHelper.getWritableDatabase();
+        }
         Log.i(TAG, "clearing old alert from stops table " + alertId);
-        Cursor c = mDB.query(DBHelper.STOPS_INB_TABLE,
+        c = mDB.query(DBHelper.STOPS_INB_TABLE,
                 new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
                 null, null, null, null);
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ALERT_ID, "");
         if(c.moveToFirst()) {
+            if(!mDB.isOpen()) {
+                mDB = TTimeApp.sHelper.getWritableDatabase();
+            }
             mDB.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
         }
         c = mDB.query(DBHelper.STOPS_OUT_TABLE,
                 new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
                 null, null, null, null);
         if(c.moveToFirst()) {
+            if(!mDB.isOpen()) {
+                mDB = TTimeApp.sHelper.getWritableDatabase();
+            }
             mDB.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
         }
         Log.i(TAG, "deleting from Alerts table: " + mDB.delete(DBHelper.DB_ALERTS_TABLE, DBHelper.KEY_ALERT_ID + " like " + alertId, null));
-        c.close();
     }
 
     ArrayList<AlertHolder> selectAlerts() {
         final ArrayList<AlertHolder> tmp = new ArrayList<>();
-        if(mDB == null || !mDB.isOpen()) {
-            mDB = DBHelper.getHelper(this).getWritableDatabase();
+        if(!mDB.isOpen()) {
+            mDB = TTimeApp.sHelper.getWritableDatabase();
         }
-        final Cursor c = mDB.query(DBHelper.DB_ALERTS_TABLE,
+        c = mDB.query(DBHelper.DB_ALERTS_TABLE,
                 new String[] { DBHelper.KEY_ALERT_ID, DBHelper.KEY_LAST_MODIFIED_DT },
                 null, null, null, null, DBHelper.KEY_LAST_MODIFIED_DT + " desc");
         if(c.getCount() > 0 && c.moveToFirst()) {
@@ -329,7 +351,7 @@ public class GetMBTARequestService extends IntentService {
                 tmp.add(alert);
             } while(c.moveToNext());
         }
-        c.close();
+
         //Log.i(TAG, "Alerts in table " + tmp.size());
         return tmp;
     }

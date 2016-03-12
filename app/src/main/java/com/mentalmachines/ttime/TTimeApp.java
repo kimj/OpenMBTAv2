@@ -18,12 +18,14 @@ import com.mentalmachines.ttime.services.GetMBTARequestService;
  */
 public class TTimeApp extends Application{
     public static final String TAG = "TTimeApp";
+    public static DBHelper sHelper;
 
     @Override
     public void onCreate() {
         super.onCreate();
         if(checkNetwork(this)) {
-            final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
+            sHelper = new DBHelper(this);
+            final SQLiteDatabase db = sHelper.getReadableDatabase();
             if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
                 Log.i(TAG, "no db");
                 startService(new Intent(this, DBCreateStopsRoutes.class));
@@ -34,14 +36,6 @@ public class TTimeApp extends Application{
         } else {
             Log.e(TAG, "network error, app services not started");
         }
-    }
-
-    @Override
-    public void onTerminate() {
-        super.onTerminate();
-        //http://touchlabblog.tumblr.com/post/24474750219/single-sqlite-connection
-        DBHelper.getHelper(this).close();
-        //end app, finally close helper
     }
 
     /**

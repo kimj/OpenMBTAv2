@@ -267,8 +267,8 @@ public class DBHelper extends SQLiteOpenHelper {
         return null;
     }
 
-    public static boolean checkFavorite(Context ctx, String routeNm) {
-        final SQLiteDatabase db = DBHelper.getHelper(ctx).getReadableDatabase();
+    public static boolean checkFavorite(String routeNm) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         final boolean isFavorite = checkFavorite(db, routeNm);
         return isFavorite;
     }
@@ -285,8 +285,8 @@ public class DBHelper extends SQLiteOpenHelper {
         return returnVal;
     }
 
-    public static boolean setFavorite(Context ctx, String routeNm, String routeId) {
-        final SQLiteDatabase db = DBHelper.getHelper(ctx).getWritableDatabase();
+    public static boolean setFavorite(String routeNm, String routeId) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
         final boolean isFavorite;
         final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         if(c.getCount() > 0) {
@@ -309,18 +309,22 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     //This junk manages db concurrency, many reads and one write
-    private static DBHelper instance;
+    //volatile means one copy in Global memory
+    /*private volatile static DBHelper instance;
 
-    /**
+    *//**
      * DBHelper is a singleton, the app has one db connection, DBHelper
+     * The application class instantiates so, no other write, no need to synchronize
+     * Seem to have issues clisng cursors!
+     * Whenever getHelper is called after the app is launched will already have created the helper instance
      * @param context
      * @return
-     */
-    public static synchronized DBHelper getHelper(Context context){
+     *//*
+    public static DBHelper getHelper(Context context){
         if(instance == null) {
             instance = new DBHelper(context);
         }
         return instance;
-    }
+    }*/
 
 }

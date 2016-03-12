@@ -15,6 +15,7 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
@@ -22,6 +23,8 @@ import com.mentalmachines.ttime.objects.StopList;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Created by emezias on 1/11/16.
@@ -37,7 +40,8 @@ public class StopService extends IntentService {
     public static final String STOPVERB = "schedulebystop";
     public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
-
+    ArrayList<String> idDirs = new ArrayList<>(0);
+    ArrayList<StopData> tmpList;
     final StringBuilder strBuild = new StringBuilder(0);
 
     //required, empty constructor, builds intents
@@ -55,30 +59,33 @@ public class StopService extends IntentService {
         //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
         mainStop = b.getParcelable(TAG);
+
         final ArrayList<StopData> nearby = new ArrayList<>();
-        final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
+        nearby.add(mainStop);
+
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
                 null, null, null, null, "_id ASC", null);
-        ArrayList<StopData> tmp = Route.makeStops(stopNameCursor);
+        tmpList = Route.makeStops(stopNameCursor);
         float[] results = new float[1];
         final double mainLong = Double.valueOf(mainStop.stopLong);
         final double mainLat = Double.valueOf(mainStop.stopLat);
-        for(StopData stop: tmp) {
+        for(StopData stop: tmpList) {
             Location.distanceBetween(mainLong, mainLat,
                     Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
             //find other stops within 25m of the mainStop
-            if(results[0] < 25.0f && !nearby.contains(stop)) {
+            if(results[0] < 25.0f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
                 nearby.add(stop);
             }
         }
         stopNameCursor = db.query(true, DBHelper.STOPS_OUT_TABLE, Route.mStopProjection,
                 null, null, null, null, "_id ASC", null);
-        tmp = Route.makeStops(stopNameCursor);
-        for(StopData stop: tmp) {
+        tmpList = Route.makeStops(stopNameCursor);
+        for(StopData stop: tmpList) {
             Location.distanceBetween(mainLong, mainLat,
                     Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
             //find other stops within 25m of the mainStop
-            if(results[0] < 25.0f && !nearby.contains(stop)) {
+            if(results[0] < 25.0f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
                 nearby.add(stop);
             }
         }
@@ -87,10 +94,29 @@ public class StopService extends IntentService {
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        tmp.clear();
+        tmpList.clear();
         //cleanup completed
+        StopData dup  = nearby.get(0);
+        StopData tmp;
+        idDirs.clear();
+        for(int dex = 1; dex < nearby.size(); dex++) {
+            tmp = nearby.get(dex);
+            if(dup.schedTimes.equals(tmp.schedTimes)) {
+                idDirs.add(dex + "");
+            }
+            dup = tmp;
+        }
+        if(!idDirs.isEmpty()) {
+            //need to remove duplicates in reverse order to preserve the saved index value
+            for(int dex = idDirs.size() - 1; dex >= 0; dex--) {
+                nearby.remove(Integer.valueOf(idDirs.get(dex)).intValue());
+            }
+            //would be better to figure out how the dup is getting through
+            idDirs.clear();
+            nearby.trimToSize();
+        }
         try {
-            //Log.d(TAG, "stops to parse? " + nearby.size());
+            Log.d(TAG, "stops to parse? " + nearby.size());
             for(StopData stop: nearby) {
                 parseStop(stop);
                 if(stop.schedTimes.isEmpty()) {
@@ -111,10 +137,10 @@ public class StopService extends IntentService {
     void parseStop(StopData stop) throws IOException {
         //add schedule times and direction to the stops
         final Time t = new Time();
-        String routeName = "", directionNm = "";
+        String routeName = "", directionNm = "", tmp;
         final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
         Log.d(TAG, "stops call? " + GETSTOPTIMES + stop.stopId);
-
+        StopData newStop = null;
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -150,8 +176,14 @@ public class StopService extends IntentService {
                             if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
                                 //Some stops might have multiple routes
                                 token = parser.nextToken();
-                                routeName = Route.readableName(this, parser.getValueAsString());
-                                //Log.d(TAG, "stop's route " + routeName);
+                                if(routeName.isEmpty()) {
+                                    routeName = parser.getValueAsString();
+                                } else {
+                                    newStop = new StopData(stop);
+                                    stop = newStop;
+                                    routeName = parser.getValueAsString();
+                                }
+                                Log.d(TAG, "stop's route " + routeName);
                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
                                 //no names at the top of this return, straight into objects
                                 //direction, begin array, begin object
@@ -166,20 +198,26 @@ public class StopService extends IntentService {
 
                                     if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        directionNm = parser.getValueAsString();
-                                        Log.d(TAG, "direction id set " + directionNm);
-
+                                        if(directionNm.isEmpty()) {
+                                            directionNm = parser.getValueAsString();
+                                            //this assignment should fix a glitch with the first stop to parse
+                                            stop.schedTimes = "";
+                                        } else {
+                                            newStop = new StopData(stop);
+                                            stop = newStop;
+                                            directionNm = parser.getValueAsString();
+                                        }
+                                        //Log.d(TAG, "direction id set " + directionNm);
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
                                         //array of trips with stops inside, may be several trips returned
                                         token = parser.nextToken();
                                         if (!JsonToken.START_ARRAY.equals(token)) {
                                             break;
                                         }
-                                        //Log.d(TAG, "trip array");
+                                        //Log.d(TAG, "handle idDir here? " + Route.readableName(this, routeName) + " " + directionNm);
                                         while (!JsonToken.END_ARRAY.equals(token)) {
                                             //running through the trips, read the trip array into times
                                             token = parser.nextToken();
-
                                             if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
                                                 t.set(1000 * Long.valueOf(parser.getValueAsString()));
@@ -187,16 +225,29 @@ public class StopService extends IntentService {
                                                 getTime(t);
                                                 //put the scheduled time into the string builder
                                             } else if (JsonToken.END_OBJECT.equals(token)) {
-                                                //end of the trip, add in String
-                                                if (!stop.schedTimes.isEmpty()) {
+                                                //end of the trip
+                                                tmp = Route.readableName(this, routeName) + " " + directionNm;
+                                                if(!stop.schedTimes.isEmpty()) {
+                                                    //add a new time into the String
                                                     stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
                                                 } else {
-                                                    strBuild.insert(0, getString(R.string.scheduled));
+                                                    //start the schedule string and add in a new stopdata, as needed
+                                                    Log.d(TAG, "new routename: " + tmp);
+                                                    strBuild.insert(0, tmp + " " + getString(R.string.scheduled) + "\n");
                                                     stop.schedTimes = strBuild.toString();
+                                                    if(newStop == null) {
+                                                        //first stop!
+                                                        if(idDirs.contains(tmp)) {
+                                                            Log.w(TAG, "should not happen " + tmp);
+                                                        } else
+                                                        idDirs.add(tmp);
+                                                    } else {
+                                                        if(!newStop.schedTimes.isEmpty() && !idDirs.contains(tmp)) {
+                                                            tmpList.add(newStop);
+                                                        }
+                                                    }
                                                 }
-                                                if (stop.predicTimes.isEmpty()) {
-                                                    stop.predicTimes = routeName + ": " + directionNm;
-                                                }
+
                                                 strBuild.setLength(0);
                                                 //Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);
                                             } //end object
@@ -205,19 +256,14 @@ public class StopService extends IntentService {
                                         token = JsonToken.NOT_AVAILABLE;
                                         //ending the trip array should not end the  parsing
                                     }//trip field
-
                                 }
                                 token = JsonToken.NOT_AVAILABLE;
-
                             }//end dir field
-
                         }//route array end
                         token = JsonToken.NOT_AVAILABLE;
                     }
                 } //end mode array, end array token
-
             } //array following stop name inside here
-
         } //parser is closed
         if (stop.schedTimes.isEmpty()) {
             Log.e(TAG, "error with stop detail, no trips or times");
@@ -225,9 +271,24 @@ public class StopService extends IntentService {
     }
 
     void endService(ArrayList<StopData> nearby) {
+        //Log.d(TAG, "stops to add? " + tmpList.size());
+        if(!tmpList.isEmpty()) {
+            for(StopData s: tmpList) {
+                nearby.add(s);
+            }
+        }
+        Collections.sort(nearby, new Comparator<StopData>() {
+            @Override
+            public int compare(final StopData object1, final StopData object2) {
+                return object1.schedTimes.compareTo(object2.schedTimes);
+            }
+        });
         final StopList details = new StopList(mainStop, nearby);
         final Intent returnResults = new Intent(TAG);
         returnResults.putExtra(TAG, details);
+        tmpList.clear();
+
+        Log.d(TAG, "stops to return? " + nearby.size() + ":" + details.mStopList.size());
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
 

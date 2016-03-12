@@ -173,6 +173,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
      * @param routeNm - if this is a bus, it will set a prefix
      */
     public static void colorView(TextView tv, String routeNm) {
+        tv.setTag(R.layout.child_view, routeNm);
         if(routeNm.contains("Green")) {
             tv.setBackgroundResource(R.drawable.bg_greenroute);
             tv.setText(routeNm);

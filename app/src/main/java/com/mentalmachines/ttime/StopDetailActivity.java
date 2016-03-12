@@ -85,10 +85,17 @@ public class StopDetailActivity extends AppCompatActivity {
     }
 
     void setList() {
-        setTitle(mStopDetail.mainStop.stopName);
-        final StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
-        mStopDetail.mStopList.toArray(adapterList);
+        if(mStopDetail.mainStop.stopName.contains(" - ")) {
+            setTitle(mStopDetail.mainStop.stopName.substring(0,
+                    mStopDetail.mainStop.stopName.indexOf(" -")));
+        } else {
+            setTitle(mStopDetail.mainStop.stopName);
+        }
+
+        StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
+        adapterList = mStopDetail.mStopList.toArray(adapterList);
         mList.setAdapter(new StopDetailAdapter(adapterList));
+        Log.d(TAG, "set new adapter");
         ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
     }
 
@@ -124,6 +131,7 @@ public class StopDetailActivity extends AppCompatActivity {
                 mProgress.cancel();
             }
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
+            Log.d(TAG, mStopDetail.mainStop.stopName + " data check, stop detail list size " + mStopDetail.mStopList.size());
             setList();
         }
     };

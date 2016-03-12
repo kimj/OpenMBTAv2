@@ -9,6 +9,7 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
 
 /**
  * Created by emezias on 2/5/16.
@@ -30,7 +31,7 @@ public class NavDrawerTask extends IntentService {
     protected void onHandleIntent(Intent intent) {
         //Log.d(TAG, "starting Drawer adapter data service");
         final Intent tnt = new Intent(TAG);
-        final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         final Bundle b = intent.getExtras();
         final Cursor c;
         if(b == null) {

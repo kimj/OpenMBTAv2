@@ -17,6 +17,16 @@ public class StopData implements Parcelable {
     public String predicTimes = "";
     public String schedTimes = "";
 
+    public StopData(){}
+
+    public StopData(StopData makeCopy) {
+        stopName = makeCopy.stopName;
+        stopId = makeCopy.stopId;
+        stopLat = makeCopy.stopLat;
+        stopLong = makeCopy.stopLong;
+        stopAlert = makeCopy.stopAlert;
+    }
+
     @Override
     public int describeContents() {
         return 0;

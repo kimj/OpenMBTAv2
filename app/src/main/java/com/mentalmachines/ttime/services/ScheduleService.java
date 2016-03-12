@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 
@@ -61,7 +62,7 @@ public class ScheduleService extends IntentService {
         searchRoute = new Route();
         searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
         searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
-        final SQLiteDatabase db = DBHelper.getHelper(this).getReadableDatabase();
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         searchRoute.setStops(db);
         if(searchRoute.name == null) {
             final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, new String[]{DBHelper.KEY_ROUTE_NAME},

@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
 
 import java.io.IOException;
 import java.net.URL;
@@ -59,7 +60,7 @@ public class DBCreateStopsRoutes extends IntentService {
     }
 
     void parseRoutesCall(JsonParser parser) throws IOException {
-        final SQLiteDatabase mDB = DBHelper.getHelper(this).getWritableDatabase();
+        final SQLiteDatabase mDB = TTimeApp.sHelper.getWritableDatabase();
         final ContentValues cv = new ContentValues();
         String mode_name = null;
         //int rtType = -1;
@@ -149,7 +150,7 @@ public class DBCreateStopsRoutes extends IntentService {
     } //end routes
 
     void parseStopsCall(String route) throws IOException {
-        final SQLiteDatabase mDB = DBHelper.getHelper(this).getWritableDatabase();
+        final SQLiteDatabase mDB = TTimeApp.sHelper.getWritableDatabase();
         JsonParser parser = factory.createParser(new URL(STOPS + route));
         //check that the route isn't already in the mDB?
         final ContentValues cv = new ContentValues();

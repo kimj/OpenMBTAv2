@@ -33,7 +33,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ExpandableListView;
 import android.widget.PopupMenu;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
@@ -139,7 +138,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_favorites:
-                if(DBHelper.setFavorite(this, mRouteName, mRouteId)) {
+                if(DBHelper.setFavorite(mRouteName, mRouteId)) {
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                     noFaves = false;
@@ -193,23 +192,24 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     @Override
     protected void onResume() {
         super.onResume();
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
-        if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
-            tx.add(RouteFragment.newInstance(null), TAG).commit();
-        } else {
-            mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
-            if(TTimeApp.checkNetwork(this)) {
-                mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-                final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
-                tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
-                startService(tnt);
-                Log.i(TAG, "starting schedule service with id: " + mRouteId);
+        if(mRouteFragment == null) {
+            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+            if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+                tx.add(RouteFragment.newInstance(null), TAG).commit();
             } else {
-                Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
+                mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
+                if(TTimeApp.checkNetwork(this)) {
+                    mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+                    final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+                    tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
+                    startService(tnt);
+                    Log.i(TAG, "starting schedule service with id: " + mRouteId);
+                } else {
+                    Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
+                }
             }
         }
-
     }
 
     /**
@@ -265,7 +265,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
         mRouteId = (String)v.getTag();
-        mRouteName = ((TextView) v).getText().toString();
+        mRouteName = (String) v.getTag(R.layout.child_view);
         setTitle(Route.readableName(this, mRouteName));
         v.setSelected(true);
         if(mDrawerList.getTag() != null) {
@@ -400,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             } else {
                 mFavoritesAction.setVisible(true);
                 mFavoritesAction.setCheckable(true);
-                if(DBHelper.checkFavorite(context, r.name)) {
+                if(DBHelper.checkFavorite(r.name)) {
                     mFavoritesAction.setChecked(true);
                 } else {
                     mFavoritesAction.setChecked(false);
@@ -433,7 +433,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
             }
 
-            if(DBHelper.checkFavorite(MainActivity.this, mRouteName)) {
+            if(DBHelper.checkFavorite(mRouteName)) {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                 Log.d(TAG, "is a favorite");
             } else {
@@ -517,7 +517,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
         @Override
         protected Void doInBackground(Void... voids) {
-            final SQLiteDatabase db = DBHelper.getHelper(MainActivity.this).getReadableDatabase();
+            final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
             if(DatabaseUtils.queryNumEntries(db, DBHelper.FAVS_TABLE) == 0) {
                 Log.i(TAG, "no favorites");
                 noFaves = true;
