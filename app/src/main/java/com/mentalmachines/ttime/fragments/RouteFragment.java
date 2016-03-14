@@ -24,9 +24,9 @@ import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.services.ScheduleService;
 
 public class RouteFragment extends Fragment{
-	/**
-	 * A fragment representing a train or bus line
-	 */
+    /**
+     * A fragment representing a train or bus line
+     */
     private static final String TAG = "RouteFragment";
 
     boolean mInbound = true;
@@ -34,61 +34,63 @@ public class RouteFragment extends Fragment{
     public SimpleStopAdapter mListAdapter;
     AnimatorSet moveLeft, moveRight, moveR2, moveL2;
 
-	/**
-	 * Returns a new instance of this fragment
+    /**
+     * Returns a new instance of this fragment
      * sets the route stops and route name
-	 */
-	public static RouteFragment newInstance(Route route) {
+     */
+    public static RouteFragment newInstance(Route route) {
         if(route == null) {
             return new RouteFragment();
         }
-		RouteFragment fragment = new RouteFragment();
-		Bundle args = new Bundle();
+        RouteFragment fragment = new RouteFragment();
+        Bundle args = new Bundle();
         args.putParcelable(TAG, route);
-		fragment.setArguments(args);
-		return fragment;
-	}
+        fragment.setArguments(args);
+        return fragment;
+    }
 
-	public RouteFragment() { }
+    public RouteFragment() { }
 
-	@Override
-	public View onCreateView(LayoutInflater inflater, ViewGroup container,
-			Bundle savedInstanceState) {
-		final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                             Bundle savedInstanceState) {
+        final View rootView = inflater.inflate(R.layout.route_fragment, container, false);
 
         mList = (RecyclerView) rootView.findViewById(R.id.route_list);
         final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
         swipeViewGroup.setOnRefreshListener(refreshList);
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         //Floating Action button switches the display between inbound and outbound
-		return rootView;
-	}
+        return rootView;
+    }
 
     @Override
     public void onResume() {
         super.onResume();
         Log.d(TAG, "route resume");
-
-        if(!getArguments().containsKey(TAG)) {
-            mList.setVisibility(View.GONE);
-            getView().findViewById(R.id.route_empty).setVisibility(View.VISIBLE);
-            getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
-            Log.w(TAG, "no stops");
-        } else {
-            //there is a route
-            final Route r = getArguments().getParcelable(TAG);
-            mListAdapter = new SimpleStopAdapter(r, 1);
-            mList.setVisibility(View.VISIBLE);
-            if(mListAdapter.isOneWay) {
-                //this is a one way route
-                Log.w(TAG, "one way route");
+        Bundle arguments = getArguments();
+        if (arguments != null){
+            if(!getArguments().containsKey(TAG)) {
+                mList.setVisibility(View.GONE);
+                getView().findViewById(R.id.route_empty).setVisibility(View.VISIBLE);
                 getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                Log.w(TAG, "no stops");
             } else {
-                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-                getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
+                //there is a route
+                final Route r = getArguments().getParcelable(TAG);
+                mListAdapter = new SimpleStopAdapter(r, 1);
+                mList.setVisibility(View.VISIBLE);
+                if(mListAdapter.isOneWay) {
+                    //this is a one way route
+                    Log.w(TAG, "one way route");
+                    getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                } else {
+                    getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+                    getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
+                }
+                mList.setAdapter(mListAdapter);
+                //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
             }
-            mList.setAdapter(mListAdapter);
-            //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
         }
     }
 
@@ -117,27 +119,27 @@ public class RouteFragment extends Fragment{
 
 
     View.OnClickListener fabListener = new View.OnClickListener() {
-    @Override
-    public void onClick(View view) {
-        reloadTimes();
-        //make sure the times are fresh when switching directions
-        if(moveRight == null) {
-            animationSetup(getView());
-        }
-        mInbound = !mInbound;
-        if(mInbound) {
-            ObjectAnimator.ofFloat(view, "rotation", 540f).start();
-            //mItems = getArguments().getStringArray(IN_STOPS_LIST);
-            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
-            mListAdapter.changeDirection(1);
-            moveRight.start();
-        } else {
-            ObjectAnimator.ofFloat(view, "rotation", -540f).start();
-            //TODO -> call the schedule service to get the latest times
-            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
-            mListAdapter.changeDirection(0);
-            moveLeft.start();
-        }
+        @Override
+        public void onClick(View view) {
+            reloadTimes();
+            //make sure the times are fresh when switching directions
+            if(moveRight == null) {
+                animationSetup(getView());
+            }
+            mInbound = !mInbound;
+            if(mInbound) {
+                ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+                //mItems = getArguments().getStringArray(IN_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+                mListAdapter.changeDirection(1);
+                moveRight.start();
+            } else {
+                ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+                //TODO -> call the schedule service to get the latest times
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+                mListAdapter.changeDirection(0);
+                moveLeft.start();
+            }
         }
     };
 
