@@ -143,6 +143,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             convertView = LayoutInflater.from(ctx).inflate(
                     R.layout.child_view, null);
         }
+        final View v = (View) parent.getTag();
         switch (mMode) {
             case BUS:
                 if(busChildren[groupPosition] == null) {
@@ -151,11 +152,17 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 final int rtIndex = busChildren[groupPosition][childPosition];
                 convertView.setTag(rtIds[rtIndex]);
                 colorView((TextView) convertView, rtNames[rtIndex]);
+                if(v != null && ((TextView)v).getText().equals(rtNames[rtIndex])) {
+                    convertView.setSelected(true);
+                }
                 break;
             case SUBWAY:
             case FAVE:
                 colorView((TextView) convertView, rtNames[childPosition]);
                 convertView.setTag(rtIds[childPosition]);
+                if(v != null && ((TextView)v).getText().equals(rtNames[childPosition])) {
+                    convertView.setSelected(true);
+                }
                 break;
         }
 

@@ -23,9 +23,9 @@ public class TTimeApp extends Application{
     @Override
     public void onCreate() {
         super.onCreate();
+        sHelper = new DBHelper(this);
+        final SQLiteDatabase db = sHelper.getReadableDatabase();
         if(checkNetwork(this)) {
-            sHelper = new DBHelper(this);
-            final SQLiteDatabase db = sHelper.getReadableDatabase();
             if(DatabaseUtils.queryNumEntries(db, DBHelper.DB_ROUTE_TABLE) == 0) {
                 Log.i(TAG, "no db");
                 startService(new Intent(this, DBCreateStopsRoutes.class));

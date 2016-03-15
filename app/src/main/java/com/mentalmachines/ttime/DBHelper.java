@@ -7,6 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.mentalmachines.ttime.objects.Route;
+
 /**
  * Created by CaptofOuterSpace on 1/23/2016.
  */
@@ -52,19 +54,19 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_STOPLN = "stop_lon";
 
     public static final String KEY_TRIP = "trip";
-    public static final String KEY_TRIP_ID = "trip_id";
-    public static final String KEY_TRIP_SIGN = "trip_headsign";
     public static final String KEY_VEHICLE = "vehicle";
-    public static final String KEY_ARR_TIME = "arrival_time";
-    public static final String KEY_DEP_TIME = "departure_time";
+    public static final String KEY_TRIP_SIGN = "trip_headsign";
+    public static final String KEY_HOUR = "hour";
+    public static final String KEY_MINUTE = "minute";
+    public static final String KEY_DTIME = "sch_dep_dt";
 
     String SCHEDULE_COLS = "(_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_ROUTE_ID + " TEXT not null,"
             + KEY_STOPID + " TEXT not null,"
-            + KEY_TRIP_ID + " TEXT not null,"
+            + KEY_DIR_ID + " NUMERIC not null,"
             + KEY_TRIP_SIGN + " TEXT,"
-            + KEY_ARR_TIME + " TEXT not null,"
-            + KEY_DEP_TIME + " TEXT not null);";
+            + KEY_HOUR + " TEXT not null,"
+            + KEY_MINUTE + " TEXT not null);";
 
     public static final String TABLE_PREFIX = "create table if not exists ";
     public static final String WEEKDAY_TABLE_BUS_IN = "weekday_table_b_in";
@@ -99,43 +101,43 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
     //these are created AFTER tables are loaded to speed through loading up these big tables
     public static final String WEEKDAY_DEX_B_IN = "CREATE UNIQUE INDEX WDAY_DEX_B_IN ON " + WEEKDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String WEEKDAY_DEX_B_OUT = "CREATE UNIQUE INDEX WDAY_DEX_B_OUT ON " + WEEKDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String WEEKDAY_DEX_B4_IN = "CREATE UNIQUE INDEX WDAY_DEX_B_IN ON " + WEEKDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String WEEKDAY_DEX_B4_OUT = "CREATE UNIQUE INDEX WDAY_DEX_B_OUT ON " + WEEKDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String WEEKDAY_DEX_SUB_IN = "CREATE UNIQUE INDEX WDAY_DEX_SUB_IN ON " + WEEKDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String WEEKDAY_DEX_SUB_OUT = "CREATE UNIQUE INDEX WDAY_DEX_SUB_OUT ON " + WEEKDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
 
     public static final String SATURDAY_DEX_B_IN = "CREATE UNIQUE INDEX SAT_DEX_INB ON " + SATURDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SATURDAY_DEX_B_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUTB ON " + SATURDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SATURDAY_DEX_4B_IN = "CREATE UNIQUE INDEX SAT_DEX_INB ON " + SATURDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SATURDAY_DEX_4B_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUTB ON " + SATURDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SATURDAY_DEX_SUB_IN = "CREATE UNIQUE INDEX SAT_DEX_IN ON " + SATURDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SATURDAY_DEX_SUB_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUT ON " + SATURDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
 
     public static final String SUN_DEX_B_IN = "CREATE UNIQUE INDEX SUN_DEX_INB ON " + SUNDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SUN_DEX_B_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUTB ON " + SUNDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SUN_DEX_B4_IN = "CREATE UNIQUE INDEX SUN_DEX_INB ON " + SUNDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SUN_DEX_B4_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUTB ON " + SUNDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SUN_DEX_SUB_IN = "CREATE UNIQUE INDEX SUN_DEX_IN ON " + SUNDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
     public static final String SUN_DEX_SUB_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUT ON " + SUNDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_ARR_TIME + ");";
+            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
 
 
     public static final String KEY_ALERTS= "alerts";
@@ -192,16 +194,7 @@ public class DBHelper extends SQLiteOpenHelper {
     //Scheduled arrival time at the stop for the trip, in epoch time
     //Example: “1361989260”
     public static final String PRED_TIME = "pre_dt";
-    public static final String DB_TABLE_PREDICTION = "timetable";
-    public static final String dropTimeTable = "DROP TABLE IF EXISTS " + DB_TABLE_PREDICTION + ";";
 
-    public static final String CREATE_PRED_TABLE = TABLE_PREFIX + DB_TABLE_PREDICTION + "("
-            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_STOPID + " TEXT not null,"
-            + KEY_DIR_ID + " NUMERIC not null,"
-            + KEY_SCH_TIME + " NUMERIC,"
-            + PRED_TIME + " NUMERIC not null,"
-            + KEY_PREAWAY + " NUMERIC not null);";
 
     // alert ids are saved to the stop table
     // parse alerts in reverse chron order, save alert id to stop table
@@ -306,6 +299,18 @@ public class DBHelper extends SQLiteOpenHelper {
 
         c.close();
         return isFavorite;
+    }
+
+    public static String getRouteName(SQLiteDatabase db, String routeID) {
+        final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, new String[]{DBHelper.KEY_ROUTE_NAME},
+                Route.routeStopsWhereClause + "'" + routeID + "'", null,
+                null, null, null);
+        if(c.moveToFirst()) {
+            final String name = c.getString(0);
+            c.close();
+            return name;
+        }
+        return null;
     }
 
     //This junk manages db concurrency, many reads and one write

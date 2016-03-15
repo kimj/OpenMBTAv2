@@ -2,7 +2,6 @@ package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -15,6 +14,7 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
+import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.StopData;
 
 import java.io.IOException;
@@ -35,8 +35,11 @@ public class ScheduleService extends IntentService {
 
     //JSON constants for predictive times, data is not in SQLite
     public static final String ROUTEPARAM = "&route=";
-    public static final String ROUTEVERB = "predictionsbyroute";
-    public static final String GETROUTETIMES = BASE + ROUTEVERB + SUFFIX + ROUTEPARAM;
+    public static final String PREDVERB = "predictionsbyroute";
+    public static final String SCHEDVERB = "schedulebyroute";
+    public static final String MAXHR_PARAM = "&max_time=1440&max_trips=100";
+    public static final String GETROUTETIMES = BASE + PREDVERB + SUFFIX + ROUTEPARAM;
+    public static final String GETROUTESCHED = BASE + SCHEDVERB + SUFFIX + MAXHR_PARAM + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
     final StringBuilder strBuild = new StringBuilder(0);
@@ -55,34 +58,39 @@ public class ScheduleService extends IntentService {
         //make the route here in the background
         //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
-        searchRoute = new Route();
-        searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
-        searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
-        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        searchRoute.setStops(db);
-        if(searchRoute.name == null) {
-            final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, new String[]{DBHelper.KEY_ROUTE_NAME},
-                    Route.routeStopsWhereClause + "'" + searchRoute.id + "'", null,
-                    null, null, null);
-            if(c.moveToFirst()) {
-                searchRoute.name = c.getString(0);
-                c.close();
-            } else {
-                Log.e(TAG, "bad route id? " + searchRoute.id);
-                db.close();
-                endService();
-                return;
-            }
+        if(b == null || !b.containsKey(DBHelper.KEY_ROUTE_ID)) {
+            Log.e(TAG, "bad route id");
+            endService();
+            return;
         }
+        searchRoute = new Route();
+        searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
 
-        //Log.i(TAG, "stops check " + searchRoute.mInboundStops.size());
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        if(b.containsKey(DBHelper.KEY_ROUTE_NAME)) {
+            searchRoute.name = b.getString(DBHelper.KEY_ROUTE_NAME);
+        } else {
+            searchRoute.name = DBHelper.getRouteName(db, searchRoute.id);
+        }
+        searchRoute.setStops(db);
+        //Route data is fully populated
+
         try {
-            getTimesForRoute(searchRoute.id);
+            if(b.containsKey(TAG)) {
+                //call for the schedule
+                Log.i(TAG, "start schedule service for " + searchRoute.name);
+                parseSchedule();
+            } else {
+                Log.i(TAG, "start prediction service for " + searchRoute.name);
+                getTimesForRoute(searchRoute.id);
+            }
+
         } catch (IOException e) {
-            Log.e(TAG, "problem with alerts call " + e.getMessage());
+            Log.e(TAG, "Exception in Schedule Service " + e.getMessage());
             e.printStackTrace();
             endService();
         }
+
     }
 
     void getTimesForRoute(String route) throws IOException {
@@ -176,12 +184,10 @@ public class ScheduleService extends IntentService {
                                         if(stop == null || value.isEmpty() || value == null) {
                                             Log.w(TAG, "skipping schedule time field");
                                         } else {
-                                            t.set(1000 * Long.valueOf(value));
-                                            t.normalize(false);
                                             if(stop.schedTimes.isEmpty()) {
-                                                stop.schedTimes = getTime(t);
+                                                stop.schedTimes = getTime(value, t);
                                             } else {
-                                                stop.schedTimes = stop.schedTimes + ", " + getTime(t);
+                                                stop.schedTimes = stop.schedTimes + ", " + getTime(value, t);
                                             }
                                             strBuild.setLength(0);
                                             //Log.d(TAG, "stop schedule " + stop.schedTimes);
@@ -193,13 +199,10 @@ public class ScheduleService extends IntentService {
                                         if(stop == null || value.isEmpty() || value == null) {
                                             Log.w(TAG, "skipping prediction time field");
                                         } else {
-                                            t.set(1000 * Long.valueOf(value));
-                                            t.normalize(false);
-                                            getTime(t);
+                                            getTime(value, t);
                                             //predicted time is now set into the string builder
                                         }
                                         //This time will go into the stop field below with the pre away key to put min/sec with the time
-
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         value = parser.getValueAsString();
@@ -223,13 +226,7 @@ public class ScheduleService extends IntentService {
                                             strBuild.setLength(0);
                                             //risky? proper order?
                                         }
-
-                                    } /*else if(JsonToken.END_OBJECT.equals(token)) {
-                                        //end of the stop, insert row
-                                        if(stop != null) {
-                                            Log.d(TAG, "stop object complete " + stop.stopId);
-                                        }
-                                    }*/
+                                    }
 
                                 } //end while stops
                                 //here we need to change the token from end array in order to continue parsing
@@ -253,8 +250,136 @@ public class ScheduleService extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
 
+    void parseSchedule( ) throws IOException {
+        //add schedule times and direction to the stops
+        final Time t = new Time();
+        Schedule sch = new Schedule();
+        sch.route = searchRoute;
+        Schedule.StopTimes tmpTimes = null;
+        String tripName = "";
+        int dirID = 0, dex;
+        String directionNm = "", tmp;
+        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTESCHED + searchRoute.id));
+        Log.d(TAG, "schedule call? " + GETROUTESCHED + searchRoute.id);
+
+        while (!parser.isClosed()) {
+            //start parsing, get the token
+            JsonToken token = parser.nextToken();
+            if (token == null) {
+                Log.e(TAG, "null token");
+                break;
+            }
+            //running through tokens to get to direction array, "error" key comes up before any other
+            if (JsonToken.FIELD_NAME.equals(token) && "error".equals(parser.getCurrentName())) {
+                //This route is done for the night or the server is hosed -> something is wrong
+                parser.close();
+                Log.w(TAG, "error reading " + searchRoute.name);
+                token = null;
+            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
+                //no names at the top of this return, straight into objects
+                //direction, begin array, begin object
+                //Log.d(TAG, "direction array");
+                token = parser.nextToken();
+                if (!JsonToken.START_ARRAY.equals(token)) {
+                    break;
+                }
+                //direction array, then read the trips array
+                while (!JsonToken.END_ARRAY.equals(token)) {
+                    token = parser.nextToken();
+
+                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        dirID = Integer.valueOf(parser.getValueAsString()).intValue();
+
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
+                        token = parser.nextToken();
+                        directionNm = parser.getValueAsString();
+                        Log.d(TAG, "direction id set " + directionNm);
+                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
+                        //array of trips with stops inside, may be several trips returned
+                        token = parser.nextToken();
+                        if (!JsonToken.START_ARRAY.equals(token)) {
+                            break;
+                        }
+                        //trip name, trip id need to get to STOPS array
+                        while (!JsonToken.END_ARRAY.equals(token)) {
+                            //running through the trips, read the trip array into times
+                            token = parser.nextToken();
+                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP_SIGN.equals(parser.getCurrentName())) {
+                                //keep the trip name only once
+                                token = parser.nextToken();
+                                tripName = parser.getValueAsString();
+                                Log.d(TAG, "trip name set " + tripName);
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
+                                //put the times into the Schedule's stop times object...
+                                token = parser.nextToken();
+                                if (!JsonToken.START_ARRAY.equals(token)) {
+                                    break;
+                                }
+                                //trip name, trip id need to get to STOPS array and add times into the hours/minutes
+                                while (!JsonToken.END_ARRAY.equals(token)) {
+                                    token = parser.nextToken();
+                                    //begin object
+                                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        tmp = parser.getValueAsString();
+                                        //stopId
+                                        if(dirID == 0) {
+                                            //direction id is 0 or 1
+                                            dex = searchRoute.mOutboundStops.indexOf(tmp);
+                                            if(dex < 0) {
+                                                Log.e(TAG, "error with stops array");
+                                                break;
+                                            }
+                                            if(sch.TripsOutbound.size() > dex) {
+                                                tmpTimes = sch.TripsOutbound.get(dex);
+                                            } else {
+                                                tmpTimes = new Schedule.StopTimes();
+                                                tmpTimes.stopId = tmp;
+                                                tmpTimes.tripSign = tripName;
+                                            }
+                                        } else {
+                                            dex = searchRoute.mInboundStops.indexOf(tmp);
+                                            if(dex < 0) {
+                                                Log.e(TAG, "error with stops array");
+                                                break;
+                                            }
+                                            if(sch.TripsInbound.size() > dex) {
+                                                tmpTimes = sch.TripsInbound.get(dex);
+                                            } else {
+                                                tmpTimes = new Schedule.StopTimes();
+                                                tmpTimes.stopId = tmp;
+                                                tmpTimes.tripSign = tripName;
+                                            }
+                                        }
+                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
+                                        token = parser.nextToken();
+                                        getTime(parser.getValueAsString(), t);
+                                        tmpTimes.hours.add(t.hour);
+                                        tmpTimes.minutes.add(t.minute);
+                                        strBuild.setLength(0);
+                                        Log.d(TAG, "time added to stopTime " + t.format2445());
+                                    }
+                                }//end stop array, all stops in the trip are set
+                                token = JsonToken.NOT_AVAILABLE;
+                            } //end stop token
+
+                        }//trip array end
+                        token = JsonToken.NOT_AVAILABLE;
+                        //ending the trip array should not end the  parsing
+                    }//trip field
+                }
+                token = JsonToken.NOT_AVAILABLE;
+            }//end dir field
+
+        } //parser is closed
+        //TODO select alerts and set ids into StopData, as needed
+    }
+
     //utility methods to format times when making a call for prediction data
-    public String getTime (Time t) {
+    public String getTime (String stamp, Time t) {
+        t.set(1000 * Long.valueOf(stamp));
+        t.normalize(false);
         strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
         if(t.hour >= 12) {
             strBuild.append("PM");
