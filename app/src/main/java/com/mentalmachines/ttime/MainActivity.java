@@ -153,7 +153,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 getSupportFragmentManager().beginTransaction()
                         .replace(R.id.container, alertsFragment)
                         .commit();
-
+                mRouteFragment = null;
+                /*getSupportFragmentManager().beginTransaction()
+                        .add(R.id.container, alertsFragment).commit();*/
                 break;
             case R.id.menu_settings:
                 Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
@@ -180,13 +182,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             mPD.dismiss();
         }
         //just in case
-        if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
-            ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+        if(mRouteFragment != null) {
+            if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
+                ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+            }
+            //persist the view
+            //save the routeName and ID, call the route prediction times again when user gets back
+            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).commit();
         }
-        //persist the view
-        //save the routeName and ID, call the route prediction times again when user gets back
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).commit();
+
     }
 
     @Override

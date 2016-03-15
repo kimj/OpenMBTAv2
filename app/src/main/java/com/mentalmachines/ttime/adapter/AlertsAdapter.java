@@ -23,11 +23,7 @@ import java.util.List;
 
 public class AlertsAdapter extends ArrayAdapter<Alert> {
     public static final String TAG = "AlertsAdapter";
-    static boolean loadComplete = false;
-    static SQLiteDatabase mDB;
-    Context context;
-    private static LayoutInflater inflater = null;
-    ArrayList<Alert> alerts;
+    ArrayList<Alert> mAlerts;
 
     static class ViewHolder{
         ImageView imageViewSeverityIcon;
@@ -60,6 +56,7 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
 
     public AlertsAdapter(Context context, int resource, ArrayList<Alert> alerts) {
         super(context, resource, alerts);
+        mAlerts = alerts;
     }
 
     static String[] loadAlertArray(String[] silverline, SQLiteDatabase db) {
@@ -79,6 +76,16 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
         Boolean b = db.isOpen();
         /*Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
                 null, null, null, null, null, null);*/
+        ArrayList<String> arrTblNames = new ArrayList<String>();
+        Cursor c = db.rawQuery("SELECT name FROM sqlite_master WHERE type='table'", null);
+
+        if (c.moveToFirst()) {
+            while ( !c.isAfterLast() ) {
+                arrTblNames.add( c.getString( c.getColumnIndex("name")) );
+                c.moveToNext();
+            }
+        }
+
         Cursor alertsCursor = db.rawQuery("SELECT * FROM alerts", null);
         if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
             do {
@@ -88,7 +95,7 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
                 a.effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
                 a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
                 a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
-                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));                a.severity = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
+                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
                 a.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
                 a.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
                 a.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
@@ -101,6 +108,22 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
             alertsCursor.close();
         }
         return alerts;
+    }
+
+    @Override
+    public Alert getItem(int position) {
+        if (mAlerts != null){
+            return mAlerts.get(position);
+        }
+        return null;
+    }
+
+    @Override
+    public int getCount() {
+        if (mAlerts!= null ){
+            return mAlerts.size();
+        }
+        return 0;
     }
 
     static String[] loadAlertsArray(String route, SQLiteDatabase db) {
@@ -135,31 +158,26 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
 
     @Override
     public View getView(int position, View convertView, ViewGroup parent) {
-        LayoutInflater inflater = (LayoutInflater) getContext()
-                .getSystemService(Context.LAYOUT_INFLATER_SERVICE);
 
-        LinearLayout alertLayout;
-        Alert alert = getItem(position);
-
+        Alert alert = mAlerts.get(position);
+        final ViewHolder viewHolder;
         if (convertView == null){
-            alertLayout = new LinearLayout(getContext());
-            inflater = (LayoutInflater) context.getSystemService((Context.LAYOUT_INFLATER_SERVICE));
-            convertView = inflater.inflate(R.layout.alert_item_layout, parent, false);
+            //inflater = (LayoutInflater) parent.getContext()ontext.getSystemService((Context.LAYOUT_INFLATER_SERVICE));
+            convertView = LayoutInflater.from(parent.getContext()).inflate(R.layout.alert_item_layout, parent, false);
+            viewHolder = new ViewHolder();
+            viewHolder.imageViewSeverityIcon = (ImageView) convertView.findViewById(R.id.imageViewSeverityIcon);
+            viewHolder.textViewSeverityText = (TextView) convertView.findViewById(R.id.textViewSeverityText);
+            viewHolder.textViewServiceEffectText = (TextView) convertView.findViewById(R.id.textViewServiceEffectText);;
+            viewHolder.textViewDescriptionText = (TextView) convertView.findViewById(R.id.textViewDescriptionText);
+            viewHolder.textViewEffectPeriods = (TextView) convertView.findViewById(R.id.textViewEffectPeriods);
+            viewHolder.textViewAlertLifecycle = (TextView) convertView.findViewById(R.id.textViewAlertLifecycle);
+            viewHolder.textViewAffectedServices = (TextView) convertView.findViewById(R.id.textViewAffectedServices);
+            convertView.setTag(viewHolder);
         } else {
-            alertLayout = (LinearLayout) convertView;
+            viewHolder = (ViewHolder) convertView.getTag();
         }
 
-        ViewHolder viewHolder = new ViewHolder();
-        viewHolder.imageViewSeverityIcon = (ImageView) convertView.findViewById(R.id.imageViewSeverityIcon);
-        viewHolder.textViewSeverityText = (TextView) convertView.findViewById(R.id.textViewSeverityText);
-        viewHolder.textViewServiceEffectText = (TextView) convertView.findViewById(R.id.textViewServiceEffectText);;
-        viewHolder.textViewDescriptionText = (TextView) convertView.findViewById(R.id.textViewDescriptionText);
-        viewHolder.textViewEffectPeriods = (TextView) convertView.findViewById(R.id.textViewEffectPeriods);
-        viewHolder.textViewAlertLifecycle = (TextView) convertView.findViewById(R.id.textViewAlertLifecycle);
-        viewHolder.textViewAffectedServices = (TextView) convertView.findViewById(R.id.textViewAffectedServices);
-        convertView.setTag(viewHolder);
-
-        viewHolder.imageViewSeverityIcon.setImageResource(getSeverityIcon(alert.severity));
+        //viewHolder.imageViewSeverityIcon.setImageResource(getSeverityIcon(alert.severity));
         viewHolder.textViewSeverityText.setText(alert.severity);
         viewHolder.textViewServiceEffectText.setText(alert.service_effect_text);
         viewHolder.textViewDescriptionText.setText(alert.description_text);
@@ -169,10 +187,10 @@ public class AlertsAdapter extends ArrayAdapter<Alert> {
         return convertView;
     }
 
-    private int getSeverityIcon(String severityText){
+    /*private int getSeverityIcon(String severityText){
         String resourceName = "";
         resourceName = "ic_alert_severity_" + severityText + ".png";
         int id = context.getResources().getIdentifier(resourceName, "drawable", context.getPackageName());
         return id;
-    }
+    }*/
 }
