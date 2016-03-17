@@ -71,6 +71,7 @@ public class RouteFragment extends Fragment{
 
         if(!getArguments().containsKey(TAG)) {
             mList.setVisibility(View.GONE);
+            mListAdapter = null;
             getView().findViewById(R.id.route_empty).setVisibility(View.VISIBLE);
             getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
             Log.w(TAG, "no stops");

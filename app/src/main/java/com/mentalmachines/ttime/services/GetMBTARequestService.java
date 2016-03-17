@@ -71,7 +71,7 @@ public class GetMBTARequestService extends IntentService {
                 parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
             } else {
                 Log.e(TAG, "not starting svc for route " + b.getString(TAG));
-                //getTimesForRoute(b.getString(TAG));
+                //getPredictions(b.getString(TAG));
             }
 
         } catch (IOException e) {

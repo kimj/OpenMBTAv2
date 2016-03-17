@@ -14,10 +14,8 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -49,32 +47,25 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public static final String TAG = "MainActivity";
     SharedPreferences mPrefs;
     ExpandableListView mDrawerList;
-    RouteFragment mRouteFragment;
-    String mRouteId, mRouteName;
-    int routeMode;
-    //Route mRoute;
+    int currentSelection = -1;
+    //This is set to the expandable adapter mode or to -1 when Alerts are showing
+    //TODO create a timeout for late night, intent service can hang
     ProgressDialog mPD = null;
     MenuItem mFavoritesAction;
     boolean noFaves = true;
+    Fragment mFragment;
 
 	@Override
 	protected void onCreate(Bundle b) {
 		super.onCreate(b);
 		setContentView(R.layout.activity_main);
         new CheckFavesTable().execute();
+        //this task sets the noFaves boolean
+
         /*Log.d(TAG, "starting svc");
         startService(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
-
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab_in_out);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "action?", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
 
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
@@ -89,11 +80,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final Intent tnt = new Intent(this, NavDrawerTask.class);
         if(noFaves) {
             Log.i(TAG, "no favorites");
-            routeMode = RouteExpandableAdapter.SUBWAY;
+            currentSelection = RouteExpandableAdapter.SUBWAY;
             tnt.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
             findViewById(R.id.exp_lines).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         } else {
-            routeMode = RouteExpandableAdapter.FAVE;
+            currentSelection = RouteExpandableAdapter.FAVE;
             findViewById(R.id.exp_favorite).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         }
         final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
@@ -138,7 +129,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_favorites:
-                if(DBHelper.setFavorite(mRouteName, mRouteId)) {
+                final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
+                if(DBHelper.setFavorite(r.name, r.id)) {
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                     noFaves = false;
@@ -149,11 +141,32 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 }
                 break;
             case R.id.menu_alerts:
-                AlertsFragment alertsFragment = new AlertsFragment();
-                getSupportFragmentManager().beginTransaction()
-                        .replace(R.id.container, alertsFragment)
-                        .commit();
-
+                //This piece will always create a new alert fragment
+                if(mFragment != null) {
+                    //hide the existing fragment, alert or route frgament
+                    AlertsFragment alertsFragment = new AlertsFragment();
+                    getSupportFragmentManager().beginTransaction().hide(mFragment)
+                            .add(R.id.container, alertsFragment)
+                            .commit();
+                    mFragment = alertsFragment;
+                } else {
+                    mFragment = new AlertsFragment();
+                    getSupportFragmentManager().beginTransaction()
+                            .add(R.id.container, mFragment)
+                            .commit();
+                }
+                //now a little clean up for a switch from Route to Alerts
+                if(currentSelection > 0) {
+                    findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                    setTitle(getString(R.string.action_alerts));
+                    mFavoritesAction.setVisible(false);
+                }
+                currentSelection = -1;
+                Log.d(TAG, "reset selection here! " + currentSelection);
+                if(mDrawerList.getTag() != null) {
+                    ((View)mDrawerList.getTag()).setSelected(false);
+                    mDrawerList.setTag(null);
+                }
                 break;
             case R.id.menu_settings:
                 Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
@@ -179,26 +192,32 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(mPD != null && mPD.isShowing()) {
             mPD.dismiss();
         }
+
         //just in case
-        if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
-            ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+        if(findViewById(R.id.route_swipe) != null) {
+            if(((SwipeRefreshLayout)findViewById(R.id.route_swipe)).isRefreshing()) {
+                ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
+            }
         }
         //persist the view
-        //save the routeName and ID, call the route prediction times again when user gets back
-        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).commit();
+        if(currentSelection > 0) {
+            //save the route ID in order to call the route prediction times again when user gets back
+            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
+                    ((RouteFragment) mFragment).mListAdapter.mRoute.id).commit();
+        }
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        if(mRouteFragment == null) {
+        if(mFragment == null) {
             mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-            final FragmentTransaction tx = getSupportFragmentManager().beginTransaction();
+            //no fragment showing, no preference from last route shown, display toast
             if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
-                tx.add(RouteFragment.newInstance(null), TAG).commit();
+                Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             } else {
-                mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
+                final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
                 if(TTimeApp.checkNetwork(this)) {
                     mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
                     final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
@@ -228,7 +247,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         switch(v.getId()) {
             case R.id.exp_bus:
                 final Intent tnt = new Intent(this, NavDrawerTask.class);
-                routeMode = RouteExpandableAdapter.BUS;
+                currentSelection = RouteExpandableAdapter.BUS;
                 tnt.putExtra(NavDrawerTask.TAG, DBHelper.BUS_MODE);
                 startService(tnt);
                 findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
@@ -238,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Intent svc = new Intent(this, NavDrawerTask.class);
                 svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
                 startService(svc);
-                routeMode = RouteExpandableAdapter.SUBWAY;
+                currentSelection = RouteExpandableAdapter.SUBWAY;
                 findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
@@ -254,7 +273,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 } else {
                     findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                     findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
-                    routeMode = RouteExpandableAdapter.FAVE;
+                    currentSelection = RouteExpandableAdapter.FAVE;
                     //no extras for Favorites service
                     startService(new Intent(this, NavDrawerTask.class));
                 }
@@ -270,8 +289,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         //click listener set on the child view in the nav drawer
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
-        mRouteId = (String)v.getTag();
-        mRouteName = (String) v.getTag(R.layout.child_view);
+        final String mRouteId = (String)v.getTag();
+        final String mRouteName = (String) v.getTag(R.layout.child_view);
         setTitle(Route.readableName(this, mRouteName));
         v.setSelected(true);
         if(mDrawerList.getTag() != null) {
@@ -351,7 +370,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         @Override
         public void onGroupCollapse(int i) {
         //group is always zero for favorites and subway, allow only one open group
-            if(routeMode == RouteExpandableAdapter.BUS) {
+            if(currentSelection == RouteExpandableAdapter.BUS) {
                 return;
             } else {
                 if(!mDrawerList.isGroupExpanded(i)) {
@@ -392,13 +411,18 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 Log.d(TAG, "debug, start svc: " + r.mInboundStops.get(0).stopName);
             }*/
             //CREATING LIST DETAIL PAGE
-
-            if(mFavoritesAction.isVisible() && r.name.equals(mRouteName)) {
+            final String rName;
+            if(mFragment != null && currentSelection > 0) {
+                rName = ((RouteFragment) mFragment).mListAdapter.mRoute.name;
+            } else {
+                rName = "";
+            }
+            if(mFavoritesAction.isVisible() && r.name.equals(rName)) {
                 //route fragment is already up!
                 Log.d(TAG, "reset Route");
-                mRouteFragment.mListAdapter.resetRoute(r);
+                ((RouteFragment) mFragment).mListAdapter.resetRoute(r);
                 ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
-                if(!mRouteFragment.mListAdapter.isOneWay) {
+                if(!((RouteFragment) mFragment).mListAdapter.isOneWay) {
                     //this is a one way route
                     Log.d(TAG, "stting button viz");
                     findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
@@ -412,34 +436,33 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mFavoritesAction.setChecked(false);
                 }
                 setTitle(Route.readableName(context, r.name));
-                mRouteId = r.id;
-                mRouteName = r.name;
+
                 final FragmentManager mgr = getSupportFragmentManager();
                 if(mgr.findFragmentByTag(r.name) != null) {
                     Log.d(TAG, "fragment is showing");
                     RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
-                    if(mRouteFragment == null) {
+                    if(mFragment == null) {
                         mgr.beginTransaction().show(frag).commit();
                     } else {
-                        mgr.beginTransaction().hide(mRouteFragment).show(frag).commit();
+                        mgr.beginTransaction().hide(mFragment).show(frag).commit();
                     }
-                    mRouteFragment = frag;
-                    mRouteFragment.onResume();
+                    mFragment = frag;
+                    mFragment.onResume();
                 } else {
                     Log.d(TAG, "new fragment");
-                    if(mRouteFragment == null) {
-                        mRouteFragment = RouteFragment.newInstance(r);
-                        mgr.beginTransaction().add(R.id.container, mRouteFragment, r.name).commit();
+                    if(mFragment == null) {
+                        mFragment = RouteFragment.newInstance(r);
+                        mgr.beginTransaction().add(R.id.container, mFragment, r.name).commit();
                     } else {
                         RouteFragment frag = RouteFragment.newInstance(r);
-                        mgr.beginTransaction().hide(mRouteFragment).add(R.id.container, frag, r.name).commit();
-                        mRouteFragment = frag;
+                        mgr.beginTransaction().hide(mFragment).add(R.id.container, frag, r.name).commit();
+                        mFragment = frag;
                     }
                 }
 
             }
 
-            if(DBHelper.checkFavorite(mRouteName)) {
+            if(DBHelper.checkFavorite(r.name)) {
                 mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                 Log.d(TAG, "is a favorite");
             } else {
@@ -465,7 +488,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
             else {
                 //show the right list after the I/O is done in the bg
-                switch (routeMode) {
+                switch (currentSelection) {
                     case RouteExpandableAdapter.FAVE:
                         mDrawerList.setAdapter(new RouteExpandableAdapter(
                                 b.getStringArray(DBHelper.KEY_ROUTE_NAME),
@@ -488,7 +511,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                         break;
                 }
 
-                if(routeMode != RouteExpandableAdapter.BUS) {
+                if(currentSelection != RouteExpandableAdapter.BUS) {
                     mDrawerList.expandGroup(0);
                     //here the list has only one group
                 }

@@ -84,7 +84,7 @@ public class ScheduleService extends IntentService {
             } else {
                 Log.i(TAG, "start prediction service for " + searchRoute.name);
                 getSchedule();
-                getTimesForRoute(searchRoute.id);
+                getPredictions();
             }
 
         } catch (IOException e) {
@@ -95,13 +95,13 @@ public class ScheduleService extends IntentService {
 
     }
 
-    void getTimesForRoute(String route) throws IOException {
+    void getPredictions( ) throws IOException {
         //add times to the stops in mInbound and searchRoute.mOutboundStops
         final Time t = new Time();
         String value = "";
         StopData stop = null;
         int dex = -1;
-        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + route));
+        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + searchRoute.id));
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -279,9 +279,10 @@ public class ScheduleService extends IntentService {
         //add schedule times to the empty stops on the route
         final Time t = new Time();
         t.setToNow();
+
         StopData stop = null;
         int dirID = 0;
-        String directionNm = "", tmp;
+        String tmp;
         final JsonParser parser = new JsonFactory().createParser(new URL(
                 BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id));
         Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id);
@@ -359,16 +360,17 @@ public class ScheduleService extends IntentService {
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         tmp = parser.getValueAsString();
-                                        if(stop != null) {
+                                        tmp = getTime(tmp, t);
+
+                                        if(t.toMillis(false) > System.currentTimeMillis()) {
+                                            //stale data for a stop comes through
+                                            //don't show passed times...
                                             if(stop.schedTimes.isEmpty()) {
-                                                stop.schedTimes = getTime(tmp, t);
+                                                stop.schedTimes = tmp;
                                             } else {
-                                                stop.schedTimes = stop.schedTimes + ", " + getTime(tmp, t);
+                                                stop.schedTimes = stop.schedTimes + ", " + tmp;
                                             }
-                                            strBuild.setLength(0);
                                         }
-
-
                                         strBuild.setLength(0);
                                     }
                                 }//end stop array, all stops in the trip are set

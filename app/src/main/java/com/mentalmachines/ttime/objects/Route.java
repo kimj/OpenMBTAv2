@@ -14,7 +14,7 @@ import java.util.ArrayList;
 
 public class Route implements Parcelable {
     public static final String TAG = "Route";
-    public int type;
+    //public int type;
     //public String mode_name;
     //skipping
     public String id, name;
@@ -83,7 +83,7 @@ public class Route implements Parcelable {
 
     @Override
     public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeInt(type);
+        //parcel.writeInt(type);
         //public String mode_name;
         //using integer mode type, not name
         parcel.writeString(id);
@@ -101,7 +101,7 @@ public class Route implements Parcelable {
         @Override
         public Route createFromParcel(Parcel parcel) {
             Route r = new Route();
-            r.type = parcel.readInt();
+            //r.type = parcel.readInt();
             r.id = parcel.readString();
             r.name = parcel.readString();
             r.mInboundStops = parcel.createTypedArrayList(StopData.CREATOR);
