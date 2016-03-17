@@ -205,12 +205,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
                     startService(tnt);
                     Log.i(TAG, "starting schedule service with id: " + mRouteId);
-                    //DBUG
-                    final Intent tnt2 = new Intent(MainActivity.this, ScheduleService.class);
+                    //DBUG, just checking
+                    /*final Intent tnt2 = new Intent(MainActivity.this, ScheduleService.class);
                     tnt2.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
                     tnt2.putExtra(ScheduleService.TAG, true);
                     startService(tnt2);
-                    Log.i(TAG, "starting schedule service, testing new parse");
+                    Log.i(TAG, "starting schedule service, testing new parse");*/
                 } else {
                     Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
                 }

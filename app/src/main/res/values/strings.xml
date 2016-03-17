@@ -26,13 +26,13 @@
 
     <string-array name="nav_groups">
         <item>Silver Line</item>
-        <item>Bus 1-50</item>
-        <item>Bus 51-99</item>
-        <item>Bus 100-199</item>
-        <item>Bus 200-399</item>
-        <item>Bus 400-599</item>
-        <item>Bus 600-750</item>
-        <item>Bus 9000+, Others</item>
+        <item>Metro Boston \n1->50</item>
+        <item>Metro Boston \n51->125</item>
+        <item>Melrose \n126->199</item>
+        <item>Quincy \n200->399</item>
+        <item>Medford, Burlington, Lynn, North Shore \n400->599</item>
+        <item>Newton, Crosstown \n500-750</item>
+        <item>Others \n9000+, combined</item>
     </string-array>
 
 

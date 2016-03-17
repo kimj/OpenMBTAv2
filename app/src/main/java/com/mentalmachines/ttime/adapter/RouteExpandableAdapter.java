@@ -228,8 +228,8 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 break;
             case 2:
                 for(String bus: rtIds) {
-                    if (bus.matches("[0-9]+") && bus.length() <= 2 &&
-                            Integer.valueOf(bus) > 50) {
+                    if (bus.matches("[0-9]+") && bus.length() <= 3 &&
+                            Integer.valueOf(bus) > 50 && Integer.valueOf(bus) < 125) {
                         tmp.add(dex);
                     }
                     dex++;
@@ -247,7 +247,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             case 4:
                 for(String bus: rtIds) {
                     if (bus.matches("[0-9]+") && bus.length() == 3 &&
-                            Integer.valueOf(bus) > 199 && Integer.valueOf(bus) < 400) {
+                            Integer.valueOf(bus) > 199 && Integer.valueOf(bus) < 500) {
                         tmp.add(dex);
                     }
                     dex++;
@@ -256,7 +256,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             case 5:
                 for(String bus: rtIds) {
                     if (bus.matches("[0-9]+") && bus.length() == 3 &&
-                            Integer.valueOf(bus) > 399 && Integer.valueOf(bus) < 600) {
+                            Integer.valueOf(bus) > 499 && Integer.valueOf(bus) < 600) {
                         tmp.add(dex);
                     }
                     dex++;
