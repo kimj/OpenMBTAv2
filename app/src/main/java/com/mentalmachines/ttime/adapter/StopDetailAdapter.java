@@ -60,13 +60,14 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
         } else {
             //alert header text gets set in the alert field instead of the alert id
             holder.mStopDescription.setText(s.schedTimes);
-            holder.mETA.setText("");
+            holder.mETA.setText(s.predicTimes);
             //TODO create new layout
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
                 holder.mAlertBtn.setTag(s.stopAlert);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
+                holder.mAlertBtn.invalidate();
             }
         }
     }

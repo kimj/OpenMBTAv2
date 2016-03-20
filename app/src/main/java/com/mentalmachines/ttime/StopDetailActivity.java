@@ -119,7 +119,7 @@ public class StopDetailActivity extends AppCompatActivity {
             startService(tnt);
 
         } else {
-            Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, getString(R.string.chkNet), Toast.LENGTH_SHORT).show();
         }
     }
 
@@ -130,8 +130,15 @@ public class StopDetailActivity extends AppCompatActivity {
             if(mProgress != null && mProgress.isShowing()) {
                 mProgress.cancel();
             }
+            if(intent.getExtras() == null) {
+                //error broadcast, no extras
+                Toast.makeText(StopDetailActivity.this,
+                        getString(R.string.schedSvcErr), Toast.LENGTH_SHORT).show();
+                return;
+            }
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
-            Log.d(TAG, mStopDetail.mainStop.stopName + " data check, stop detail list size " + mStopDetail.mStopList.size());
+            Log.d(TAG, mStopDetail.mainStop.stopName +
+                    " data check, stop detail list size " + mStopDetail.mStopList.size());
             setList();
         }
     };

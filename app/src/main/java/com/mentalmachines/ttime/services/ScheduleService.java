@@ -180,22 +180,7 @@ public class ScheduleService extends IntentService {
                                             }
                                             //Log.i(TAG, "stop set here" + stop.stopId + ":" + stop.stopName);
                                         }
-                                    } else /*if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
-                                        token = parser.nextToken();
-                                        value = parser.getValueAsString();
-                                        if(stop == null || value.isEmpty() || value == null) {
-                                            Log.w(TAG, "skipping schedule time field");
-                                        } else {
-                                            if(stop.schedTimes.isEmpty()) {
-                                                stop.schedTimes = getTime(value, t);
-                                            } else {
-                                                stop.schedTimes = stop.schedTimes + ", " + getTime(value, t);
-                                            }
-                                            strBuild.setLength(0);
-                                            //Log.d(TAG, "stop schedule " + stop.schedTimes);
-                                        }
-
-                                    } else*/ if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
+                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         value = parser.getValueAsString();
                                         if(stop == null || value.isEmpty() || value == null) {

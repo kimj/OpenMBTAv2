@@ -9,14 +9,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Alert;
 
-import java.nio.channels.AlreadyConnectedException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;

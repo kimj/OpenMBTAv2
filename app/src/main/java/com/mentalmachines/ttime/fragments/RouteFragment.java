@@ -1,7 +1,5 @@
 package com.mentalmachines.ttime.fragments;
 
-import android.animation.Animator;
-import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.content.Intent;
@@ -29,10 +27,10 @@ public class RouteFragment extends Fragment{
 	 */
     private static final String TAG = "RouteFragment";
 
-    boolean mInbound = true;
+    public boolean mInbound = true;
     public RecyclerView mList;
     public SimpleStopAdapter mListAdapter;
-    AnimatorSet moveLeft, moveRight, moveR2, moveL2;
+    int mWidth = -1;
 
 	/**
 	 * Returns a new instance of this fragment
@@ -78,17 +76,8 @@ public class RouteFragment extends Fragment{
         } else {
             //there is a route
             final Route r = getArguments().getParcelable(TAG);
-            mListAdapter = new SimpleStopAdapter(r, 1);
             mList.setVisibility(View.VISIBLE);
-            if(mListAdapter.isOneWay) {
-                //this is a one way route
-                Log.w(TAG, "one way route");
-                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
-            } else {
-                getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-                getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
-            }
-            mList.setAdapter(mListAdapter);
+            finishList(r);
             //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
         }
     }
@@ -102,6 +91,31 @@ public class RouteFragment extends Fragment{
         }
     };
 
+    public void resetRoute(Route r) {
+        finishList(r);
+        if(mInbound) {
+            ObjectAnimator.ofFloat(mList, "translationX", -mWidth, 0).start();
+        } else {
+            ObjectAnimator.ofFloat(mList, "translationX", mWidth, 0).start();
+        }
+        getActivity().findViewById(R.id.fab_in_out).setEnabled(true);
+        ((SwipeRefreshLayout)getActivity().findViewById(R.id.route_swipe)).setRefreshing(false);
+    }
+
+    public void finishList(Route r) {
+        mListAdapter = new SimpleStopAdapter(r, mInbound);
+        if(mListAdapter.isOneWay) {
+            //this is a one way route
+            Log.w(TAG, "one way route");
+            getActivity().findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+        } else {
+            getActivity().findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+            getActivity().findViewById(R.id.fab_in_out).setOnClickListener(fabListener);
+            getActivity().findViewById(R.id.fab_in_out).setEnabled(true);
+        }
+        mList.setAdapter(mListAdapter);
+    }
+
     public void reloadTimes() {
         final Context ctx = getContext();
         if(TTimeApp.checkNetwork(ctx)) {
@@ -113,94 +127,35 @@ public class RouteFragment extends Fragment{
             ctx.startService(tnt);
         } else {
             Toast.makeText(ctx, "check network", Toast.LENGTH_SHORT).show();
+            getActivity().findViewById(R.id.fab_in_out).setEnabled(true);
         }
     }
 
 
     View.OnClickListener fabListener = new View.OnClickListener() {
-    @Override
-    public void onClick(View view) {
-        reloadTimes();
-        //make sure the times are fresh when switching directions
-        if(moveRight == null) {
-            animationSetup(getView());
-        }
-        mInbound = !mInbound;
-        if(mInbound) {
-            ObjectAnimator.ofFloat(view, "rotation", 540f).start();
-            //mItems = getArguments().getStringArray(IN_STOPS_LIST);
-            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
-            mListAdapter.changeDirection(1);
-            moveRight.start();
-        } else {
-            ObjectAnimator.ofFloat(view, "rotation", -540f).start();
-            //TODO -> call the schedule service to get the latest times
-            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
-            mListAdapter.changeDirection(0);
-            moveLeft.start();
-        }
+        @Override
+        public void onClick(View view) {
+            reloadTimes();
+            view.setEnabled(false);
+            //make sure the times are fresh when switching directions
+            if(mWidth < 0) {
+                mWidth = getView().getWidth();
+            }
+            mInbound = !mInbound;
+            Log.d(TAG, "inbound direction?" + mInbound);
+            if(mInbound) {
+                ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+                //mItems = getArguments().getStringArray(IN_STOPS_LIST);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+                ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * mWidth).start();
+            } else {
+                ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+                //TODO -> call the schedule service to get the latest times
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+                ObjectAnimator.ofFloat(mList, "translationX", 0, -mWidth).start();
+            }
         }
     };
-
-    /**
-     * these animations run when switching between inbound and outbound
-     * the "moveRight" go along with the direction of the FAB
-     * the moveLeft are also setup for gesture detectors, swiping changes the list
-     */
-    void animationSetup(final View screen) {
-
-        final int width = screen.getWidth();
-        //Log.d(TAG, "setting up animations " + width);
-        moveRight = new AnimatorSet();
-        moveRight.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
-                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f));
-        moveR2 = new AnimatorSet();
-        moveR2.play(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f))
-                .with(ObjectAnimator.ofFloat(mList, "translationX", -width, 0));
-        moveRight.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animator) { }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                //move right, IN_STOPS_LIST
-                //SimpleStopAdapter.pullSchedule(getContext(), 1+"");
-                mList.setAdapter(mListAdapter);
-                moveR2.start();
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animator) { }
-
-            @Override
-            public void onAnimationRepeat(Animator animator) { }
-        });
-
-        moveLeft = new AnimatorSet();
-        moveLeft.play(ObjectAnimator.ofFloat(mList, "translationX", 0, -width))
-                .with(ObjectAnimator.ofFloat(mList, "alpha", 1f, 0f));
-        moveL2 = new AnimatorSet();
-        moveL2.play(ObjectAnimator.ofFloat(mList, "translationX", width, 0))
-                .with(ObjectAnimator.ofFloat(mList, "alpha", 0f, 1f));
-
-        moveLeft.addListener(new Animator.AnimatorListener() {
-            @Override
-            public void onAnimationStart(Animator animator) { }
-
-            @Override
-            public void onAnimationEnd(Animator animation) {
-                //SimpleStopAdapter.pullSchedule(getContext(), 0+"");
-                mList.setAdapter(mListAdapter);
-                moveL2.start();
-            }
-
-            @Override
-            public void onAnimationCancel(Animator animator) { }
-
-            @Override
-            public void onAnimationRepeat(Animator animator) { }
-        });
-    }
 
     /*  REMINDER
     gesture detector does not play nicely with a scrolling list

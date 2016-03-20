@@ -1,12 +1,8 @@
 package com.mentalmachines.ttime.fragments;
 
-import android.support.v4.app.Fragment;
-import android.support.v4.app.ListFragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.support.v4.widget.SwipeRefreshLayout;
-import android.support.v7.app.AppCompatActivity;
-import android.support.v7.widget.RecyclerView;
+import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -16,11 +12,8 @@ import android.view.ViewGroup;
 import android.widget.ListView;
 
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
-import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.adapter.AlertsAdapter;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
+import com.mentalmachines.ttime.adapter.AlertsAdapter;
 import com.mentalmachines.ttime.objects.Alert;
 
 import java.util.ArrayList;

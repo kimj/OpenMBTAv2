@@ -27,9 +27,14 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
     static String SCHED, ACTUAL, NODATA;
 
     //public SimpleStopAdapter(String[] data, int resource) {
-    public SimpleStopAdapter(Route r, int direction) {
+    public SimpleStopAdapter(Route r, boolean inbound) {
         super();
-        mDirectionId = direction;
+        if(inbound) {
+            mDirectionId = 1;
+        } else {
+            mDirectionId = 0;
+        }
+
         mRoute = r;
         if(mRoute.mInboundStops == null || mRoute.mOutboundStops == null
                 || mRoute.mInboundStops.size() == 0 || mRoute.mOutboundStops.size() == 0) {
@@ -37,22 +42,6 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         } else {
             isOneWay = false;
         }
-    }
-
-    /**
-     * Reset list, invalidate, redraw the recycler view
-     * @param dir
-     */
-    public void changeDirection(int dir) {
-        mDirectionId = dir;
-        Log.d(TAG, "change dir");
-        notifyDataSetChanged();
-    }
-
-    public void resetRoute(Route r) {
-        mRoute = r;
-        Log.d(TAG, "change to " + r.name);
-        notifyDataSetChanged();
     }
 
     @Override

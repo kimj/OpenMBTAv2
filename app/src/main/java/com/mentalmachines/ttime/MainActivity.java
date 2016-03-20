@@ -143,7 +143,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             case R.id.menu_alerts:
                 //This piece will always create a new alert fragment
                 if(mFragment != null) {
-                    //hide the existing fragment, alert or route frgament
+                    //hide the existing fragment, either alert or route frgament
+                    Log.d(TAG, "hide route fragment");
                     AlertsFragment alertsFragment = new AlertsFragment();
                     getSupportFragmentManager().beginTransaction().hide(mFragment)
                             .add(R.id.container, alertsFragment)
@@ -156,11 +157,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                             .commit();
                 }
                 //now a little clean up for a switch from Route to Alerts
-                if(currentSelection > 0) {
-                    findViewById(R.id.fab_in_out).setVisibility(View.GONE);
-                    setTitle(getString(R.string.action_alerts));
-                    mFavoritesAction.setVisible(false);
-                }
+                findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                setTitle(getString(R.string.action_alerts));
+                mFavoritesAction.setVisible(false);
                 currentSelection = -1;
                 Log.d(TAG, "reset selection here! " + currentSelection);
                 if(mDrawerList.getTag() != null) {
@@ -301,6 +300,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
         final String mRouteId = (String)v.getTag();
+        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).apply();
         final String mRouteName = (String) v.getTag(R.layout.child_view);
         setTitle(Route.readableName(this, mRouteName));
         v.setSelected(true);
@@ -416,31 +416,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 return;
             }
             final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
-
-            //DEBUGGGING
-            /*if(r.mInboundStops != null && r.mInboundStops.get(0) != null) {
-                final Intent tnt = new Intent(getBaseContext(), StopService.class);
-                tnt.putExtra(StopService.TAG, r.mInboundStops.get(0));
-                getBaseContext().startSchedSvc(tnt);
-                Log.d(TAG, "debug, start svc: " + r.mInboundStops.get(0).stopName);
-            }*/
-            //CREATING LIST DETAIL PAGE
-            final String rName;
-            if(mFragment != null && currentSelection > 0) {
-                rName = ((RouteFragment) mFragment).mListAdapter.mRoute.name;
-            } else {
-                rName = "";
-            }
-            if(mFavoritesAction.isVisible() && r.name.equals(rName)) {
-                //route fragment is already up!
+            final String title = getSupportActionBar().getTitle().toString();
+            if(mFavoritesAction.isVisible() && Route.readableName(context, r.name).equals(title)) {
+                //route fragment is already up! Reset route includes animation
                 Log.d(TAG, "reset Route");
-                ((RouteFragment) mFragment).mListAdapter.resetRoute(r);
-                ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
-                if(!((RouteFragment) mFragment).mListAdapter.isOneWay) {
-                    //this is a one way route
-                    Log.d(TAG, "stting button viz");
-                    findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-                }
+                ((RouteFragment) mFragment).resetRoute(r);
             } else {
                 mFavoritesAction.setVisible(true);
                 mFavoritesAction.setCheckable(true);
@@ -453,15 +433,19 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
                 final FragmentManager mgr = getSupportFragmentManager();
                 if(mgr.findFragmentByTag(r.name) != null) {
-                    Log.d(TAG, "fragment is showing");
+                    Log.d(TAG, "fragment found");
                     RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
-                    if(mFragment == null) {
+                    if(mFragment == frag) {
+                        ((RouteFragment) mFragment).resetRoute(r);
+                    } else if(mFragment == null) {
                         mgr.beginTransaction().show(frag).commit();
+                        mFragment = frag;
                     } else {
                         mgr.beginTransaction().hide(mFragment).show(frag).commit();
+                        frag.resetRoute(r);
+                        mFragment = frag;
                     }
-                    mFragment = frag;
-                    mFragment.onResume();
+
                 } else {
                     Log.d(TAG, "new fragment");
                     if(mFragment == null) {

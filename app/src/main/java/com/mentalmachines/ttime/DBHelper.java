@@ -8,10 +8,9 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 import com.mentalmachines.ttime.objects.Alert;
+import com.mentalmachines.ttime.objects.Route;
 
 import java.util.ArrayList;
-
-import com.mentalmachines.ttime.objects.Route;
 
 /**
  * Created by CaptofOuterSpace on 1/23/2016.
