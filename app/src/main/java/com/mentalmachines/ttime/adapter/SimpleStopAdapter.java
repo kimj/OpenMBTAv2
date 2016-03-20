@@ -103,6 +103,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
+                holder.mAlertBtn.invalidate();
             }
             //This part gets tricky, put stop and sched fields into one text view
             if(s.predicTimes.isEmpty() && s.schedTimes.isEmpty()) {

@@ -38,7 +38,7 @@ public class StopService extends IntentService {
     public static final String STOPPARAM = "&stop=";
     public static final String SCHEDHOUR = "&max_time=120";
     public static final String STOPVERB = "schedulebystop";
-    public static final String STPREDVERB = "predictionsbyroute";
+    public static final String STPREDVERB = "predictionsbystop";
     public static final String GETPREDICTIMES = ScheduleService.BASE + STPREDVERB + ScheduleService.SUFFIX + STOPPARAM;
     public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + SCHEDHOUR + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
@@ -277,9 +277,12 @@ public class StopService extends IntentService {
                                                 }
                                                 if(found) {
                                                     if (!stop.predicTimes.isEmpty()) {
-                                                        stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
+                                                        if(strBuild.length() > 0 && !stop.predicTimes.contains(strBuild.toString())) {
+                                                            stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
+                                                        }
+
                                                     } else {
-                                                        stop.predicTimes = strBuild.toString();
+                                                        stop.predicTimes = getString(R.string.actual) + strBuild.toString();
                                                     }
                                                     Log.d(TAG, stop.stopId + " set stop predicTimes" + stop.predicTimes);
                                                     found = false;

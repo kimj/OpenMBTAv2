@@ -53,7 +53,9 @@ public class AlertsFragment extends Fragment {
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        //TODO need to get the latest data every time this fragment shows
+        //startService(new Intent(this, GetMBTARequestService.class));
+        //can start the service in the MainActivity before calling the fragment
         alertsListView = (ListView) view.findViewById(R.id.listViewAlerts);
         ArrayList<Alert> alerts =  DBHelper.getAllAlerts();
         Log.i(TAG, "alerts to show: " + alerts.size());
