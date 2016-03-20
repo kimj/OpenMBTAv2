@@ -7,6 +7,10 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.mentalmachines.ttime.objects.Alert;
+
+import java.util.ArrayList;
+
 import com.mentalmachines.ttime.objects.Route;
 
 /**
@@ -332,4 +336,43 @@ public class DBHelper extends SQLiteOpenHelper {
         return instance;
     }*/
 
+    final static String[] mAlertProjection = new String[]{
+                    DBHelper.KEY_ALERT_ID,
+                    DBHelper.KEY_EFFECT_NAME, DBHelper.KEY_EFFECT,
+                    DBHelper.KEY_CAUSE, DBHelper.KEY_SHORT_HEADER_TEXT,
+                    DBHelper.KEY_DESCRIPTION_TEXT, DBHelper.KEY_SEVERITY,
+                    DBHelper.KEY_CREATED_DT, DBHelper.KEY_LAST_MODIFIED_DT,
+                    DBHelper.KEY_TIMEFRAME_TEXT,
+                    DBHelper.KEY_ALERT_LIFECYCLE, DBHelper.KEY_EFFECT_PERIOD_START,
+                    DBHelper.KEY_EFFECT_PERIOD_END
+            };
+
+    public static ArrayList<Alert> getAllAlerts(){
+        SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
+                null, null, null, null, null, null);
+
+        ArrayList<Alert> alerts = new ArrayList<Alert>();
+        if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
+            do {
+                Alert a = new Alert();
+                a.alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
+                a.effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
+                a.effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
+                a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
+                a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
+                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
+                a.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
+                a.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
+                a.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
+                a.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
+                a.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
+                a.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
+                a.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+                alerts.add(a);
+            } while (alertsCursor.moveToNext());
+            alertsCursor.close();
+        }
+        return alerts;
+    }
 }

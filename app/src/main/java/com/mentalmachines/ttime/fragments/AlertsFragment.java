@@ -1,8 +1,13 @@
 package com.mentalmachines.ttime.fragments;
 
+import android.support.v4.app.Fragment;
 import android.support.v4.app.ListFragment;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.v4.widget.SwipeRefreshLayout;
+import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -10,8 +15,12 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 
-import com.mentalmachines.ttime.AlertsAdapter;
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.MainActivity;
+import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.adapter.AlertsAdapter;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
 import com.mentalmachines.ttime.objects.Alert;
 
 import java.util.ArrayList;
@@ -19,38 +28,51 @@ import java.util.ArrayList;
 /**
  * Created by CaptofOuterSpace on 2/15/2016.
  */
-public class AlertsFragment extends ListFragment {
+public class AlertsFragment extends Fragment {
+
+    private static final String LINE_NAME = "line";
+    private static final String TAG = "AlertsFragment";
+
     ListView alertsListView;
+    AlertsAdapter alertsAdapter;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
     }
 
-    @Nullable
-    @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.alerts_fragment, container, false);
-        alertsListView = (ListView) v.findViewById(R.id.alertsListView);
+    public static AlertsFragment newInstance(AlertsAdapter alertsAdapter, String title) {
+        AlertsFragment fragment = new AlertsFragment();
+        Bundle args = new Bundle();
+        args.putString(LINE_NAME, title);
+        fragment.setArguments(args);
+        alertsAdapter = alertsAdapter;
+        return fragment;
+    }
 
-        return super.onCreateView(inflater, container, savedInstanceState);
+    public AlertsFragment() { }
+
+    @Override
+    public View onCreateView(LayoutInflater inflater, ViewGroup container, @Nullable Bundle savedInstanceState) {
+        return inflater.inflate(R.layout.alerts_fragment, container, false);
     }
 
     @Override
-    public void onActivityCreated(Bundle savedInstanceState) {
-        super.onActivityCreated(savedInstanceState);
+    public void onViewCreated(View view, Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
-        ArrayList<Alert> alerts =  new ArrayList<Alert>();
+        alertsListView = (ListView) view.findViewById(R.id.listViewAlerts);
+        ArrayList<Alert> alerts =  DBHelper.getAllAlerts();
+        Log.i(TAG, "alerts to show: " + alerts.size());
         AlertsAdapter alertsAdapter = new AlertsAdapter(getActivity(), R.layout.alert_item_layout, alerts);
-        /// alertsListView = (ListView) getView();
         alertsListView.setAdapter(alertsAdapter);
-        alertsAdapter.notifyDataSetChanged();
-
-        setListAdapter(alertsAdapter);
     }
+
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        menu.clear();
+        inflater.inflate(R.menu.alerts_fragment_menu, menu);
         super.onCreateOptionsMenu(menu, inflater);
     }
 }
