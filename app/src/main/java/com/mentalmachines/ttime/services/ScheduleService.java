@@ -61,7 +61,7 @@ public class ScheduleService extends IntentService {
         final Bundle b = intent.getExtras();
         if(b == null || !b.containsKey(DBHelper.KEY_ROUTE_ID)) {
             Log.e(TAG, "bad route id");
-            endService();
+            endService(true);
             return;
         }
         searchRoute = new Route();
@@ -90,7 +90,7 @@ public class ScheduleService extends IntentService {
         } catch (IOException e) {
             Log.e(TAG, "Exception in Schedule Service " + e.getMessage());
             e.printStackTrace();
-            endService();
+            endService(true);
         }
 
     }
@@ -243,10 +243,16 @@ public class ScheduleService extends IntentService {
         } //parser is closed
         Log.i(TAG, "parser closed, times complete");
         //This part wraps things up and sends a message back to the activity
-        endService();
+        endService(false);
     }
 
-    void endService() {
+    void endService(boolean hasError) {
+        final Intent returnResults = new Intent(TAG);
+        if(hasError) {
+            //the parser threw an exception - show the user an error
+            LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
+            return;
+        }
         ArrayList<StopData> clearStops = new ArrayList<>();
         for(StopData s: searchRoute.mOutboundStops) {
             if(s.schedTimes.isEmpty() && s.predicTimes.isEmpty()) {
@@ -270,7 +276,7 @@ public class ScheduleService extends IntentService {
             }
         }
         clearStops.clear();
-        final Intent returnResults = new Intent(TAG);
+        //attach results and return them to the activity
         returnResults.putExtra(TAG, searchRoute);
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
@@ -279,14 +285,14 @@ public class ScheduleService extends IntentService {
         //add schedule times to the empty stops on the route
         final Time t = new Time();
         t.setToNow();
-
         StopData stop = null;
-        int dirID = 0;
+        int dirID = Long.valueOf(t.toMillis(false)/1000).intValue();
         String tmp;
         final JsonParser parser = new JsonFactory().createParser(new URL(
-                BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id));
-        Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id);
-
+                BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id
+                        + "&max_time=120&datetime=" + dirID));
+        Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id  + "&datetime=" + dirID);
+        dirID = 0;
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();

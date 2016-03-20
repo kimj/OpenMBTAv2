@@ -33,15 +33,14 @@ import java.util.Comparator;
 public class StopService extends IntentService {
 
     public static final String TAG = "StopService";
-    StopData mainStop;
 
     //JSON constants for predictive times, data is not in SQLite
-    public static final String STOPPARAM = "&stop=";
+    public static final String STOPPARAM = "&max_time=120&stop=";
     public static final String STOPVERB = "schedulebystop";
     public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
-    ArrayList<String> idDirs = new ArrayList<>(0);
-    ArrayList<StopData> tmpList;
+    StopData mainStop;
+    ArrayList<StopData> returnList;
     final StringBuilder strBuild = new StringBuilder(0);
 
     //required, empty constructor, builds intents
@@ -65,12 +64,13 @@ public class StopService extends IntentService {
 
         final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
-                null, null, null, null, "_id ASC", null);
-        tmpList = Route.makeStops(stopNameCursor);
+                null, null, null, null, null, null);
+        returnList = Route.makeStops(stopNameCursor);
+        Log.d(TAG, "inbound total stops" + returnList.size());
         float[] results = new float[1];
         final double mainLong = Double.valueOf(mainStop.stopLong);
         final double mainLat = Double.valueOf(mainStop.stopLat);
-        for(StopData stop: tmpList) {
+        for(StopData stop: returnList) {
             Location.distanceBetween(mainLong, mainLat,
                     Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
             //find other stops within 25m of the mainStop
@@ -78,10 +78,12 @@ public class StopService extends IntentService {
                 nearby.add(stop);
             }
         }
+        returnList.clear();
+        Log.d(TAG, "inbound stops" + nearby.size());
         stopNameCursor = db.query(true, DBHelper.STOPS_OUT_TABLE, Route.mStopProjection,
-                null, null, null, null, "_id ASC", null);
-        tmpList = Route.makeStops(stopNameCursor);
-        for(StopData stop: tmpList) {
+                null, null, null, null, null, null);
+        returnList = Route.makeStops(stopNameCursor);
+        for(StopData stop: returnList) {
             Location.distanceBetween(mainLong, mainLat,
                     Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
             //find other stops within 25m of the mainStop
@@ -89,44 +91,54 @@ public class StopService extends IntentService {
                 nearby.add(stop);
             }
         }
+        Log.d(TAG, "total nearby stops" + nearby.size());
         //now have list of stop ids within 25 meters of the stop passed in
         //call the server for each id and parse the schedule/predictions
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        tmpList.clear();
+        returnList.clear();
         //cleanup completed
-        StopData dup  = nearby.get(0);
-        StopData tmp;
-        idDirs.clear();
-        for(int dex = 1; dex < nearby.size(); dex++) {
-            tmp = nearby.get(dex);
-            if(dup.schedTimes.equals(tmp.schedTimes)) {
-                idDirs.add(dex + "");
+        Collections.sort(nearby, new Comparator<StopData>() {
+            @Override
+            public int compare(final StopData object1, final StopData object2) {
+                return object1.stopId.compareTo(object2.stopId);
             }
-            dup = tmp;
+        });
+        String id = "";
+        for(StopData stp: nearby) {
+            if(stp.stopId.equals(id)) {
+                returnList.add(stp);
+                Log.d(TAG, "stp added? " + id);
+            }
+            id = stp.stopId;
         }
-        if(!idDirs.isEmpty()) {
+
+        if(!returnList.isEmpty()) {
+            Log.d(TAG, "total ids that match" + returnList.size());
             //need to remove duplicates in reverse order to preserve the saved index value
-            for(int dex = idDirs.size() - 1; dex >= 0; dex--) {
-                nearby.remove(Integer.valueOf(idDirs.get(dex)).intValue());
+            for(StopData stp: returnList) {
+                Log.d(TAG, "removing stop data " + nearby.remove(stp));
             }
             //would be better to figure out how the dup is getting through
-            idDirs.clear();
+            returnList.clear();
             nearby.trimToSize();
+            Log.d(TAG, "new total nearby stops" + nearby.size());
         }
         try {
             Log.d(TAG, "stops to parse? " + nearby.size());
             for(StopData stop: nearby) {
+                returnList.add(stop);
                 parseStop(stop);
             }
             //This part wraps things up and sends a message back to the activity with data for the stop detail
-            endService(nearby);
+            endService();
 
         } catch (IOException e) {
             Log.e(TAG, "problem with stop service " + e.getMessage());
             e.printStackTrace();
-            endService(null);
+            returnList.clear();
+            endService();
         }
     }
 
@@ -137,6 +149,7 @@ public class StopService extends IntentService {
         final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
         Log.d(TAG, "stops call? " + GETSTOPTIMES + stop.stopId);
         StopData newStop = null;
+        int dex;
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -149,6 +162,7 @@ public class StopService extends IntentService {
                 //This route is done for the night or the server is hosed -> something is wrong
                 parser.close();
                 Log.w(TAG, "error reading " + stop.stopName);
+                returnList.remove(stop);
                 token = null;
             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_MODE.equals(parser.getCurrentName())) {
                 token = parser.nextToken();
@@ -172,13 +186,11 @@ public class StopService extends IntentService {
                             if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_ROUTE_NAME.equals(parser.getCurrentName())) {
                                 //Some stops might have multiple routes
                                 token = parser.nextToken();
-                                if(routeName.isEmpty()) {
-                                    routeName = parser.getValueAsString();
-                                } else {
+                                if(!routeName.isEmpty()) {
                                     newStop = new StopData(stop);
                                     stop = newStop;
-                                    routeName = parser.getValueAsString();
                                 }
+                                routeName = parser.getValueAsString();
                                 Log.d(TAG, "stop's route " + routeName);
                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
                                 //no names at the top of this return, straight into objects
@@ -191,7 +203,6 @@ public class StopService extends IntentService {
                                 //direction array, then read the trips array
                                 while (!JsonToken.END_ARRAY.equals(token)) {
                                     token = parser.nextToken();
-
                                     if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         if(directionNm.isEmpty()) {
@@ -220,9 +231,25 @@ public class StopService extends IntentService {
                                                 t.normalize(false);
                                                 getTime(t);
                                                 //put the scheduled time into the string builder
-                                            } else if (JsonToken.END_OBJECT.equals(token)) {
+                                            } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip
                                                 tmp = Route.readableName(this, routeName) + " " + directionNm;
+                                                if(newStop != null) {
+                                                    dex = 0;
+                                                    for(StopData d: returnList) {
+                                                        if(d.schedTimes.contains(tmp)) {
+                                                            Log.w(TAG, "setting stop");
+                                                            break;
+                                                        }
+                                                        dex++;
+                                                    }
+                                                    if(dex != returnList.size()) {
+                                                        //index of the stop data to replace
+                                                        stop = returnList.get(dex);
+                                                    } else {
+                                                        returnList.add(stop);
+                                                    }
+                                                }
                                                 if(!stop.schedTimes.isEmpty()) {
                                                     //add a new time into the String
                                                     stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
@@ -231,19 +258,9 @@ public class StopService extends IntentService {
                                                     Log.d(TAG, "new routename: " + tmp);
                                                     strBuild.insert(0, tmp + " " + getString(R.string.scheduled) + "\n");
                                                     stop.schedTimes = strBuild.toString();
-                                                    if(newStop == null) {
-                                                        //first stop!
-                                                        if(idDirs.contains(tmp)) {
-                                                            Log.w(TAG, "should not happen " + tmp);
-                                                        } else
-                                                        idDirs.add(tmp);
-                                                    } else {
-                                                        if(!newStop.schedTimes.isEmpty() && !idDirs.contains(tmp)) {
-                                                            tmpList.add(newStop);
-                                                        }
-                                                    }
                                                 }
 
+                                                newStop = null;
                                                 strBuild.setLength(0);
                                                 //Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);
                                             } //end object
@@ -264,25 +281,19 @@ public class StopService extends IntentService {
         //TODO select alerts and set ids into StopData, as needed
     }
 
-    void endService(ArrayList<StopData> nearby) {
-        //Log.d(TAG, "stops to add? " + tmpList.size());
-        if(!tmpList.isEmpty()) {
-            for(StopData s: tmpList) {
-                nearby.add(s);
-            }
-        }
-        Collections.sort(nearby, new Comparator<StopData>() {
-            @Override
-            public int compare(final StopData object1, final StopData object2) {
-                return object1.schedTimes.compareTo(object2.schedTimes);
-            }
-        });
-        final StopList details = new StopList(mainStop, nearby);
+    void endService( ) {
         final Intent returnResults = new Intent(TAG);
-        returnResults.putExtra(TAG, details);
-        tmpList.clear();
-
-        Log.d(TAG, "stops to return? " + nearby.size() + ":" + details.mStopList.size());
+        if(!returnList.isEmpty()) {
+            Collections.sort(returnList, new Comparator<StopData>() {
+                @Override
+                public int compare(final StopData object1, final StopData object2) {
+                    return object1.schedTimes.compareTo(object2.schedTimes);
+                }
+            });
+            final StopList details = new StopList(mainStop, returnList);
+            returnResults.putExtra(TAG, details);
+            Log.d(TAG, "stops to return? " + returnList.size() + ":" + details.mStopList.size());
+        }
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
 

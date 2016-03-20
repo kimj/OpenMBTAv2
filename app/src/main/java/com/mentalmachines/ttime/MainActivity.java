@@ -11,9 +11,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.AsyncTask;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.content.LocalBroadcastManager;
@@ -63,7 +63,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         //this task sets the noFaves boolean
 
         /*Log.d(TAG, "starting svc");
-        startService(new Intent(this, CopyDBService.class));*/
+        startSchedSvc(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
@@ -218,23 +218,34 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             } else {
                 final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
-                if(TTimeApp.checkNetwork(this)) {
-                    mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-                    final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
-                    tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
-                    startService(tnt);
-                    Log.i(TAG, "starting schedule service with id: " + mRouteId);
-                    //DBUG, just checking
-                    /*final Intent tnt2 = new Intent(MainActivity.this, ScheduleService.class);
-                    tnt2.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
-                    tnt2.putExtra(ScheduleService.TAG, true);
-                    startService(tnt2);
-                    Log.i(TAG, "starting schedule service, testing new parse");*/
-                } else {
-                    Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
-                }
+                startSchedSvc(mRouteId);
+            }
+        } else {
+            if(mFragment.isHidden()) {
+                getSupportFragmentManager().beginTransaction().show(mFragment).commit();
+                Log.d(TAG, "showing hidden fragment");
+            }
+            if(currentSelection > 0) {
+                //this is a route fragment, get the latest times
+                ((RouteFragment)mFragment).reloadTimes();
+
             }
         }
+    }
+
+    void startSchedSvc(String routeId) {
+        if(!TTimeApp.checkNetwork(this)) {
+            Toast.makeText(this, getString(R.string.chkNet), Toast.LENGTH_SHORT).show();
+            return;
+        } else if(routeId == null || routeId.isEmpty()) {
+            Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
+            return;
+        }
+        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
+        final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+        tnt.putExtra(DBHelper.KEY_ROUTE_ID, routeId);
+        startService(tnt);
+        Log.i(TAG, "starting schedule service with id: " + routeId);
     }
 
     /**
@@ -393,12 +404,15 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 mPD.dismiss();
             }
             Log.d(TAG, "schedule ready");
-            //quick callback error check
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-                if(MainActivity.this.isDestroyed() || MainActivity.this.isFinishing()) {
-                    return;
-                }
-            } else if(MainActivity.this.isFinishing()) {
+            //quick callbacks error check, is everything here
+            if(MainActivity.this.isFinishing()) {
+                return;
+            }
+            if(intent.getExtras() == null ||
+                    intent.getExtras().getParcelable(ScheduleService.TAG) == null) {
+                //The service had an error
+                Snackbar.make(findViewById(R.id.container),
+                        getString(R.string.schedSvcErr), Snackbar.LENGTH_LONG).show();
                 return;
             }
             final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
@@ -407,7 +421,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             /*if(r.mInboundStops != null && r.mInboundStops.get(0) != null) {
                 final Intent tnt = new Intent(getBaseContext(), StopService.class);
                 tnt.putExtra(StopService.TAG, r.mInboundStops.get(0));
-                getBaseContext().startService(tnt);
+                getBaseContext().startSchedSvc(tnt);
                 Log.d(TAG, "debug, start svc: " + r.mInboundStops.get(0).stopName);
             }*/
             //CREATING LIST DETAIL PAGE

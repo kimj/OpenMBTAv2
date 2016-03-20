@@ -68,7 +68,7 @@ public class Route implements Parcelable {
                 data.stopLat = stopNameCursor.getString(3);
                 data.stopAlert = stopNameCursor.getString(4);
                 stopList.add(data);
-                //Log.d(TAG, data.stopId + " predictimes? " + data.predicTimes);
+                //Log.d(TAG, data.stopId + " name? " + data.stopName);
             } while (stopNameCursor.moveToNext());
             return stopList;
         }
