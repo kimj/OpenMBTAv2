@@ -5,6 +5,11 @@ import android.os.Parcelable;
 
 import java.util.ArrayList;
 
+/**
+ * This class helps present stops that have more than one route
+ * Other stops within 35 meters of the main stop are found in the ArrayList
+ * It powers the StopDetail activity
+ */
 public class StopList implements Parcelable {
     public static final String TAG = "StopList";
     public StopData mainStop;

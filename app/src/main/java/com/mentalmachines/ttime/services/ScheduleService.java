@@ -29,6 +29,8 @@ public class ScheduleService extends IntentService {
 
     public static final String TAG = "ScheduleService";
     Route searchRoute;
+    final Time t = new Time();
+    final StringBuilder strBuild = new StringBuilder(0);
 
     //Base URL
     public static final String BASE = "http://realtime.mbta.com/developer/api/v2/";
@@ -38,12 +40,10 @@ public class ScheduleService extends IntentService {
     public static final String ROUTEPARAM = "&route=";
     public static final String PREDVERB = "predictionsbyroute";
     public static final String SCHEDVERB = "schedulebyroute";
-    public static final String MAXHR_PARAM = "&max_time=1440&max_trips=100";
+    public static final String MAXHR_PARAM = "&max_time=120";
     public static final String GETROUTETIMES = BASE + PREDVERB + SUFFIX + ROUTEPARAM;
     public static final String GETROUTESCHED = BASE + SCHEDVERB + SUFFIX + MAXHR_PARAM + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
-
-    final StringBuilder strBuild = new StringBuilder(0);
 
     //required, empty constructor, builds intents
     public ScheduleService() {
@@ -97,7 +97,6 @@ public class ScheduleService extends IntentService {
 
     void getPredictions( ) throws IOException {
         //add times to the stops in mInbound and searchRoute.mOutboundStops
-        final Time t = new Time();
         String value = "";
         StopData stop = null;
         int dex = -1;
@@ -186,7 +185,7 @@ public class ScheduleService extends IntentService {
                                         if(stop == null || value.isEmpty() || value == null) {
                                             Log.w(TAG, "skipping prediction time field");
                                         } else {
-                                            getTime(value, t);
+                                            getTime(value, t, strBuild);
                                             //predicted time is now set into the string builder
                                         }
                                         //This time will go into the stop field below with the pre away key to put min/sec with the time
@@ -197,13 +196,7 @@ public class ScheduleService extends IntentService {
                                             Log.w(TAG, "skipping seconds prediction field");
                                             //this is not possible... pred time always has the away key
                                         } else {
-                                            offsetSecs = Integer.valueOf(value);
-                                            strBuild.append(" (");
-                                            if(offsetSecs > 60) {
-                                                strBuild.append(offsetSecs/60).append("m ").append(offsetSecs % 60).append("s").append(")");
-                                            } else {
-                                                strBuild.append(offsetSecs).append("s").append(")");
-                                            }
+                                            addAwayTimes(value, strBuild);
                                             if(!stop.predicTimes.isEmpty()) {
                                                 stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
                                             } else {
@@ -268,7 +261,6 @@ public class ScheduleService extends IntentService {
 
     void getSchedule() throws IOException {
         //add schedule times to the empty stops on the route
-        final Time t = new Time();
         t.setToNow();
         StopData stop = null;
         int dirID = Long.valueOf(t.toMillis(false)/1000).intValue();
@@ -276,7 +268,7 @@ public class ScheduleService extends IntentService {
         final JsonParser parser = new JsonFactory().createParser(new URL(
                 BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id
                         + "&max_time=120&datetime=" + dirID));
-        Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id  + "&datetime=" + dirID);
+        Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id + "&datetime=" + dirID);
         dirID = 0;
         while (!parser.isClosed()) {
             //start parsing, get the token
@@ -351,7 +343,7 @@ public class ScheduleService extends IntentService {
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         tmp = parser.getValueAsString();
-                                        tmp = getTime(tmp, t);
+                                        tmp = getTime(tmp, t, strBuild);
 
                                         if(t.toMillis(false) > System.currentTimeMillis()) {
                                             //stale data for a stop comes through
@@ -390,7 +382,6 @@ public class ScheduleService extends IntentService {
      */
     void parseDaySchedule() throws IOException {
         //add schedule times and direction to the stops
-        final Time t = new Time();
         t.setToNow();
         t.hour = 0;
         t.minute = 0;
@@ -513,7 +504,7 @@ public class ScheduleService extends IntentService {
                                         }
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        Log.d(TAG, "time added to stopTime " + getTime(parser.getValueAsString(), t));
+                                        Log.d(TAG, "time added to stopTime " + getTime(parser.getValueAsString(), t, strBuild));
                                         tmpTimes.hours.add(t.hour);
                                         tmpTimes.minutes.add(t.minute);
                                         strBuild.setLength(0);
@@ -534,17 +525,38 @@ public class ScheduleService extends IntentService {
         //TODO select alerts and set ids into StopData, as needed
     }
 
-    //utility methods to format times when making a call for prediction data
-    public String getTime (String stamp, Time t) {
+    /**
+     * Calculate the prediction time offset and add it on to the string builder
+     * @param value
+     * @param builder
+     */
+    public static void addAwayTimes(String value, StringBuilder builder) {
+        final int offsetSecs = Integer.valueOf(value);
+        builder.append(" (");
+        if(offsetSecs > 60) {
+            builder.append(offsetSecs / 60).append("m ").append(offsetSecs % 60).append("s").append(")");
+        } else {
+            builder.append(offsetSecs).append("s").append(")");
+        }
+    }
+
+    /**
+     * utility methods to format times when making a call for schedule or prediction data
+     * @param stamp, JSON string representing epoch time
+     * @param t, Time class, scratch variable used throughout the parser
+     * @param builder, StringBuilder - object updated in this method
+     * @return
+     */
+    public static String getTime (String stamp, Time t, StringBuilder builder) {
         t.set(1000 * Long.valueOf(stamp));
         t.normalize(false);
-        strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
+        builder.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
         if(t.hour >= 12) {
-            strBuild.append("PM");
+            builder.append("PM");
         } else {
-            strBuild.append("AM");
+            builder.append("AM");
         }
-        return strBuild.toString();
+        return builder.toString();
     }
 
     public static String pad(int c) {
