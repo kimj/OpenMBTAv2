@@ -133,7 +133,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Intent svc = new Intent(this, FullScheduleService.class);
                 svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute.id);
                 startService(svc);
-                Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
+                //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, ShowScheduleActivity.class));
                 break;
             case R.id.menu_favorites:
