@@ -61,20 +61,26 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
     @Override
     public void onBindViewHolder(final ScheduleViewHolder holder, int position) {
         StopTimes s;
+        String name ="";
         if(mSchedule == null) {
             s = null;
         } else if(position < mSchedule.TripsInbound.length) {
             s = mSchedule.TripsInbound[position];
+            name = mSchedule.route.mInboundStops.get(position).stopName;
+            holder.mDir.setText(R.string.inbound);
         } else {
             position -= mSchedule.TripsInbound.length;
             s = mSchedule.TripsOutbound[position];
+            name = mSchedule.route.mOutboundStops.get(position).stopName;
+            holder.mDir.setText(R.string.outbound);
         }
         if(s == null) {
             Log.e(TAG, "null stopTimes! " + position);
             return;
         }
         if(s.morning != null && s.morning.size() > 0) {
-            holder.mMorning.setText(enumerateTimes(s.morning));
+            holder.mMorning.setText(name + "\n" +
+                    enumerateTimes(s.morning));
         } else {
             holder.mMorning.setText("");
         }
@@ -114,10 +120,11 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
     }
 
     public class ScheduleViewHolder extends RecyclerView.ViewHolder {
-        public final TextView mMorning, mAMPeak, mMidday, mPMPeak, mNight;
+        public final TextView mDir, mMorning, mAMPeak, mMidday, mPMPeak, mNight;
         //set any tags?
         public ScheduleViewHolder(View itemView) {
             super(itemView);
+            mDir = (TextView) itemView.findViewById(R.id.sch_direction);
             mMorning = (TextView) itemView.findViewById(R.id.sch_morning);
             mAMPeak = (TextView) itemView.findViewById(R.id.sch_ampeak);
             mMidday = (TextView) itemView.findViewById(R.id.sch_midday);

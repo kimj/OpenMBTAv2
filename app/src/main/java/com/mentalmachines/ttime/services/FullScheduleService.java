@@ -67,7 +67,7 @@ public class FullScheduleService extends IntentService {
         final Bundle b = intent.getExtras();
         Log.d(TAG, "handle intent");
         if(b == null) {
-            endService(true);
+            sendBroadcast(true);
             return;
         }
         if(b.containsKey(DBHelper.KEY_ROUTE_ID)) {
@@ -82,13 +82,12 @@ public class FullScheduleService extends IntentService {
             try {
                 Log.d(TAG, "parse weekday");
                 parseWeekdaySchedule();
+                sendBroadcast(false);
                 Log.d(TAG, "parse saturday");
                 parseSaturdaySchedule();
                 Log.d(TAG, "parse sunday");
                 parseSundaySchedule();
                 Log.d(TAG, "end service");
-                endService(false);
-                Log.d(TAG, "schedule ready?");
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -97,7 +96,7 @@ public class FullScheduleService extends IntentService {
 
     }
 
-    void endService(boolean hasError) {
+    void sendBroadcast(boolean hasError) {
         Log.d(TAG, "end service");
         final Intent returnResults = new Intent(TAG);
         returnResults.putExtra(TAG, hasError);
@@ -210,7 +209,7 @@ public class FullScheduleService extends IntentService {
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
                         token = parser.nextToken();
                         directionNm = parser.getValueAsString();
-                        Log.d(TAG, "direction id set " + directionNm);
+                        //Log.d(TAG, "direction id set " + directionNm);
                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
                         //array of trips with stops inside, may be several trips returned
                         token = parser.nextToken();
@@ -225,7 +224,7 @@ public class FullScheduleService extends IntentService {
                                 //keep the trip name only once
                                 token = parser.nextToken();
                                 tripName = parser.getValueAsString();
-                                Log.d(TAG, "trip name set " + tripName);
+                                //Log.d(TAG, "trip name set " + tripName);
                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
                                 //put the times into the Schedule's stop times object...
                                 token = parser.nextToken();

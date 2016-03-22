@@ -8,10 +8,12 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.app.NavUtils;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.ActionBar;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
@@ -30,7 +32,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_stops);
+        setContentView(R.layout.activity_schedule);
         final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if(getSupportActionBar() != null) {
@@ -39,7 +41,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
         //Schedule Service is launched before start Activity
         LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady,
                 new IntentFilter(FullScheduleService.TAG));
-        mList = (RecyclerView) findViewById(R.id.route_list);
+        mList = (RecyclerView) findViewById(R.id.times_list);
     }
 
     @Override
@@ -57,12 +59,24 @@ public class ShowScheduleActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.schedule, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
+            case R.id.menu_weekdays:
+                break;
+            case R.id.menu_saturdays:
+                break;
+            case R.id.menu_sunday:
+                break;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -89,6 +103,9 @@ public class ShowScheduleActivity extends AppCompatActivity {
                 return;
             }
             mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sWeekdays));
+            final ActionBar ab = getSupportActionBar();
+            ab.setTitle(FullScheduleService.sWeekdays.route.name);
+            ab.setSubtitle(getString(R.string.weekdays));
             Log.d(TAG, "set new weekday adapter");
             if(mProgress != null && mProgress.isShowing()) {
                 mProgress.cancel();

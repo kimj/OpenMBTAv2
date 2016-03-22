@@ -6,11 +6,23 @@
     android:paddingRight="4dp">
     <!-- layout for a stop in a listview -->
     <TextView
+        android:id="@+id/sch_direction"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:padding="16dip"
+        android:text="Inbound"
+        android:fontFamily="bold"
+        android:textColor="@android:color/black"
+        android:background="@android:color/transparent"
+        android:textSize="14dp" />
+    <TextView
         android:id="@+id/sch_morning"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:padding="16dip"
+        android:layout_below="@id/sch_direction"
         android:text="Morning times"
         android:textColor="@color/colorPrimaryDark"
         android:background="@android:color/transparent"

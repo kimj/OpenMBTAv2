@@ -19,6 +19,12 @@
     <string name="stopDetail">View Schedule</string>
     <string name="schedSvcErr">Sorry! \nThere was an error talking to the MBTA server</string>
     <string name="chkNet">Check the network and try again</string>
+    <string name="weekdays">Weekday Schedule</string>
+    <string name="saturdays">Saturday Schedule</string>
+    <string name="sunday">Sundays and Holidays</string>
+    <string name="inbound">Inbound</string>
+    <string name="outbound">Outbound</string>
+
     <string-array name="transit_methods">
         <item>Bus</item>
         <item>Subway</item>

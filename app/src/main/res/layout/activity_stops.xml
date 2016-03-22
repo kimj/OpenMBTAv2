@@ -31,7 +31,7 @@
         android:paddingLeft="@dimen/def_padding"
         android:paddingRight="@dimen/def_padding"
         android:paddingTop="@dimen/def_margin"
-        tools:context=".fragments.RouteFragment">
+        tools:context=".StopDetailActivity">
 
         <!-- To do text appearance large -->
         <android.support.v7.widget.RecyclerView
