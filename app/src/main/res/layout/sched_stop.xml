@@ -7,11 +7,11 @@
     <!-- layout for a stop in a listview -->
     <TextView
         android:id="@+id/sch_direction"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:padding="16dip"
+        android:padding="4dip"
         android:text="Inbound"
+        android:gravity="center_horizontal"
         android:fontFamily="bold"
         android:textColor="@android:color/black"
         android:background="@android:color/transparent"
