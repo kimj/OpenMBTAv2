@@ -14,7 +14,6 @@ import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.StopData;
 
 import java.io.IOException;
@@ -38,11 +37,14 @@ public class ScheduleService extends IntentService {
 
     //JSON constants for predictive times, data is not in SQLite
     public static final String ROUTEPARAM = "&route=";
+    public static final String DATETIMEPARAM = "&datetime=";
     public static final String PREDVERB = "predictionsbyroute";
     public static final String SCHEDVERB = "schedulebyroute";
-    public static final String MAXHR_PARAM = "&max_time=120";
-    public static final String GETROUTETIMES = BASE + PREDVERB + SUFFIX + ROUTEPARAM;
-    public static final String GETROUTESCHED = BASE + SCHEDVERB + SUFFIX + MAXHR_PARAM + ROUTEPARAM;
+    public static final String TWOHR_PARAM = "&max_time=120";
+    public static final String ALLHR_PARAM = "&max_time=1440";
+    public static final String GETROUTEPREDTIMES = BASE + PREDVERB + SUFFIX + ROUTEPARAM;
+    public static final String GETROUTESCHEDTIMES = BASE + SCHEDVERB + SUFFIX + TWOHR_PARAM + ROUTEPARAM;
+    public static final String GETSCHEDULE = BASE + SCHEDVERB + SUFFIX + ALLHR_PARAM + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
     //required, empty constructor, builds intents
@@ -60,7 +62,7 @@ public class ScheduleService extends IntentService {
         //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
         if(b == null || !b.containsKey(DBHelper.KEY_ROUTE_ID)) {
-            Log.e(TAG, "bad route id");
+            //this is experimental...
             endService(true);
             return;
         }
@@ -77,15 +79,9 @@ public class ScheduleService extends IntentService {
         //Route data is fully populated
 
         try {
-            if(b.containsKey(TAG)) {
-                //call for the schedule
-                Log.i(TAG, "start schedule service for " + searchRoute.name);
-                parseDaySchedule();
-            } else {
-                Log.i(TAG, "start prediction service for " + searchRoute.name);
-                getSchedule();
-                getPredictions();
-            }
+            Log.i(TAG, "start prediction service for " + searchRoute.name);
+            getRouteSchedTimes();
+            getPredictions();
 
         } catch (IOException e) {
             Log.e(TAG, "Exception in Schedule Service " + e.getMessage());
@@ -100,7 +96,7 @@ public class ScheduleService extends IntentService {
         String value = "";
         StopData stop = null;
         int dex = -1;
-        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTETIMES + searchRoute.id));
+        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTEPREDTIMES + searchRoute.id));
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -259,16 +255,15 @@ public class ScheduleService extends IntentService {
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
 
-    void getSchedule() throws IOException {
+    void getRouteSchedTimes() throws IOException {
         //add schedule times to the empty stops on the route
         t.setToNow();
         StopData stop = null;
         int dirID = Long.valueOf(t.toMillis(false)/1000).intValue();
         String tmp;
         final JsonParser parser = new JsonFactory().createParser(new URL(
-                BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id
-                        + "&max_time=120&datetime=" + dirID));
-        Log.d(TAG, "schedule call? " + BASE + SCHEDVERB + SUFFIX + ROUTEPARAM + searchRoute.id + "&datetime=" + dirID);
+                GETROUTESCHEDTIMES + searchRoute.id + DATETIMEPARAM + dirID));
+        Log.d(TAG, "schedule call? " + GETROUTESCHEDTIMES + searchRoute.id + DATETIMEPARAM + dirID);
         dirID = 0;
         while (!parser.isClosed()) {
             //start parsing, get the token
@@ -374,158 +369,6 @@ public class ScheduleService extends IntentService {
     }
 
     /**
-     * First effort is using MAXHR_PARAM to get the full day's schedule
-     * The plan is to build a table and display the full schedule
-     * datetime (optional) Epoch time after which schedule should be returned
-     If included then must be within the next seven (7) days
-     * @throws IOException
-     */
-    void parseDaySchedule() throws IOException {
-        //add schedule times and direction to the stops
-        t.setToNow();
-        t.hour = 0;
-        t.minute = 0;
-        t.second = 0;
-        t.yearDay = t.yearDay+1;
-        t.normalize(false);
-        int tstamp = Long.valueOf(t.toMillis(false)/1000).intValue();
-        //time set to collect 24hr schedule for tomorrow
-
-        ArrayList<String> inStops, outStops;
-        inStops = new ArrayList<>(searchRoute.mInboundStops.size());
-        for(StopData s: searchRoute.mInboundStops) {
-            inStops.add(s.stopId);
-        }
-        outStops = new ArrayList<>(searchRoute.mOutboundStops.size());
-        for(StopData s: searchRoute.mOutboundStops) {
-            outStops.add(s.stopId);
-        }
-        //these arraylists will serve as the index to find the right stoptimes object
-        Schedule sch = new Schedule(searchRoute);
-        Schedule.StopTimes tmpTimes = null;
-        String tripName = "";
-        int dirID = 0, dex;
-        String directionNm = "", tmp;
-        final JsonParser parser = new JsonFactory().createParser(new URL(GETROUTESCHED + searchRoute.id +
-            "&datetime=" + tstamp));
-        Log.d(TAG, "schedule call? " + GETROUTESCHED + searchRoute.id + "&datetime=" + tstamp);
-
-        while (!parser.isClosed()) {
-            //start parsing, get the token
-            JsonToken token = parser.nextToken();
-            if (token == null) {
-                Log.w(TAG, "null token");
-                break;
-            }
-            //running through tokens to get to direction array, "error" key comes up before any other
-            if (JsonToken.FIELD_NAME.equals(token) && "error".equals(parser.getCurrentName())) {
-                //This route is done for the night or the server is hosed -> something is wrong
-                parser.close();
-                Log.w(TAG, "error reading " + searchRoute.name);
-                token = null;
-            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR.equals(parser.getCurrentName())) {
-                //no names at the top of this return, straight into objects
-                //direction, begin array, begin object
-                //Log.d(TAG, "direction array");
-                token = parser.nextToken();
-                if (!JsonToken.START_ARRAY.equals(token)) {
-                    break;
-                }
-                //direction array, then read the trips array
-                while (!JsonToken.END_ARRAY.equals(token)) {
-                    token = parser.nextToken();
-
-                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_ID.equals(parser.getCurrentName())) {
-                        token = parser.nextToken();
-                        dirID = Integer.valueOf(parser.getValueAsString()).intValue();
-
-                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
-                        token = parser.nextToken();
-                        directionNm = parser.getValueAsString();
-                        Log.d(TAG, "direction id set " + directionNm);
-                    } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
-                        //array of trips with stops inside, may be several trips returned
-                        token = parser.nextToken();
-                        if (!JsonToken.START_ARRAY.equals(token)) {
-                            break;
-                        }
-                        //trip name, trip id need to get to STOPS array
-                        while (!JsonToken.END_ARRAY.equals(token)) {
-                            //running through the trips, read the trip array into times
-                            token = parser.nextToken();
-                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP_SIGN.equals(parser.getCurrentName())) {
-                                //keep the trip name only once
-                                token = parser.nextToken();
-                                tripName = parser.getValueAsString();
-                                Log.d(TAG, "trip name set " + tripName);
-                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
-                                //put the times into the Schedule's stop times object...
-                                token = parser.nextToken();
-                                if (!JsonToken.START_ARRAY.equals(token)) {
-                                    break;
-                                }
-                                //trip name, trip id need to get to STOPS array and add times into the hours/minutes
-                                while (!JsonToken.END_ARRAY.equals(token)) {
-                                    token = parser.nextToken();
-                                    //begin object
-                                    if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_STOPID.equals(parser.getCurrentName())) {
-                                        token = parser.nextToken();
-                                        tmp = parser.getValueAsString();
-                                        //stopId
-                                        if(dirID == 0) {
-                                            //direction id is 0 or 1
-                                            dex = outStops.indexOf(tmp);
-                                            if(dex < 0) {
-                                                Log.e(TAG, "error with stops array");
-                                                break;
-                                            }
-                                            if(sch.TripsOutbound.size() > dex) {
-                                                tmpTimes = sch.TripsOutbound.get(dex);
-                                            } else {
-                                                tmpTimes = new Schedule.StopTimes();
-                                                tmpTimes.stopId = tmp;
-                                                sch.TripsOutbound.add(tmpTimes);
-                                                Log.d(TAG, tmp + " new stop times " + tripName);
-                                            }
-                                        } else {
-                                            dex = inStops.indexOf(tmp);
-                                            if(dex < 0) {
-                                                Log.e(TAG, "error with stops array");
-                                                break;
-                                            }
-                                            if(sch.TripsInbound.size() > dex) {
-                                                tmpTimes = sch.TripsInbound.get(dex);
-                                            } else {
-                                                tmpTimes = new Schedule.StopTimes();
-                                                tmpTimes.stopId = tmp;
-                                                sch.TripsInbound.add(tmpTimes);
-                                                Log.d(TAG, tmp + " new stop times " + tripName);
-                                            }
-                                        }
-                                    } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
-                                        token = parser.nextToken();
-                                        Log.d(TAG, "time added to stopTime " + getTime(parser.getValueAsString(), t, strBuild));
-                                        tmpTimes.hours.add(t.hour);
-                                        tmpTimes.minutes.add(t.minute);
-                                        strBuild.setLength(0);
-                                    }
-                                }//end stop array, all stops in the trip are set
-                                token = JsonToken.NOT_AVAILABLE;
-                            } //end stop token
-
-                        }//trip array end
-                        token = JsonToken.NOT_AVAILABLE;
-                        //ending the trip array should not end the  parsing
-                    }//trip field
-                }
-                token = JsonToken.NOT_AVAILABLE;
-            }//end dir field
-
-        } //parser is closed
-        //TODO select alerts and set ids into StopData, as needed
-    }
-
-    /**
      * Calculate the prediction time offset and add it on to the string builder
      * @param value
      * @param builder
@@ -565,6 +408,8 @@ public class ScheduleService extends IntentService {
     }
 
     public static String hourHandle(int c) {
+        //hour is offset by 1
+        c++;
         if (c > 12) return String.valueOf(c-12);
         else if (c == 0) return String.valueOf(12);
         return String.valueOf(c);

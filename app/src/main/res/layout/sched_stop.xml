@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingLeft="4dp"
+    android:paddingRight="4dp">
+    <!-- layout for a stop in a listview -->
+    <TextView
+        android:id="@+id/sch_morning"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:padding="16dip"
+        android:text="Morning times"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="@android:color/transparent"
+        android:textSize="16dp" />
+    <TextView
+        android:id="@+id/sch_ampeak"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="@dimen/def_margin"
+        android:layout_below="@id/sch_morning"
+        android:gravity="left"
+        android:padding="8dip"
+        android:text="AM peak"
+        android:drawableLeft="@drawable/sunicon"
+        android:textColor="@android:color/black"
+        android:background="@android:color/transparent"
+        android:textSize="18dp" />
+    <TextView
+        android:id="@+id/sch_midday"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_below="@id/sch_ampeak"
+        android:padding="16dip"
+        android:text="Midday times"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="@android:color/transparent"
+        android:textSize="16dp" />
+    <TextView
+        android:id="@+id/sch_pmpeak"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="@dimen/def_margin"
+        android:layout_below="@id/sch_midday"
+        android:gravity="left"
+        android:padding="8dip"
+        android:text="Peak hour"
+        android:drawableLeft="@drawable/peak_icon"
+        android:textColor="@android:color/black"
+        android:background="@android:color/transparent"
+        android:textSize="18dp" />
+    <TextView
+        android:id="@+id/sch_night"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_below="@id/sch_pmpeak"
+        android:padding="16dip"
+        android:text="Midday times"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="@android:color/transparent"
+        android:textSize="16dp" />
+    <View android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="@dimen/def_margin"
+        android:layout_marginRight="@dimen/def_margin"
+        android:layout_below="@id/sch_night"
+        android:background="@color/colorPrimaryDark" />
+</RelativeLayout>

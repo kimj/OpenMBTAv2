@@ -9,6 +9,7 @@
     <string name="favorites">Favorites</string>
     <string name="action_alerts">Get Alerts</string>
     <string name="action_settings">Settings</string>
+    <string name="action_schedule">Show Schedule (for this Route)</string>
     <string name="bus_prefix">Bus #</string>
     <string name="loading">Loading, please wait</string>
     <string name="noSched">sorry, no schedule available</string>

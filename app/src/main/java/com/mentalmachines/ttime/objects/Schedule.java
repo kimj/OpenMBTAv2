@@ -2,19 +2,19 @@ package com.mentalmachines.ttime.objects;
 
 import java.util.ArrayList;
 
-public class Schedule {
+public class Schedule{
 
 	public Route route;
     /**
      * These array lists are parallel to the Inbound/Outbound stops of the route
      */
-    public ArrayList<StopTimes> TripsInbound;
-    public ArrayList<StopTimes> TripsOutbound;
+    public StopTimes[] TripsInbound;
+    public StopTimes[] TripsOutbound;
 
     public Schedule(Route r) {
         route = r;
-        TripsInbound = new ArrayList<>(r.mInboundStops.size());
-        TripsOutbound = new ArrayList<>(r.mOutboundStops.size());
+        TripsInbound = new StopTimes[r.mInboundStops.size()];
+        TripsOutbound = new StopTimes[r.mOutboundStops.size()];
     }
 
     /**
@@ -25,7 +25,29 @@ public class Schedule {
     public static class StopTimes {
         public String stopId;
 
-        public ArrayList<Integer> hours = new ArrayList<>();
-        public ArrayList<Integer> minutes = new ArrayList<>();
+        public ArrayList<String> morning = new ArrayList<>();
+        public ArrayList<String> amPeak = new ArrayList<>();
+        public ArrayList<String> midday = new ArrayList<>();
+        public ArrayList<String> pmPeak = new ArrayList<>();
+        public ArrayList<String> night = new ArrayList<>();
     }
+
+    /**
+     * Creator required for class implementing the parcelable interface.
+
+    public static final Parcelable.Creator<Schedule> CREATOR = new Creator<Schedule>() {
+
+        @Override
+        public Schedule createFromParcel(Parcel parcel) {
+            final Route route = parcel.readTypedObject(Route.CREATOR);
+            Schedule schedule = new Schedule(route);
+
+            return schedule;
+        }
+
+        @Override
+        public Schedule[] newArray(int size) {
+            return new Schedule[size];
+        }
+    };  */
 }

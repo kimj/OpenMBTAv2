@@ -248,7 +248,7 @@ public class StopService extends IntentService {
                                                 //end of the trip, put the timing data  into the stop
                                                 tmp = Route.readableName(this, routeName) + " " + directionNm;
                                                 if(stop.predicTimes.isEmpty()) {
-                                                    strBuild.insert(0, getString(R.string.actual));
+                                                    strBuild.insert(0, getString(R.string.actual) + " ");
                                                     stop.predicTimes = strBuild.toString();
                                                 } else if(stop.schedTimes.contains(tmp)) {
                                                     //add another time to the current stop
@@ -267,7 +267,7 @@ public class StopService extends IntentService {
                                                     }
                                                     if(found) {
                                                         if (stop.predicTimes.isEmpty()) {
-                                                            strBuild.insert(0, getString(R.string.actual));
+                                                            strBuild.insert(0, getString(R.string.actual) + " ");
                                                             stop.predicTimes = strBuild.toString();
                                                         } else if(strBuild.length() > 0 && !stop.predicTimes.contains(strBuild.toString())) {
                                                             stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
