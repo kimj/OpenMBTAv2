@@ -43,6 +43,8 @@ import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.ScheduleService;
 import com.mentalmachines.ttime.services.StopService;
 
+import java.util.Calendar;
+
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
 
     public static final String TAG = "MainActivity";
@@ -131,7 +133,25 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 break;*/
             case R.id.menu_schedule:
                 final Intent svc = new Intent(this, FullScheduleService.class);
-                svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute.id);
+                if (mDrawerList.getTag() != null) {
+                    View v = (View) mDrawerList.getTag();
+                    final String routeId = (String) v.getTag();
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, routeId);
+                } else if(((RouteFragment)mFragment).mListAdapter != null &&
+                        ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute.id);
+                } else {
+                    //show error and return
+                    Toast.makeText(this, "Need a route to show the schedule", Toast.LENGTH_SHORT).show();
+                    return super.onOptionsItemSelected(item);
+                }
+                final Calendar c = Calendar.getInstance();
+                if(c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY ||
+                        c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
+                    svc.putExtra(FullScheduleService.TAG, c.get(Calendar.DAY_OF_WEEK));
+                } else {
+                    svc.putExtra(FullScheduleService.TAG, Calendar.TUESDAY);
+                }
                 startService(svc);
                 //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
                 startActivity(new Intent(this, ShowScheduleActivity.class));
@@ -207,12 +227,20 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
         }
         //persist the view
+        //save the route ID in order to call the route prediction times again when user gets back
         if(currentSelection > 0) {
-            //save the route ID in order to call the route prediction times again when user gets back
-            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-            mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
-                    ((RouteFragment) mFragment).mListAdapter.mRoute.id).commit();
-        }
+            if (mDrawerList.getTag() != null) {
+                View v = (View) mDrawerList.getTag();
+                final String routeId = (String) v.getTag();
+                mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+                mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).commit();
+            } else if(((RouteFragment)mFragment).mListAdapter != null &&
+                    ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
+                mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+                mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
+                        ((RouteFragment) mFragment).mListAdapter.mRoute.id).commit();
+            }
+        } //ELSE do something about alerts that are onscreen
     }
 
     @Override

@@ -7,10 +7,14 @@ import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.net.http.HttpResponseCache;
 import android.util.Log;
 
 import com.mentalmachines.ttime.services.DBCreateStopsRoutes;
 import com.mentalmachines.ttime.services.GetMBTARequestService;
+
+import java.io.File;
+import java.io.IOException;
 
 /**
  * Application class, some utils can be found in here
@@ -35,6 +39,12 @@ public class TTimeApp extends Application{
             }
         } else {
             Log.e(TAG, "network error, app services not started");
+        }
+        //Create an http cache
+        try {
+            HttpResponseCache.install(new File(getCacheDir(), "http"), (100 * 1024 * 1024)); // 100 MiB
+        } catch (IOException e) {
+            Log.e(TAG, "HTTP response cache installation failed", e);
         }
     }
 
