@@ -24,7 +24,7 @@
 
         <!-- To do text appearance large -->
         <android.support.v7.widget.RecyclerView
-            android:id="@+id/times_list"
+            android:id="@+id/sch_list"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             tools:context=".ShowScheduleActivity"
@@ -32,5 +32,15 @@
             app:layoutManager="LinearLayoutManager"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
             tools:listitem="@layout/sched_stop" />
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/sch_switch"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="bottom|end"
+            android:layout_margin="@dimen/def_margin"
+            android:onClick="switchSchedule"
+            android:src="@drawable/ic_menu_back" />
+    <!--action button is to switch between inbound and outbound -->
 
 </android.support.design.widget.CoordinatorLayout>

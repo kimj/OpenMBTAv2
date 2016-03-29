@@ -20,24 +20,36 @@ import java.util.ArrayList;
  */
 
 public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapter.ScheduleViewHolder> {
-    public static final String TAG = "SimpleStopAdapter";
+    public static final String TAG = "ScheduleStopAdapter";
     public Schedule mSchedule;
+    private boolean isInbound = true;
     StringBuilder builder = new StringBuilder(8);
 
+    //Constructor creates inbound by default, can switch to outbound
     public ScheduleStopAdapter(Schedule s) {
         super();
         mSchedule = s;
-        Log.d(TAG, "size checks? " + mSchedule.TripsInbound.length + ":" + mSchedule.TripsOutbound.length);
-        Log.d(TAG, "route checks? " + mSchedule.route.mInboundStops.size() + ":" + mSchedule.route.mOutboundStops.size());
+        if(mSchedule.route.mInboundStops == null) {
+            isInbound = false;
+            if(mSchedule.route.mOutboundStops == null) {
+                Log.e(TAG, "route has no stops!");
+                mSchedule.route.mOutboundStops = new ArrayList<>(0);
+            }
+        }
+        //Log.d(TAG, "size checks? " + mSchedule.TripsInbound.length + ":" + mSchedule.TripsOutbound.length);
+        //Log.d(TAG, "route checks? " + mSchedule.route.mInboundStops.size() + ":" + mSchedule.route.mOutboundStops.size());
     }
 
     @Override
     public int getItemCount() {
         if(mSchedule == null) {
-            Log.e(TAG, "schedule object empty");
+            Log.w(TAG, "schedule object empty");
             return 0;
         }
-        return mSchedule.route.mInboundStops.size() + mSchedule.route.mOutboundStops.size();
+        if(isInbound) {
+            return mSchedule.route.mInboundStops.size();
+        }
+        return mSchedule.route.mOutboundStops.size();
     }
 
     @Override
@@ -64,50 +76,66 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
         String name ="";
         if(mSchedule == null) {
             s = null;
-        } else if(position < mSchedule.TripsInbound.length) {
-            s = mSchedule.TripsInbound[position];
-            name = mSchedule.route.mInboundStops.get(position).stopName;
-            holder.mDir.setText(R.string.inbound);
+        } else if(isInbound) {
+            //inbound is showing
+            if(position < mSchedule.TripsInbound.length) {
+                s = mSchedule.TripsInbound[position];
+                name = mSchedule.route.mInboundStops.get(position).stopName;
+            } else {
+                Log.w(TAG, "position out of bounds");
+                return;
+            }
         } else {
-            position -= mSchedule.TripsInbound.length;
-            s = mSchedule.TripsOutbound[position];
-            name = mSchedule.route.mOutboundStops.get(position).stopName;
-            holder.mDir.setText(R.string.outbound);
+            //outbound stops showing
+            if(position < mSchedule.TripsOutbound.length) {
+                s = mSchedule.TripsOutbound[position];
+                name = mSchedule.route.mOutboundStops.get(position).stopName;
+            } else {
+                Log.w(TAG, "position out of bounds");
+                return;
+            }
         }
+
         if(s == null) {
             Log.e(TAG, "null stopTimes! " + position);
             return;
         }
-        if(s.morning != null && s.morning.size() > 0) {
-            holder.mMorning.setText(name + "\n" +
-                    enumerateTimes(s.morning));
+        Log.i(TAG, "stop times: " + s.morning.size() +":" + s.amPeak.size() + ":" + s.midday.size() + ":" + s.pmPeak.size() + ":" + s.night.size());
+        holder.mDir.setText(name);
+        if(s.morning.size() > 0) {
+            holder.mMorning.setText(enumerateTimes(s.morning));
         } else {
             holder.mMorning.setText("");
         }
 
-        if(s.amPeak != null && s.amPeak.size() > 0) {
+        if(s.amPeak.size() > 0) {
             holder.mAMPeak.setText(enumerateTimes(s.amPeak));
         } else {
             holder.mAMPeak.setText("");
         }
 
-        if(s.midday != null && s.midday.size() > 0) {
+        if(s.midday.size() > 0) {
             holder.mMidday.setText(enumerateTimes(s.midday));
         } else {
             holder.mMidday.setText("");
         }
 
-        if(s.pmPeak != null && s.pmPeak.size() > 0) {
+        if(s.pmPeak.size() > 0) {
             holder.mPMPeak.setText(enumerateTimes(s.pmPeak));
         } else {
             holder.mPMPeak.setText("");
         }
 
-        if(s.night != null && s.night.size() > 0) {
+        if(s.night.size() > 0) {
             holder.mNight.setText(enumerateTimes(s.night));
         } else {
             holder.mNight.setText("");
         }
+    }
+
+    public void switchDirection() {
+        isInbound = !isInbound;
+        notifyDataSetChanged();
     }
 
     String enumerateTimes(ArrayList<String> interval) {

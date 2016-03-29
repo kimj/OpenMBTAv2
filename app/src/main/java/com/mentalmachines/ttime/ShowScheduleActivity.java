@@ -44,7 +44,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
         //Schedule Service is launched before start Activity
         LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady,
                 new IntentFilter(FullScheduleService.TAG));
-        mList = (RecyclerView) findViewById(R.id.times_list);
+        mList = (RecyclerView) findViewById(R.id.sch_list);
     }
 
     @Override
@@ -59,6 +59,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
         if(mProgress != null && mProgress.isShowing()) {
             mProgress.cancel();
         }
+        //tried reset service here...
     }
 
     @Override
@@ -94,6 +95,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
         return super.onOptionsItemSelected(item);
     }
 
+
     @Override
     protected void onStop() {
         super.onStop();
@@ -112,20 +114,32 @@ public class ShowScheduleActivity extends AppCompatActivity {
                 mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sSunday));
                 ab.setTitle(Route.readableName(this, FullScheduleService.sSunday.route.name));
                 ab.setSubtitle(getString(R.string.sunday));
-                Log.d(TAG, "set new weekday adapter");
+                Log.d(TAG, "set new sunday adapter");
                 break;
             case Calendar.SATURDAY:
                 mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sSaturday));
                 ab.setTitle(Route.readableName(this, FullScheduleService.sSaturday.route.name));
                 ab.setSubtitle(getString(R.string.saturdays));
-                Log.d(TAG, "set new weekday adapter");
+                Log.d(TAG, "set new satureday adapter");
                 break;
         }
+        //Is this a one way route? hide the FAB
+        final Route route = ((ScheduleStopAdapter) mList.getAdapter()).mSchedule.route;
+        if(route.mInboundStops == null || route.mOutboundStops == null
+                || route.mInboundStops.size() == 0 || route.mOutboundStops.size() == 0) {
+            findViewById(R.id.sch_switch).setVisibility(View.GONE);
+        }
+    }
+
+    /*********click listeners ********/
+    public void switchSchedule(View v) {
+        ((ScheduleStopAdapter) mList.getAdapter()).switchDirection();
     }
 
     public void setList(View v) {
         Toast.makeText(ShowScheduleActivity.this, "change schedule...", Toast.LENGTH_SHORT).show();
     }
+    /*********end listeners ********/
 
     BroadcastReceiver mScheduleReady = new BroadcastReceiver() {
         @Override

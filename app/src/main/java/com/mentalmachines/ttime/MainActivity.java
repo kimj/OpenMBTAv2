@@ -132,14 +132,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_schedule:
+                FullScheduleService.resetService();
+                Log.d(TAG, "reset service");
                 final Intent svc = new Intent(this, FullScheduleService.class);
-                if (mDrawerList.getTag() != null) {
-                    View v = (View) mDrawerList.getTag();
-                    final String routeId = (String) v.getTag();
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, routeId);
-                } else if(((RouteFragment)mFragment).mListAdapter != null &&
-                        ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute.id);
+                if(((RouteFragment)mFragment).mListAdapter != null &&
+                        ((RouteFragment)mFragment).mListAdapter.getItemCount() > 0) {
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
                 } else {
                     //show error and return
                     Toast.makeText(this, "Need a route to show the schedule", Toast.LENGTH_SHORT).show();

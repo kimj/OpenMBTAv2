@@ -1,5 +1,7 @@
 package com.mentalmachines.ttime.objects;
 
+import android.util.Log;
+
 import java.util.ArrayList;
 
 public class Schedule{
@@ -10,11 +12,13 @@ public class Schedule{
      */
     public StopTimes[] TripsInbound;
     public StopTimes[] TripsOutbound;
+    public volatile boolean[] sLoading = new boolean[5];
 
     public Schedule(Route r) {
         route = r;
-        TripsInbound = new StopTimes[r.mInboundStops.size()];
-        TripsOutbound = new StopTimes[r.mOutboundStops.size()];
+        /*TripsInbound = new StopTimes[r.mInboundStops.size()];
+        TripsOutbound = new StopTimes[r.mOutboundStops.size()];*/
+        Log.d("Schedule", "route sizing: " + r.mInboundStops.size() + ":" + r.mOutboundStops.size());
     }
 
     /**

@@ -32,15 +32,17 @@ import java.util.HashMap;
  * For busy routes, using the maxtrips value of 100 did not get the full day
  * Based on those results, the service will make a call for each period of the schedule day
  * and spawn threads to parse these calls in parallel
+ *
+ * TODO validate one way routes
  */
-public class FullScheduleService extends IntentService {
+public class NewFullScheduleService extends IntentService {
 
     public static final String TAG = "FullScheduleService";
     public static volatile Schedule sWeekdays, sSaturday, sSunday;
 
-    final Calendar c = Calendar.getInstance();
+    final static Calendar c = Calendar.getInstance();
 
-    public static volatile Route mRoute;
+    public static volatile Route searchRoute;
     public static volatile int scheduleType;
 
     //static final Time t = new Time();
@@ -69,7 +71,7 @@ public class FullScheduleService extends IntentService {
     public static final int NIGHT = 4;
 
     //required, empty constructor, builds intents
-    public FullScheduleService() {
+    public NewFullScheduleService() {
         super(TAG);
     }
 
@@ -88,13 +90,16 @@ public class FullScheduleService extends IntentService {
             sendBroadcast(true);
             return;
         }
-        if(b.containsKey(DBHelper.KEY_ROUTE_ID)) {
+        if(b.containsKey(DBHelper.KEY_ROUTE_ID) && searchRoute == null) {
             //only the call from main includes the route id
             Log.d(TAG, "creating schedule");
-            mRoute = b.getParcelable(DBHelper.KEY_ROUTE_ID);
+            searchRoute = new Route();
+            searchRoute.id = b.getString(DBHelper.KEY_ROUTE_ID);
             final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+            searchRoute.name = DBHelper.getRouteName(db, searchRoute.id);
+            searchRoute.setStops(db);
             //Route data is fully populated
-            Log.d(TAG, "route sizes: " + mRoute.mInboundStops.size() + ":" + mRoute.mOutboundStops.size());
+            Log.d(TAG, "route sizes: " + searchRoute.mInboundStops.size() + ":" + searchRoute.mOutboundStops.size());
         }
         //calls from the schedule activity use the same route
         scheduleType = b.getInt(TAG);
@@ -118,17 +123,40 @@ public class FullScheduleService extends IntentService {
     /**
      * Calls are executed in parallel to build up the two hash maps
      * Once all 5 calls for a day are done, the schedule is set to the static global variable for that day
-     * @param sch Schedule copy built from mRoute
+     * @param sch Schedule copy built from searchRoute
      * @param apiCallString the api call for a specific period
      * @param timing the int constant designating the period
      * @return boolean to indicate whether or not to broadcast
      * @throws IOException
      */
-    public boolean parseSchedulePeriod(Schedule sch, String apiCallString, int timing) throws IOException {
+    public void parseSchedulePeriod(Schedule sch, String apiCallString, int timing) throws IOException {
         final JsonParser parser = new JsonFactory().createParser(new URL(apiCallString));
         final StringBuilder strBuild = new StringBuilder(0);
         Log.d(TAG, "schedule call? " + apiCallString);
-
+        int hours = 23, minutes = 0;
+        switch(timing) {
+            //using Android Time, hours are offset by 1
+            case MORNING:
+                hours = 5;
+                minutes = 30;
+                break;
+            case AMPEAK:
+                hours = 8;
+                minutes = 0;
+                break;
+            case MIDDAY:
+                hours = 14;
+                minutes = 30;
+                break;
+            case PMPEAK:
+                hours = 17;
+                minutes = 30;
+                break;
+            case NIGHT:
+                hours = 23;
+                minutes = 0;
+                break;
+        }
         Schedule.StopTimes tmpTimes = null;
         int dirID = 0;
         String tmp;
@@ -193,7 +221,7 @@ public class FullScheduleService extends IntentService {
                                                 tmpTimes = new Schedule.StopTimes();
                                                 tmpTimes.stopId = tmp;
                                                 mOutbound.put(tmpTimes.stopId, tmpTimes);
-                                                //Log.d(TAG, tmp + " new stop times " + tmp);
+                                                //Log.d(TAG, tmp + " new stop times " + tripName);
                                             }
                                         } else {
                                             tmpTimes = mInbound.get(tmp);
@@ -201,42 +229,36 @@ public class FullScheduleService extends IntentService {
                                                 tmpTimes = new Schedule.StopTimes();
                                                 tmpTimes.stopId = tmp;
                                                 mInbound.put(tmpTimes.stopId, tmpTimes);
-                                                Log.d(TAG, tmp + " new stop times " + tmp);
+                                                //Log.d(TAG, tmp + " new stop times " + tripName);
                                             }
                                         }
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         //Log.d(TAG, tmpTimes.stopId + " time added to stopTime " +
-                                        /**
-                                         * AM Rush Hour: 6:30 AM - 9:00 AM
-                                         Midday: 9:00 AM - 3:30 PM
-                                         PM Rush Hour: 3:30 PM - 6:30 PM
-                                         */
                                         tmp = ScheduleService.getTime(parser.getValueAsString(), t, strBuild);
-                                        switch (timing) {
-                                            case MORNING:
-                                                if(t.hour < 5 || (t.hour == 5 && t.minute < 30))
+                                        //drop any times out of the period
+                                        // the server returns complete trips
+                                        // trips that start in this interval may run past the last minute of the period and show twice
+                                        if(t.hour <= hours && t.minute < minutes) {
+                                            switch (timing) {
+                                                case MORNING:
                                                     tmpTimes.morning.add(tmp);
-                                                break;
-                                            case AMPEAK:
-                                                if((t.hour > 5 && t.hour < 8) || (t.hour == 8 && t.minute == 0) ||
-                                                        (t.hour == 5 && t.minute > 30))
-                                                tmpTimes.amPeak.add(tmp);
-                                                break;
-                                            case MIDDAY:
-                                                if((t.hour > 8 && t.hour < 14) || (t.hour == 14 && t.minute < 30))
-                                                tmpTimes.midday.add(tmp);
-                                                break;
-                                            case PMPEAK:
-                                                if((t.hour > 14 && t.hour < 17) || (t.hour == 17 && t.minute < 30) ||
-                                                        (t.hour == 14 && t.minute > 30))
-                                                tmpTimes.pmPeak.add(tmp);
-                                                break;
-                                            case NIGHT:
-                                                if(t.hour > 17 || (t.hour == 17 && t.minute > 30))
-                                                tmpTimes.night.add(tmp);
-                                                break;
+                                                    break;
+                                                case AMPEAK:
+                                                    tmpTimes.amPeak.add(tmp);
+                                                    break;
+                                                case MIDDAY:
+                                                    tmpTimes.midday.add(tmp);
+                                                    break;
+                                                case PMPEAK:
+                                                    tmpTimes.pmPeak.add(tmp);
+                                                    break;
+                                                case NIGHT:
+                                                    tmpTimes.night.add(tmp);
+                                                    break;
+                                            }
                                         }
+
 
                                         strBuild.setLength(0);
                                     }
@@ -258,22 +280,21 @@ public class FullScheduleService extends IntentService {
         sch.sLoading[timing] = true;
         for(boolean b: sch.sLoading) {
             if(!b) {
-                return false;
+                return;
             }
         }
-
-        sch.TripsInbound = new Schedule.StopTimes[mInbound.size()];
+        //Log.d(TAG, "bools set, sizes: " + mInbound.size() + ":" + mOutbound.size());
+        //Log.d(TAG, "array sizes: " + sch.TripsInbound.length + ":" + sch.TripsOutbound.length);
+        //sch.TripsInbound = new Schedule.StopTimes[mInbound.size()];
         mInbound.values().toArray(sch.TripsInbound);
-        sch.TripsOutbound = new Schedule.StopTimes[mOutbound.size()];
+        //sch.TripsOutbound = new Schedule.StopTimes[mOutbound.size()];
         mOutbound.values().toArray(sch.TripsOutbound);
-        Log.d(TAG, "bools set, sizes: " + mInbound.size() + ":" + mOutbound.size());
-        Log.d(TAG, "array sizes: " + sch.TripsInbound.length + ":" + sch.TripsOutbound.length);
+
         mInbound.clear();
         mOutbound.clear();
         //searchRoute = null;
         sendBroadcast(false);
         //message activity that schedule is ready
-        return true;
     }
 
     void setDay(int dayOfWeek) {
@@ -285,21 +306,32 @@ public class FullScheduleService extends IntentService {
             c.add(Calendar.DATE, 7);
         }
     }
+    /**
+     * AM Rush Hour: 6:30 AM - 9:00 AM
+     Midday: 9:00 AM - 3:30 PM
+     PM Rush Hour: 3:30 PM - 6:30 PM
+     */
 
     void getScheduleTimes() {
         setDay(scheduleType);
         switch(scheduleType) {
             case Calendar.SUNDAY:
                 Log.d(TAG, "sunday");
-                if(sSunday== null) sSunday = new Schedule(mRoute);
+                if(sSunday == null) {
+                    sSunday = new Schedule(searchRoute);
+                }
                 break;
             case Calendar.SATURDAY:
                 Log.d(TAG, "saturday");
-                if(sSaturday == null) sSaturday = new Schedule(mRoute);
+                if(sSaturday == null) {
+                    sSaturday = new Schedule(searchRoute);
+                }
                 break;
             case Calendar.TUESDAY:
                 Log.d(TAG, "Tuesday");
-                if(sWeekdays == null) sWeekdays = new Schedule(mRoute);
+                if(sWeekdays == null) {
+                    sWeekdays = new Schedule(searchRoute);
+                }
                 break;
         }
         c.set(Calendar.HOUR_OF_DAY,0);
@@ -308,21 +340,21 @@ public class FullScheduleService extends IntentService {
 
         int tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
         //time set to collect 24hr schedule for tomorrow
-        String url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "389";
+        String url = NewFullScheduleService.GETSCHEDULE + searchRoute.id +
+                NewFullScheduleService.DATETIMEPARAM + tstamp +
+                NewFullScheduleService.TIME_PARAM + "389";
         //390 minutes, 6.5 hours, takes us through morning
         (new ScheduleCall(url, 0, scheduleType)).start();
-        //executorService.submit(new ScheduleCall(new Schedule(r), url, 0, scheduleType));
+        //executorService.submit(new ScheduleCall(new Schedule(r), url, 0, mScheduleType));
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
 
         c.set(Calendar.HOUR, 6);
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "149";
+        url = NewFullScheduleService.GETSCHEDULE + searchRoute.id +
+                NewFullScheduleService.DATETIMEPARAM + tstamp +
+                NewFullScheduleService.TIME_PARAM + "149";
         (new ScheduleCall(url, 1, scheduleType)).start();
         //2.5 hours through morning peak
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
@@ -331,9 +363,9 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "389";
+        url = NewFullScheduleService.GETSCHEDULE + searchRoute.id +
+                NewFullScheduleService.DATETIMEPARAM + tstamp +
+                NewFullScheduleService.TIME_PARAM + "389";
         //6.5 hours, takes us through midday
         (new ScheduleCall(url, 2, scheduleType)).start();
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
@@ -342,9 +374,9 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "179";
+        url = NewFullScheduleService.GETSCHEDULE + searchRoute.id +
+                NewFullScheduleService.DATETIMEPARAM + tstamp +
+                NewFullScheduleService.TIME_PARAM + "179";
         (new ScheduleCall(url, 3, scheduleType)).start();
         //evening peak, rush hour done
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
@@ -353,12 +385,21 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "330";
+        url = NewFullScheduleService.GETSCHEDULE + searchRoute.id +
+                NewFullScheduleService.DATETIMEPARAM + tstamp +
+                NewFullScheduleService.TIME_PARAM + "330";
         (new ScheduleCall(url, 4, scheduleType)).start();
-        //finish off the scheduleType
+        //finish off the mScheduleType
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
+    }
+
+    public static void resetService() {
+        sWeekdays = null;
+        sSaturday = null;
+        sSunday = null;
+        mInbound.clear();
+        mOutbound.clear();
+        Log.i(TAG, "service reset");
     }
 
     private class ScheduleCall extends Thread {
@@ -377,19 +418,16 @@ public class FullScheduleService extends IntentService {
             try {
                 switch(mScheduleType) {
                     case Calendar.TUESDAY:
-                        if(parseSchedulePeriod(sWeekdays, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
+                        parseSchedulePeriod(sWeekdays, mUrl, mPeriod);
+                        Log.d(TAG, "finished weekday period: " + mPeriod);
                         break;
                     case Calendar.SATURDAY:
-                        if(parseSchedulePeriod(sSaturday, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
+                        parseSchedulePeriod(sSaturday, mUrl, mPeriod);
+                        Log.d(TAG, "finished saturday period: " + mPeriod);
                         break;
                     case Calendar.SUNDAY:
-                        if(parseSchedulePeriod(sSunday, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
+                        parseSchedulePeriod(sSunday, mUrl, mPeriod);
+                        Log.d(TAG, "finished sunday period: " + mPeriod);
                         break;
                 }
 
@@ -398,15 +436,6 @@ public class FullScheduleService extends IntentService {
             }
         }
     } //end class
-
-    public static void resetService() {
-        sWeekdays = null;
-        sSaturday = null;
-        sSunday = null;
-        mInbound.clear();
-        mOutbound.clear();
-        Log.i(TAG, "service reset");
-    }
 
 }//end class
 
