@@ -58,43 +58,28 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String KEY_TRIP = "trip";
     public static final String KEY_VEHICLE = "vehicle";
-    public static final String KEY_TRIP_SIGN = "trip_headsign";
-    public static final String KEY_HOUR = "hour";
-    public static final String KEY_MINUTE = "minute";
+    public static final String KEY_TRIP_PERIOD = "period";
+    public static final String KEY_DAY = "schedule_day";
     public static final String KEY_DTIME = "sch_dep_dt";
 
-    String SCHEDULE_COLS = "(_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ROUTE_ID + " TEXT not null,"
+    static String SCHEDULE_COLS = "(_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_STOPID + " TEXT not null,"
+            + KEY_STOPNM + " TEXT not null,"
             + KEY_DIR_ID + " NUMERIC not null,"
-            + KEY_TRIP_SIGN + " TEXT,"
-            + KEY_HOUR + " TEXT not null,"
-            + KEY_MINUTE + " TEXT not null);";
+            + KEY_TRIP_PERIOD + " NUMERIC not null,"
+            + KEY_DAY + " NUMERIC not null,"
+            + KEY_DTIME + " TEXT not null);";
 
     public static final String TABLE_PREFIX = "create table if not exists ";
-    public static final String WEEKDAY_TABLE_BUS_IN = "weekday_table_b_in";
-    public static final String WEEKDAY_TABLE_BUS_OUT = "weekday_table_b_out";
-    public static final String WEEKDAY_TABLE_4BUS_IN = "weekday_table_4b_in";
-    public static final String WEEKDAY_TABLE_4BUS_OUT = "weekday_table_4b_out";
 
-    public static final String WEEKDAY_TABLE_SUB_IN = "weekday_table_sub_in";
-    public static final String WEEKDAY_TABLE_SUB_OUT = "weekday_table_sub_out";
+    public static String getRouteTableSql(String routeID) {
+        return TABLE_PREFIX + routeID + SCHEDULE_COLS;
+    }
 
-    public static final String SATURDAY_TABLE_BUS_IN = "sat_table_bus_in";
-    public static final String SATURDAY_TABLE_BUS_OUT = "sat_table_bus_out";
-    public static final String SATURDAY_TABLE_4BUS_IN = "sat_table_4bus_in";
-    public static final String SATURDAY_TABLE_4BUS_OUT = "sat_table_4bus_out";
-
-    public static final String SATURDAY_TABLE_SUB_IN = "sat_table_sub_in";
-    public static final String SATURDAY_TABLE_SUB_OUT = "sat_table_sub_out";
-
-    public static final String SUNDAY_TABLE_BUS_IN = "sun_table_bus_in";
-    public static final String SUNDAY_TABLE_BUS_OUT = "sun_table_bus_out";
-    public static final String SUNDAY_TABLE_4BUS_IN = "sun_table_4bus_in";
-    public static final String SUNDAY_TABLE_4BUS_OUT = "sun_table_4bus_out";
-
-    public static final String SUNDAY_TABLE_SUB_IN = "sun_table_sub_in";
-    public static final String SUNDAY_TABLE_SUB_OUT = "sun_table_sub_out";
+    public static void setIndexOnRouteTable(SQLiteDatabase db, String routeID) {
+        db.execSQL("CREATE INDEX" + routeID + "DEX ON " + routeID +
+                " (" + KEY_STOPID + "," + KEY_DIR_ID + "," + KEY_DAY + ");");
+    }
 
     private static final String RTINDEX = "CREATE INDEX RTINDEX ON " + DB_ROUTE_TABLE + "("
             + KEY_ROUTE_ID + ");";
@@ -102,46 +87,6 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
     private static final String STOP_OUT_DEX = "CREATE UNIQUE INDEX STOP_OUT_DEX ON " + STOPS_OUT_TABLE + "("
             + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
-    //these are created AFTER tables are loaded to speed through loading up these big tables
-    public static final String WEEKDAY_DEX_B_IN = "CREATE UNIQUE INDEX WDAY_DEX_B_IN ON " + WEEKDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String WEEKDAY_DEX_B_OUT = "CREATE UNIQUE INDEX WDAY_DEX_B_OUT ON " + WEEKDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String WEEKDAY_DEX_B4_IN = "CREATE UNIQUE INDEX WDAY_DEX_B_IN ON " + WEEKDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String WEEKDAY_DEX_B4_OUT = "CREATE UNIQUE INDEX WDAY_DEX_B_OUT ON " + WEEKDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String WEEKDAY_DEX_SUB_IN = "CREATE UNIQUE INDEX WDAY_DEX_SUB_IN ON " + WEEKDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String WEEKDAY_DEX_SUB_OUT = "CREATE UNIQUE INDEX WDAY_DEX_SUB_OUT ON " + WEEKDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-
-    public static final String SATURDAY_DEX_B_IN = "CREATE UNIQUE INDEX SAT_DEX_INB ON " + SATURDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SATURDAY_DEX_B_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUTB ON " + SATURDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SATURDAY_DEX_4B_IN = "CREATE UNIQUE INDEX SAT_DEX_INB ON " + SATURDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SATURDAY_DEX_4B_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUTB ON " + SATURDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SATURDAY_DEX_SUB_IN = "CREATE UNIQUE INDEX SAT_DEX_IN ON " + SATURDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SATURDAY_DEX_SUB_OUT = "CREATE UNIQUE INDEX SAT_DEX_OUT ON " + SATURDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-
-    public static final String SUN_DEX_B_IN = "CREATE UNIQUE INDEX SUN_DEX_INB ON " + SUNDAY_TABLE_BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SUN_DEX_B_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUTB ON " + SUNDAY_TABLE_BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SUN_DEX_B4_IN = "CREATE UNIQUE INDEX SUN_DEX_INB ON " + SUNDAY_TABLE_4BUS_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SUN_DEX_B4_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUTB ON " + SUNDAY_TABLE_4BUS_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SUN_DEX_SUB_IN = "CREATE UNIQUE INDEX SUN_DEX_IN ON " + SUNDAY_TABLE_SUB_IN + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-    public static final String SUN_DEX_SUB_OUT = "CREATE UNIQUE INDEX SUN_DEX_OUT ON " + SUNDAY_TABLE_SUB_OUT + "("
-            + KEY_ROUTE_ID + "," + KEY_STOPID + "," + KEY_HOUR + ");";
-
 
     public static final String KEY_ALERTS= "alerts";
     public static final String KEY_ALERT_ID = "alert_id";
@@ -222,27 +167,6 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(RTINDEX);
         db.execSQL(STOP_IN_DEX);
         db.execSQL(STOP_OUT_DEX);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_BUS_OUT + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_4BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_4BUS_OUT + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_SUB_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + WEEKDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
-
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_BUS_OUT + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_4BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_4BUS_OUT + SCHEDULE_COLS);
-
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_SUB_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SATURDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
-
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_BUS_OUT + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_4BUS_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_4BUS_OUT + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_SUB_IN + SCHEDULE_COLS);
-        db.execSQL(TABLE_PREFIX + SUNDAY_TABLE_SUB_OUT + SCHEDULE_COLS);
     }
 
     public DBHelper(Context context) {

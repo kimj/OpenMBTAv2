@@ -71,6 +71,9 @@ public class ShowScheduleActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         final ActionBar ab = getSupportActionBar();
+        if(mProgress != null && mProgress.isShowing()) {
+            mProgress.cancel();
+        }
         switch (item.getItemId()) {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:

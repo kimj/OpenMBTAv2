@@ -2,15 +2,16 @@ package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.ShowScheduleActivity;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Schedule;
 
@@ -22,28 +23,16 @@ import java.util.Calendar;
 import java.util.HashMap;
 
 /**
- * Created by emezias on 1/11/16.
- * This class runs the API requests to get a full day's schedule time, based on the route
- * Three schedule objects are created, weekday, saturday, and sunday/holiday
- * the schedule activity reads the public static data from here
- * Favorite routes will be persisted in SQLite and read from there (TODO)
- *
- * For busy routes, using the maxtrips value of 100 did not get the full day
- * Based on those results, the service will make a call for each period of the schedule day
- * and spawn threads to parse these calls in parallel
+ * Created by emezias on 3/29/16.
+ * This class is like the FullScheduleService but threads do not run in parallel
+ * It is called when a route is set as a favorite to create a schedule table for that route
  */
-public class FullScheduleService extends IntentService {
+public class SaveScheduleService extends IntentService {
 
-    public static final String TAG = "FullScheduleService";
-    public static volatile Schedule sWeekdays, sSaturday, sSunday;
-
+    public static final String TAG = "SaveScheduleService";
     final Calendar c = Calendar.getInstance();
 
-    public static volatile Route mRoute;
-    public static volatile int scheduleType;
-
-    //manage current date and time
-
+    public static Route mRoute;
     final static HashMap<String, Schedule.StopTimes> mInbound = new HashMap<>();
     final static HashMap<String, Schedule.StopTimes> mOutbound = new HashMap<>();
     //Base URL
@@ -59,63 +48,59 @@ public class FullScheduleService extends IntentService {
     public static final String GETSCHEDULE = BASE + SCHEDVERB + SUFFIX + ALLHR_PARAM + ROUTEPARAM;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
 
+    SQLiteDatabase db;
     //required, empty constructor, builds intents
-    public FullScheduleService() {
+    public SaveScheduleService() {
         super(TAG);
     }
 
     /**
-     * The extra on the intent tells the service what to do, which call to make
+     * The extra on the intent is the route that is being saved into a schedule table
      * @param intent
      */
     @Override
     protected void onHandleIntent(Intent intent) {
         //make the route here in the background
         //make route, read stops from the DB in the background
-        final Bundle b = intent.getExtras();
         Log.d(TAG, "handle intent");
-        if(b == null || !b.containsKey(TAG)) {
-            //error, service requires day extra
-            sendBroadcast(true);
-            return;
-        }
+        final Bundle b = intent.getExtras();
         if(b.containsKey(DBHelper.KEY_ROUTE_ID)) {
             //only the call from main includes the route id
-            Log.d(TAG, "creating schedule");
             mRoute = b.getParcelable(DBHelper.KEY_ROUTE_ID);
-            //Route passed in is fully populated
-            Log.d(TAG, "route sizes: " + mRoute.mInboundStops.size() + ":" + mRoute.mOutboundStops.size());
+            Log.i(TAG, "creating schedule table for " + mRoute.name);
+            db = TTimeApp.sHelper.getWritableDatabase();
+            Cursor cursor = db.rawQuery(
+                    "select DISTINCT tbl_name from sqlite_master where tbl_name = '"+mRoute.id+"'", null);
+            if(cursor.getCount() > 0) {
+                Log.i(TAG, "table exists");
+                return;
+            }
+            //Route data is fully populated, now create table
+            db.execSQL(DBHelper.getRouteTableSql(mRoute.id));
+            //index the table after the data is loaded
         }
         //calls from the schedule activity use the same route
-        scheduleType = b.getInt(TAG);
-        Log.d(TAG, "call day: " + scheduleType);
-
-        getScheduleTimes();
-    }
-
-
-    void sendBroadcast(boolean hasError) {
-        Log.d(TAG, "end service");
-        final Intent returnResults = new Intent(TAG);
-        returnResults.putExtra(TAG, hasError);
-        if(!hasError) {
-            returnResults.putExtra(ShowScheduleActivity.TAG, scheduleType);
+        try {
+            final Schedule sch = getScheduleTimes(Calendar.TUESDAY);
+            sch.loadSchedule(db, Calendar.TUESDAY);
+        } catch (IOException e) {
+            e.printStackTrace();
         }
-
-        LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
+
 
 
     /**
-     * Calls are executed in parallel to build up the two hash maps
+     * Calls for each period build up the two hash maps
      * Once all 5 calls for a day are done, the schedule is set to the static global variable for that day
      * @param sch Schedule copy built from mRoute
      * @param apiCallString the api call for a specific period
-     * @param timing the int constant designating the period
      * @return boolean to indicate whether or not to broadcast
      * @throws IOException
+     *
+     * TODO parse directly into the db
      */
-    public boolean parseSchedulePeriod(Schedule sch, String apiCallString, int timing) throws IOException {
+    public void parseSchedulePeriod(Schedule sch, String apiCallString) throws IOException {
         final JsonParser parser = new JsonFactory().createParser(new URL(apiCallString));
         final StringBuilder strBuild = new StringBuilder(0);
         final Calendar c = Calendar.getInstance();
@@ -254,26 +239,6 @@ public class FullScheduleService extends IntentService {
         } //parser is closed
         Log.d(TAG, "parse Complete");
         if(!parser.isClosed()) parser.close();
-        sch.sLoading[timing] = true;
-        for(boolean b: sch.sLoading) {
-            if(!b) {
-                return false;
-            }
-        }
-
-        sch.TripsInbound = new Schedule.StopTimes[mInbound.size()];
-        mInbound.values().toArray(sch.TripsInbound);
-        sch.TripsOutbound = new Schedule.StopTimes[mOutbound.size()];
-        mOutbound.values().toArray(sch.TripsOutbound);
-        sendBroadcast(false);
-        Log.d(TAG, "bools set, sizes: " + mInbound.size() + ":" + mOutbound.size());
-        Log.d(TAG, "array sizes: " + sch.TripsInbound.length + ":" + sch.TripsOutbound.length);
-        mInbound.clear();
-        mOutbound.clear();
-
-        Log.i(TAG, "broadcasting to main");
-        //message activity that schedule is ready
-        return true;
     }
 
     void setDay(int dayOfWeek) {
@@ -286,33 +251,22 @@ public class FullScheduleService extends IntentService {
         }
     }
 
-    void getScheduleTimes() {
-        setDay(scheduleType);
-        switch(scheduleType) {
-            case Calendar.SUNDAY:
-                Log.d(TAG, "sunday");
-                if(sSunday== null) sSunday = new Schedule(mRoute);
-                break;
-            case Calendar.SATURDAY:
-                Log.d(TAG, "saturday");
-                if(sSaturday == null) sSaturday = new Schedule(mRoute);
-                break;
-            case Calendar.TUESDAY:
-                Log.d(TAG, "Tuesday");
-                if(sWeekdays == null) sWeekdays = new Schedule(mRoute);
-                break;
-        }
+    Schedule getScheduleTimes(int calendarDay) throws IOException {
+        setDay(calendarDay);
+        final Schedule schedule = new Schedule(mRoute);
+
         c.set(Calendar.HOUR_OF_DAY,0);
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0);
 
         int tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
         //time set to collect 24hr schedule for tomorrow
-        String url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "389";
+        String url = SaveScheduleService.GETSCHEDULE + mRoute.id +
+                SaveScheduleService.DATETIMEPARAM + tstamp +
+                SaveScheduleService.TIME_PARAM + "389";
         //390 minutes, 6.5 hours, takes us through morning
-        (new ScheduleCall(url, 0, scheduleType)).start();
+
+        parseSchedulePeriod(schedule, url);
         //executorService.submit(new ScheduleCall(new Schedule(r), url, 0, scheduleType));
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
 
@@ -320,10 +274,10 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "149";
-        (new ScheduleCall(url, 1, scheduleType)).start();
+        url = SaveScheduleService.GETSCHEDULE + mRoute.id +
+                SaveScheduleService.DATETIMEPARAM + tstamp +
+                SaveScheduleService.TIME_PARAM + "149";
+        parseSchedulePeriod(schedule, url);
         //2.5 hours through morning peak
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
 
@@ -331,21 +285,21 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "389";
+        url = SaveScheduleService.GETSCHEDULE + mRoute.id +
+                SaveScheduleService.DATETIMEPARAM + tstamp +
+                SaveScheduleService.TIME_PARAM + "389";
         //6.5 hours, takes us through midday
-        (new ScheduleCall(url, 2, scheduleType)).start();
+        parseSchedulePeriod(schedule, url);
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
 
         c.set(Calendar.HOUR, 3);
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "179";
-        (new ScheduleCall(url, 3, scheduleType)).start();
+        url = SaveScheduleService.GETSCHEDULE + mRoute.id +
+                SaveScheduleService.DATETIMEPARAM + tstamp +
+                SaveScheduleService.TIME_PARAM + "179";
+        parseSchedulePeriod(schedule, url);
         //evening peak, rush hour done
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
 
@@ -353,60 +307,26 @@ public class FullScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = FullScheduleService.GETSCHEDULE + mRoute.id +
-                FullScheduleService.DATETIMEPARAM + tstamp +
-                FullScheduleService.TIME_PARAM + "330";
-        (new ScheduleCall(url, 4, scheduleType)).start();
-        //finish off the scheduleType
+        url = SaveScheduleService.GETSCHEDULE + mRoute.id +
+                SaveScheduleService.DATETIMEPARAM + tstamp +
+                SaveScheduleService.TIME_PARAM + "330";
+        parseSchedulePeriod(schedule, url);
+        //finish off this schedule day...
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
-    }
 
-    private class ScheduleCall extends Thread {
-        final String mUrl;
-        final int mPeriod;
-        final int mScheduleType;
+        schedule.TripsInbound = new Schedule.StopTimes[mInbound.size()];
+        mInbound.values().toArray(schedule.TripsInbound);
+        schedule.TripsOutbound = new Schedule.StopTimes[mOutbound.size()];
+        mOutbound.values().toArray(schedule.TripsOutbound);
 
-        public ScheduleCall(String apiCallString, int timing, int day) {
-            mUrl = apiCallString;
-            mPeriod = timing;
-            mScheduleType = day;
-        }
-
-        @Override
-        public void run() {
-            try {
-                switch(mScheduleType) {
-                    case Calendar.TUESDAY:
-                        if(parseSchedulePeriod(sWeekdays, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
-                        break;
-                    case Calendar.SATURDAY:
-                        if(parseSchedulePeriod(sSaturday, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
-                        break;
-                    case Calendar.SUNDAY:
-                        if(parseSchedulePeriod(sSunday, mUrl, mPeriod)) {
-                            Log.i(TAG, "schedule period completed: " + mPeriod);
-                        }
-                        break;
-                }
-
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    } //end class
-
-    public static void resetService() {
-        sWeekdays = null;
-        sSaturday = null;
-        sSunday = null;
+        Log.d(TAG, "bools set, sizes: " + mInbound.size() + ":" + mOutbound.size());
+        Log.d(TAG, "array sizes: " + schedule.TripsInbound.length + ":" + schedule.TripsOutbound.length);
         mInbound.clear();
         mOutbound.clear();
-        Log.i(TAG, "service reset");
+        //load data structure into the database
+        return schedule;
     }
+
 
     volatile static DateFormat timeFormat = new SimpleDateFormat("h:mm a");
     String getTime(Calendar cal, String stamp) {
