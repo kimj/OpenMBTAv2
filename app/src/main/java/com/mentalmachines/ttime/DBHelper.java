@@ -62,22 +62,49 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_DAY = "schedule_day";
     public static final String KEY_DTIME = "sch_dep_dt";
 
+    public static final String TBL_PREFIX = "SCH";
+    public static final String INDX_PREFIX = "DEX";
+
     static String SCHEDULE_COLS = "(_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_STOPID + " TEXT not null,"
             + KEY_STOPNM + " TEXT not null,"
             + KEY_DIR_ID + " NUMERIC not null,"
             + KEY_TRIP_PERIOD + " NUMERIC not null,"
             + KEY_DAY + " NUMERIC not null,"
-            + KEY_DTIME + " TEXT not null);";
+            + KEY_DTIME + " NUMERIC not null);";
 
     public static final String TABLE_PREFIX = "create table if not exists ";
 
+    public static String getRouteTableName(String routeID) {
+        if(routeID.contains("-")) {
+            routeID = routeID.replace("-", "_");
+            Log.d(TAG, "replaced -" + routeID);
+        }
+        return TBL_PREFIX + routeID;
+    }
+
+    public static boolean checkForScheduleTable(String routeID) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        return checkForScheduleTable(db, routeID);
+    }
+
+    public static boolean checkForScheduleTable(SQLiteDatabase db, String routeID) {
+        Cursor cursor = db.rawQuery(
+                "select DISTINCT tbl_name from sqlite_master where tbl_name = 'SCH"+routeID+"'", null);
+        if(cursor.getCount() > 0) {
+            cursor.close();
+            return true;
+        }
+        if(!cursor.isClosed()) cursor.close();
+        return false;
+    }
+
     public static String getRouteTableSql(String routeID) {
-        return TABLE_PREFIX + routeID + SCHEDULE_COLS;
+        return TABLE_PREFIX + getRouteTableName(routeID) + SCHEDULE_COLS;
     }
 
     public static void setIndexOnRouteTable(SQLiteDatabase db, String routeID) {
-        db.execSQL("CREATE INDEX" + routeID + "DEX ON " + routeID +
+        db.execSQL("CREATE INDEX IF NOT EXISTS " + INDX_PREFIX + getRouteTableName(routeID) + " ON " + getRouteTableName(routeID) +
                 " (" + KEY_STOPID + "," + KEY_DIR_ID + "," + KEY_DAY + ");");
     }
 
@@ -196,11 +223,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static boolean checkFavorite(SQLiteDatabase db, String routeNm) {
         final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         final boolean returnVal;
-        if(c.getCount() == 0) {
-            returnVal = false;
-        } else {
-            returnVal = true;
-        }
+        returnVal = c.getCount() != 0;
         c.close();
         return returnVal;
     }

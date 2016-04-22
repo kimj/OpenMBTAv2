@@ -11,19 +11,21 @@
     <string name="action_settings">Settings</string>
     <string name="action_schedule">Show Schedule (for this Route)</string>
     <string name="bus_prefix">Bus #</string>
-    <string name="loading">Loading, please wait</string>
+
     <string name="noSched">sorry, no schedule available</string>
     <string name="scheduled">Schedule:</string>
     <string name="actual">Actual:</string>
     <string name="stopMap">Map Stop</string>
     <string name="stopDetail">View Schedule</string>
-    <string name="schedSvcErr">Sorry! \nThere was an error talking to the MBTA server</string>
+    <string name="schedSvcErr">Sorry! There is an error getting times from the MBTA server</string>
     <string name="chkNet">Check the network and try again</string>
     <string name="weekdays">Weekday Schedule</string>
     <string name="saturdays">Saturday Schedule</string>
     <string name="sunday">Sundays and Holidays</string>
     <string name="inbound">Inbound</string>
     <string name="outbound">Outbound</string>
+    <string name="wait">Please Wait</string>
+    <string name="getting_data">Calling the MBTA</string>
 
     <string-array name="transit_methods">
         <item>Bus</item>

@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.objects;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
@@ -34,11 +35,18 @@ public class Schedule{
     public static class StopTimes {
         public String stopId;
 
-        public ArrayList<String> morning = new ArrayList<>();
-        public ArrayList<String> amPeak = new ArrayList<>();
-        public ArrayList<String> midday = new ArrayList<>();
-        public ArrayList<String> pmPeak = new ArrayList<>();
-        public ArrayList<String> night = new ArrayList<>();
+        public ArrayList<Long> morning = new ArrayList<>();
+        public ArrayList<Long> amPeak = new ArrayList<>();
+        public ArrayList<Long> midday = new ArrayList<>();
+        public ArrayList<Long> pmPeak = new ArrayList<>();
+        public ArrayList<Long> night = new ArrayList<>();
+    }
+
+    public boolean scheduleIsLoaded() {
+        for(boolean b: sLoading) {
+            if(!b) return b;
+        }
+        return true;
     }
 
     StopTimes findStop(String stopId, boolean inBound) {
@@ -57,8 +65,60 @@ public class Schedule{
         }
         return null;
     }
-    public void loadSchedule(SQLiteDatabase db, int calendarDay) {
 
+    public static final int MORNING = 0;
+    public static final int AMPEAK = 1;
+    public static final int MIDDAY = 2;
+    public static final int PMPEAK = 3;
+    public static final int NIGHT = 4;
+    final String[] selection = {DBHelper.KEY_TRIP_PERIOD, DBHelper.KEY_DTIME};
+    final String whereClause = DBHelper.KEY_STOPID + " LIKE '";
+    final String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";
+
+    public void createStopTimes(SQLiteDatabase db, int day, String stopID) {
+        final Cursor c = db.query(DBHelper.getRouteTableName(route.id),
+                selection,
+                whereClause + stopID + moreWhere + day, null, //parameters embedded into where clause
+                DBHelper.KEY_TRIP_PERIOD, null, "_id ASC");
+                //String groupBy, String having, String orderBy)
+        if(!c.moveToFirst()) {
+            Log.w(TAG, "issue reading schedule table for stop: " + stopID);
+            return;
+        }
+        final StopTimes times = new StopTimes();
+        times.stopId = stopID;
+        do {
+            switch (c.getInt(0)) {
+                case MORNING:
+                    times.morning.add(c.getLong(1));
+                    break;
+                case AMPEAK:
+                    times.amPeak.add(c.getLong(1));
+                    break;
+                case MIDDAY:
+                    times.midday.add(c.getLong(1));
+                    break;
+                case PMPEAK:
+                    times.pmPeak.add(c.getLong(1));
+                    break;
+                case NIGHT:
+                    times.night.add(c.getLong(1));
+                    break;
+            }
+        } while (c.moveToNext());
+        Log.d(TAG, "times loaded: " + c.getCount());
+        c.close();
+    }
+
+    /**
+     * The next few methods all load the schedule into a new database table
+     * They are called by the SaveScheduleService class
+     * the data structure is created from MBTA servers
+     */
+    public void loadSchedule(SQLiteDatabase db, int calendarDay) {
+        //Route and Schedule data is fully populated, now create table
+        db.execSQL(DBHelper.getRouteTableSql(route.id));
+        //index the table after the data is loaded
         if(route.mInboundStops.size() != TripsInbound.length) {
             StopTimes stimes;
             for(StopData data: route.mInboundStops) {
@@ -91,39 +151,63 @@ public class Schedule{
 
     void loadTimeArray(SQLiteDatabase db, StopTimes times, String stopName, int day, int direction) {
         final ContentValues cv = new ContentValues();
-
-        cv.put(DBHelper.KEY_STOPID, times.stopId);
-        cv.put(DBHelper.KEY_STOPNM, stopName);
-        cv.put(DBHelper.KEY_DIR_ID, direction);
-        cv.put(DBHelper.KEY_DAY, day);
-        for(String schedtime: times.morning) {
+        final String table = DBHelper.getRouteTableName(route.id);
+        Log.d(TAG, "load array: " + stopName + ":" + day + ":" + direction);
+        for(Long schedtime: times.morning) {
+            cv.put(DBHelper.KEY_STOPID, times.stopId);
+            cv.put(DBHelper.KEY_STOPNM, stopName);
+            cv.put(DBHelper.KEY_DIR_ID, direction);
+            cv.put(DBHelper.KEY_DAY, day);
             cv.put(DBHelper.KEY_TRIP_PERIOD, 0);
             cv.put(DBHelper.KEY_DTIME, schedtime);
-            Log.d(TAG, "creating table: " + db.insert(route.name, "_id", cv));
+            Log.d(TAG, "creating table: " + db.insert(table, "_id", cv));
+            cv.clear();
         }
         Log.d(TAG, "creating ampeak");
-        for(String schedtime: times.amPeak) {
+        for(Long schedtime: times.amPeak) {
+            cv.put(DBHelper.KEY_STOPID, times.stopId);
+            cv.put(DBHelper.KEY_STOPNM, stopName);
+            cv.put(DBHelper.KEY_DIR_ID, direction);
+            cv.put(DBHelper.KEY_DAY, day);
             cv.put(DBHelper.KEY_TRIP_PERIOD, 1);
             cv.put(DBHelper.KEY_DTIME, schedtime);
-            db.insert(route.name, "_id", cv);
+            db.insert(table, "_id", cv);
+            cv.clear();
         }
-        for(String schedtime: times.midday) {
+        for(Long schedtime: times.midday) {
+            cv.put(DBHelper.KEY_STOPID, times.stopId);
+            cv.put(DBHelper.KEY_STOPNM, stopName);
+            cv.put(DBHelper.KEY_DIR_ID, direction);
+            cv.put(DBHelper.KEY_DAY, day);
             cv.put(DBHelper.KEY_TRIP_PERIOD, 2);
             cv.put(DBHelper.KEY_DTIME, schedtime);
-            db.insert(route.name, "_id", cv);
+            db.insert(table, "_id", cv);
+            cv.clear();
         }
         Log.d(TAG, "creating pmpeak");
-        for(String schedtime: times.pmPeak) {
+        for(Long schedtime: times.pmPeak) {
+            cv.put(DBHelper.KEY_STOPID, times.stopId);
+            cv.put(DBHelper.KEY_STOPNM, stopName);
+            cv.put(DBHelper.KEY_DIR_ID, direction);
+            cv.put(DBHelper.KEY_DAY, day);
             cv.put(DBHelper.KEY_TRIP_PERIOD, 3);
             cv.put(DBHelper.KEY_DTIME, schedtime);
-            db.insert(route.name, "_id", cv);
+            db.insert(table, "_id", cv);
+            cv.clear();
         }
         Log.d(TAG, "creating night");
-        for(String schedtime: times.night) {
+        for(Long schedtime: times.night) {
+            cv.put(DBHelper.KEY_STOPID, times.stopId);
+            cv.put(DBHelper.KEY_STOPNM, stopName);
+            cv.put(DBHelper.KEY_DIR_ID, direction);
+            cv.put(DBHelper.KEY_DAY, day);
             cv.put(DBHelper.KEY_TRIP_PERIOD, 4);
             cv.put(DBHelper.KEY_DTIME, schedtime);
-            db.insert(route.name, "_id", cv);
+            db.insert(table, "_id", cv);
+            cv.clear();
         }
+        DBHelper.setIndexOnRouteTable(db, route.id);
+
     }
 
 

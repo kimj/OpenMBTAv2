@@ -20,6 +20,7 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
+import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.StopService;
 
 public class StopDetailActivity extends AppCompatActivity {
@@ -48,7 +49,7 @@ public class StopDetailActivity extends AppCompatActivity {
         swipeViewGroup.setOnRefreshListener(refreshList);
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
-        mProgress = ProgressDialog.show(this, "", getString(R.string.loading), true, true);
+        mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
     }
 
     @Override
@@ -111,7 +112,7 @@ public class StopDetailActivity extends AppCompatActivity {
 
     public void reloadTimes() {
         Log.d(TAG, "reload times");
-        if(TTimeApp.checkNetwork(this)) {
+        if(Utils.checkNetwork(this)) {
             ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
             final Intent tnt = new Intent(this, StopService.class);

@@ -2,6 +2,7 @@ package com.mentalmachines.ttime.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -19,15 +20,15 @@ import com.mentalmachines.ttime.objects.StopData;
  * scheduled time and estimated next arrival
  */
 
-public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.StopViewHolder> {
-    public static final String TAG = "SimpleStopAdapter";
+public class RouteFragmentStopAdapter extends RecyclerView.Adapter<RouteFragmentStopAdapter.StopViewHolder> {
+    public static final String TAG = "RouteFragmentStopAdapter";
     public Route mRoute;
     public int mDirectionId;
     final public boolean isOneWay;
     static String SCHED, ACTUAL, NODATA;
 
-    //public SimpleStopAdapter(String[] data, int resource) {
-    public SimpleStopAdapter(Route r, boolean inbound) {
+    //public RouteFragmentStopAdapter(String[] data, int resource) {
+    public RouteFragmentStopAdapter(Route r, boolean inbound) {
         super();
         if(inbound) {
             mDirectionId = 1;
@@ -36,12 +37,8 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
         }
 
         mRoute = r;
-        if(mRoute.mInboundStops == null || mRoute.mOutboundStops == null
-                || mRoute.mInboundStops.size() == 0 || mRoute.mOutboundStops.size() == 0) {
-            isOneWay = true;
-        } else {
-            isOneWay = false;
-        }
+        isOneWay = mRoute.mInboundStops == null || mRoute.mOutboundStops == null
+                || mRoute.mInboundStops.size() == 0 || mRoute.mOutboundStops.size() == 0;
     }
 
     @Override
@@ -64,7 +61,7 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
 
     @Override
     public StopViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
-        View view = LayoutInflater.from(parent.getContext())
+        final View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.t_stop, parent, false);
         return new StopViewHolder(view);
     }
@@ -77,15 +74,13 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
      */
     @Override
     public void onBindViewHolder(final StopViewHolder holder, int position) {
-        StopData s;
-        if(mRoute == null) {
-            s = null;
-        } else if(mDirectionId == 0 && position < mRoute.mOutboundStops.size()) {
+        StopData s = null;
+        if(mDirectionId == 0 && position < mRoute.mOutboundStops.size()) {
             s = mRoute.mOutboundStops.get(position);
-        } else if(mDirectionId == 1 && position < mRoute.mInboundStops.size()) {
+        }
+
+        if(mDirectionId == 1 && position < mRoute.mInboundStops.size()) {
             s = mRoute.mInboundStops.get(position);
-        } else {
-            s = null;
         }
         ((View) holder.mStopDescription.getTag()).setTag(s);
         //put the stop object on the view as a tag for onClick methods to use
@@ -94,30 +89,30 @@ public class SimpleStopAdapter extends RecyclerView.Adapter<SimpleStopAdapter.St
 
     void setView(StopViewHolder holder, StopData s, int position) {
         if(s == null) {
+            Log.w(TAG, "null stop " + position);
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
         } else {
-
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
-                holder.mAlertBtn.invalidate();
             }
-            //This part gets tricky, put stop and sched fields into one text view
-            if(s.predicTimes.isEmpty() && s.schedTimes.isEmpty()) {
-                holder.mStopDescription.setText(s.stopName + "\n" + NODATA);
-            } else if(s.schedTimes.isEmpty()) {
-                holder.mStopDescription.setText(s.stopName);
-            } else {
+            holder.mAlertBtn.invalidate();
+
+            if(!TextUtils.isEmpty(s.schedTimes)) {
                 //s.schedTimes is not empty
                 holder.mStopDescription.setText(s.stopName + "\n" + SCHED + " " + s.schedTimes);
-            }
-            if(s.predicTimes.isEmpty()) {
-                //error on server can leave the stop time fields blank
+            } else if(TextUtils.isEmpty(s.predicTimes)){
+                //both are empty
+                holder.mStopDescription.setText(s.stopName + "\n" + NODATA);
                 holder.mETA.setText("");
             } else {
+                holder.mStopDescription.setText(s.stopName);
+            }
+
+            if(!TextUtils.isEmpty(s.predicTimes)) {
                 holder.mETA.setText(ACTUAL + " " + s.predicTimes);
             }
         }

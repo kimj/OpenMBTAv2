@@ -39,8 +39,8 @@ public class StopService extends IntentService {
     public static final String SCHEDHOUR = "&max_time=120";
     public static final String STOPVERB = "schedulebystop";
     public static final String STPREDVERB = "predictionsbystop";
-    public static final String GETPREDICTIMES = ScheduleService.BASE + STPREDVERB + ScheduleService.SUFFIX + STOPPARAM;
-    public static final String GETSTOPTIMES = ScheduleService.BASE + STOPVERB + ScheduleService.SUFFIX + SCHEDHOUR + STOPPARAM;
+    public static final String GETPREDICTIMES = CurrentScheduleService.BASE + STPREDVERB + CurrentScheduleService.SUFFIX + STOPPARAM;
+    public static final String GETSTOPTIMES = CurrentScheduleService.BASE + STOPVERB + CurrentScheduleService.SUFFIX + SCHEDHOUR + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
     StopData mainStop;
     ArrayList<StopData> returnList;
@@ -74,10 +74,10 @@ public class StopService extends IntentService {
         final double mainLong = Double.valueOf(mainStop.stopLong);
         final double mainLat = Double.valueOf(mainStop.stopLat);
         for(StopData stop: returnList) {
-            Location.distanceBetween(mainLong, mainLat,
-                    Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
-            //find other stops within 25m of the mainStop
-            if(results[0] < 25.0f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
+            Location.distanceBetween(mainLat, mainLong,
+                    Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
+            //find other stops within ~100ft of the mainStop
+            if(results[0] < 33f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
                 nearby.add(stop);
             }
         }
@@ -230,7 +230,7 @@ public class StopService extends IntentService {
                                                 if(stop == null || tmp.isEmpty() || tmp == null) {
                                                     Log.w(TAG, "skipping prediction time field");
                                                 } else {
-                                                    ScheduleService.getTime(tmp, t, strBuild);
+                                                    CurrentScheduleService.getTime(tmp, t, strBuild);
                                                 }
                                                 //This time will go into the stop field below with the pre away key to put min/sec with the time
                                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
@@ -240,7 +240,7 @@ public class StopService extends IntentService {
                                                     Log.w(TAG, "skipping seconds prediction field");
                                                     //this is not possible... pred time always has the away key
                                                 } else {
-                                                    ScheduleService.addAwayTimes(tmp, strBuild);
+                                                    CurrentScheduleService.addAwayTimes(tmp, strBuild);
                                                     Log.d(TAG, "stringbuilder predicTimes" + strBuild.toString());
                                                 }
 
@@ -371,7 +371,7 @@ public class StopService extends IntentService {
                                             token = parser.nextToken();
                                             if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
-                                                ScheduleService.getTime(parser.getValueAsString(), t, strBuild);
+                                                CurrentScheduleService.getTime(parser.getValueAsString(), t, strBuild);
                                                 //put the scheduled time into the string builder
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip

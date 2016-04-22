@@ -10,8 +10,11 @@ import android.widget.TextView;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.Schedule.StopTimes;
+import com.mentalmachines.ttime.services.SaveScheduleService;
 
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collections;
 
 /**
  * Created by emezias on 1/20/16.
@@ -29,7 +32,12 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
     public ScheduleStopAdapter(Schedule s) {
         super();
         mSchedule = s;
-        if(mSchedule.route.mInboundStops == null) {
+        if(mSchedule.route == null) {
+            //debug?
+            Log.e(TAG, "route must be set on the Schedule");
+            return;
+        }
+        if(mSchedule.route != null && mSchedule.route.mInboundStops == null) {
             isInbound = false;
             if(mSchedule.route.mOutboundStops == null) {
                 Log.e(TAG, "route has no stops!");
@@ -133,17 +141,35 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
         }
     }
 
-    public void switchDirection() {
+    public boolean switchDirection() {
         isInbound = !isInbound;
         notifyDataSetChanged();
+        return isInbound;
     }
 
-    String enumerateTimes(ArrayList<String> interval) {
+    final Calendar cal = Calendar.getInstance();
+
+    String enumerateTimes(ArrayList<Long> interval) {
+        int hour, next;
+        String tmp;
+        Collections.sort(interval);
         builder.setLength(0);
-        for(int dex = 0; dex < interval.size()-1; dex++) {
-            builder.append(interval.get(dex)).append(", ");
+        cal.setTimeInMillis(interval.get(0));
+        tmp = SaveScheduleService.timeFormat.format(cal.getTime());
+        hour = Integer.valueOf(tmp.substring(0, tmp.indexOf(":")));
+        builder.append(tmp);
+        for(int dex = 1; dex < interval.size(); dex++) {
+            cal.setTimeInMillis(interval.get(dex));
+            tmp = SaveScheduleService.timeFormat.format(cal.getTime());
+            next = Integer.valueOf(tmp.substring(0, tmp.indexOf(":")));
+            //start a new line with an hour change
+            if(next != hour) {
+                hour = next;
+                builder.append("\n").append(tmp);
+            } else {
+                builder.append(",  ").append(tmp);
+            }
         }
-        builder.append(interval.get(interval.size()-1));
         return builder.toString();
     }
 

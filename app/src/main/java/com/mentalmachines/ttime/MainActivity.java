@@ -38,9 +38,11 @@ import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.services.FullScheduleService;
+import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.CurrentScheduleService;
 import com.mentalmachines.ttime.services.NavDrawerTask;
-import com.mentalmachines.ttime.services.ScheduleService;
+import com.mentalmachines.ttime.services.SaveScheduleService;
+import com.mentalmachines.ttime.services.ShowScheduleService;
 import com.mentalmachines.ttime.services.StopService;
 
 import java.util.Calendar;
@@ -101,7 +103,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-        mgr.registerReceiver(mScheduleReady, new IntentFilter(ScheduleService.TAG));
+        mgr.registerReceiver(mScheduleReady, new IntentFilter(CurrentScheduleService.TAG));
 	}
 
     @Override
@@ -132,9 +134,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_schedule:
-                FullScheduleService.resetService();
-                Log.d(TAG, "reset service");
-                final Intent svc = new Intent(this, FullScheduleService.class);
+                final Intent svc = new Intent(this, ShowScheduleService.class);
                 if(((RouteFragment)mFragment).mListAdapter != null &&
                         ((RouteFragment)mFragment).mListAdapter.getItemCount() > 0) {
                     svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
@@ -146,9 +146,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Calendar c = Calendar.getInstance();
                 if(c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY ||
                         c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-                    svc.putExtra(FullScheduleService.TAG, c.get(Calendar.DAY_OF_WEEK));
+                    svc.putExtra(ShowScheduleService.TAG, c.get(Calendar.DAY_OF_WEEK));
                 } else {
-                    svc.putExtra(FullScheduleService.TAG, Calendar.TUESDAY);
+                    svc.putExtra(ShowScheduleService.TAG, Calendar.TUESDAY);
                 }
                 startService(svc);
                 //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
@@ -160,6 +160,10 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                     noFaves = false;
+                    final Intent tnt = new Intent(this, SaveScheduleService.class);
+                    tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
+                    startService(tnt);
+                    Log.v(TAG, "saving favorite route schedule: " + r.name);
                 } else {
                     mFavoritesAction.setChecked(false);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_off);
@@ -232,7 +236,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final String routeId = (String) v.getTag();
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
                 mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).commit();
-            } else if(((RouteFragment)mFragment).mListAdapter != null &&
+            } else if(mFragment != null && ((RouteFragment)mFragment).mListAdapter != null &&
                     ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
                 mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
@@ -267,15 +271,15 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     }
 
     void startSchedSvc(String routeId) {
-        if(!TTimeApp.checkNetwork(this)) {
+        if(!Utils.checkNetwork(this)) {
             Toast.makeText(this, getString(R.string.chkNet), Toast.LENGTH_SHORT).show();
             return;
         } else if(routeId == null || routeId.isEmpty()) {
             Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             return;
         }
-        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-        final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.getting_data), true, true);
+        final Intent tnt = new Intent(MainActivity.this, CurrentScheduleService.class);
         tnt.putExtra(DBHelper.KEY_ROUTE_ID, routeId);
         startService(tnt);
         Log.i(TAG, "starting schedule service with id: " + routeId);
@@ -344,9 +348,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
-        if(TTimeApp.checkNetwork(this)) {
-            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.loading), true, true);
-            final Intent tnt = new Intent(MainActivity.this, ScheduleService.class);
+        if(Utils.checkNetwork(this)) {
+            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.getting_data), true, true);
+            final Intent tnt = new Intent(MainActivity.this, CurrentScheduleService.class);
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mRouteName);
             tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
             startService(tnt);
@@ -362,21 +366,21 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         This click listener is set on the map button next to the route name */
     /*public void mapRoute(View v) {
         StringBuilder s = new StringBuilder().append("http://maps.google.com/maps?saddr=");
-        StopData stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         s.append(stop.stopLat).append(",").append(stop.stopLong).append("&daddr=");
         Log.d(TAG, "first stop " + stop.stopName);
-        stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s.toString()));
         //intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
         startActivity(intent);
         Log.d(TAG, "stop " + stop.stopName);
-        *//*StopData stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        *//*StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         StringBuilder s = new StringBuilder().append("geo:=")
                 .append(stop.stopLat).append(",").append(stop.stopLong).append("?q=");
-        stop = ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((SimpleStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong)*//*;
         startActivity(new Intent(android.content.Intent.ACTION_VIEW,
                 Uri.parse(s.toString())));
@@ -427,7 +431,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     };
 
     /**
-     * This receiver gets the Route object back from the ScheduleService IntentService class
+     * This receiver gets the Route object back from the CurrentScheduleService IntentService class
      * Either creates a new RouteFragment or resets the data in the recycler view of the fragment
      */
     BroadcastReceiver mScheduleReady = new BroadcastReceiver() {
@@ -442,14 +446,19 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             if(MainActivity.this.isFinishing()) {
                 return;
             }
-            if(intent.getExtras() == null ||
-                    intent.getExtras().getParcelable(ScheduleService.TAG) == null) {
+            final Bundle b = intent.getExtras();
+            if(b == null || b.getParcelable(CurrentScheduleService.TAG) == null) {
                 //The service had an error
+                return;
+                //don't return; Show the stops without the times
+            }
+            if(b.getBoolean(TAG)) {
                 Snackbar.make(findViewById(R.id.container),
                         getString(R.string.schedSvcErr), Snackbar.LENGTH_LONG).show();
-                return;
             }
-            final Route r = intent.getExtras().getParcelable(ScheduleService.TAG);
+            final Route r = intent.getExtras().getParcelable(CurrentScheduleService.TAG);
+            Log.i(TAG, "good route!");
+
             final String title = getSupportActionBar().getTitle().toString();
             if(mFavoritesAction.isVisible() && Route.readableName(context, r.name).equals(title)) {
                 //route fragment is already up! Reset route includes animation

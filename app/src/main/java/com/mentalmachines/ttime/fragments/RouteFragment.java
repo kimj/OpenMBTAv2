@@ -16,20 +16,22 @@ import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.adapter.SimpleStopAdapter;
+import com.mentalmachines.ttime.adapter.RouteFragmentStopAdapter;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.services.ScheduleService;
+import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.CurrentScheduleService;
 
 public class RouteFragment extends Fragment{
 	/**
 	 * A fragment representing a train or bus line
+     * It is displayed in the MainActivity and shows a list of stops to the user
+     * There is a FAB to switch directions
 	 */
     private static final String TAG = "RouteFragment";
 
     public boolean mInbound = true;
     public RecyclerView mList;
-    public SimpleStopAdapter mListAdapter;
+    public RouteFragmentStopAdapter mListAdapter;
     int mWidth = -1;
 
 	/**
@@ -93,6 +95,7 @@ public class RouteFragment extends Fragment{
 
     public void resetRoute(Route r) {
         finishList(r);
+
         if(mInbound) {
             ObjectAnimator.ofFloat(mList, "translationX", -mWidth, 0).start();
         } else {
@@ -103,7 +106,7 @@ public class RouteFragment extends Fragment{
     }
 
     public void finishList(Route r) {
-        mListAdapter = new SimpleStopAdapter(r, mInbound);
+        mListAdapter = new RouteFragmentStopAdapter(r, mInbound);
         if(mListAdapter.isOneWay) {
             //this is a one way route
             Log.w(TAG, "one way route");
@@ -118,10 +121,10 @@ public class RouteFragment extends Fragment{
 
     public void reloadTimes() {
         final Context ctx = getContext();
-        if(TTimeApp.checkNetwork(ctx)) {
+        if(Utils.checkNetwork(ctx)) {
             ((SwipeRefreshLayout)getActivity().findViewById(R.id.route_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
-            final Intent tnt = new Intent(ctx, ScheduleService.class);
+            final Intent tnt = new Intent(ctx, CurrentScheduleService.class);
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
             tnt.putExtra(DBHelper.KEY_ROUTE_ID, mListAdapter.mRoute.id);
             ctx.startService(tnt);
@@ -139,10 +142,10 @@ public class RouteFragment extends Fragment{
             view.setEnabled(false);
             //make sure the times are fresh when switching directions
             if(mWidth < 0) {
-                mWidth = getView().getWidth();
+                mWidth = Utils.getScreenWidth(getContext());
             }
             mInbound = !mInbound;
-            Log.d(TAG, "inbound direction?" + mInbound);
+            //Log.d(TAG, "inbound direction?" + mInbound);
             if(mInbound) {
                 ObjectAnimator.ofFloat(view, "rotation", 540f).start();
                 //mItems = getArguments().getStringArray(IN_STOPS_LIST);

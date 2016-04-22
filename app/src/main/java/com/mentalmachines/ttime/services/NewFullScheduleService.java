@@ -37,7 +37,7 @@ import java.util.HashMap;
  */
 public class NewFullScheduleService extends IntentService {
 
-    public static final String TAG = "FullScheduleService";
+    public static final String TAG = "ShowScheduleService";
     public static volatile Schedule sWeekdays, sSaturday, sSunday;
 
     final static Calendar c = Calendar.getInstance();
@@ -235,17 +235,17 @@ public class NewFullScheduleService extends IntentService {
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         //Log.d(TAG, tmpTimes.stopId + " time added to stopTime " +
-                                        tmp = ScheduleService.getTime(parser.getValueAsString(), t, strBuild);
+                                        tmp = CurrentScheduleService.getTime(parser.getValueAsString(), t, strBuild);
                                         //drop any times out of the period
                                         // the server returns complete trips
                                         // trips that start in this interval may run past the last minute of the period and show twice
                                         if(t.hour <= hours && t.minute < minutes) {
                                             switch (timing) {
                                                 case MORNING:
-                                                    tmpTimes.morning.add(tmp);
+                                                    tmpTimes.morning.add(Long.valueOf(parser.getValueAsString()));
                                                     break;
                                                 case AMPEAK:
-                                                    tmpTimes.amPeak.add(tmp);
+                                                    /*tmpTimes.amPeak.add(tmp);
                                                     break;
                                                 case MIDDAY:
                                                     tmpTimes.midday.add(tmp);
@@ -254,7 +254,7 @@ public class NewFullScheduleService extends IntentService {
                                                     tmpTimes.pmPeak.add(tmp);
                                                     break;
                                                 case NIGHT:
-                                                    tmpTimes.night.add(tmp);
+                                                    tmpTimes.night.add(tmp);*/
                                                     break;
                                             }
                                         }

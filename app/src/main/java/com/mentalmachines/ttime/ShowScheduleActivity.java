@@ -1,11 +1,14 @@
 package com.mentalmachines.ttime;
 
+import android.animation.AnimatorSet;
+import android.animation.ObjectAnimator;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.NavUtils;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.ActionBar;
@@ -20,7 +23,9 @@ import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.ScheduleStopAdapter;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.services.FullScheduleService;
+import com.mentalmachines.ttime.objects.Schedule;
+import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.ShowScheduleService;
 
 import java.util.Calendar;
 
@@ -43,14 +48,14 @@ public class ShowScheduleActivity extends AppCompatActivity {
         }
         //Schedule Service is launched before start Activity
         LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady,
-                new IntentFilter(FullScheduleService.TAG));
+                new IntentFilter(ShowScheduleService.TAG));
         mList = (RecyclerView) findViewById(R.id.sch_list);
     }
 
     @Override
     protected void onResume() {
         super.onResume();
-        mProgress = ProgressDialog.show(this, "", getString(R.string.loading), true, true);
+        mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
     }
 
     @Override
@@ -108,22 +113,19 @@ public class ShowScheduleActivity extends AppCompatActivity {
     void showSchedule(int scheduleDay, ActionBar ab) {
         switch(scheduleDay) {
             case Calendar.TUESDAY:
-                mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sWeekdays));
-                ab.setTitle(Route.readableName(this, FullScheduleService.sWeekdays.route.name));
+                setScheduleIntoList(ShowScheduleService.sWeekdays, ab);
                 ab.setSubtitle(getString(R.string.weekdays));
                 Log.d(TAG, "set new weekday adapter");
                 break;
             case Calendar.SUNDAY:
-                mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sSunday));
-                ab.setTitle(Route.readableName(this, FullScheduleService.sSunday.route.name));
+                setScheduleIntoList(ShowScheduleService.sSunday, ab);
                 ab.setSubtitle(getString(R.string.sunday));
                 Log.d(TAG, "set new sunday adapter");
                 break;
             case Calendar.SATURDAY:
-                mList.setAdapter(new ScheduleStopAdapter(FullScheduleService.sSaturday));
-                ab.setTitle(Route.readableName(this, FullScheduleService.sSaturday.route.name));
+                setScheduleIntoList(ShowScheduleService.sSaturday, ab);
                 ab.setSubtitle(getString(R.string.saturdays));
-                Log.d(TAG, "set new satureday adapter");
+                Log.d(TAG, "set new saturday adapter");
                 break;
         }
         //Is this a one way route? hide the FAB
@@ -134,9 +136,38 @@ public class ShowScheduleActivity extends AppCompatActivity {
         }
     }
 
+    void setScheduleIntoList(Schedule s, ActionBar ab) {
+        if(!s.scheduleIsLoaded()) {
+            mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+            Log.w(TAG, "schedules still loading");
+            return;
+        }
+        mList.setAdapter(new ScheduleStopAdapter(s));
+        ab.setTitle(Route.readableName(this, s.route.name));
+        Log.d(TAG, "set new satureday adapter");
+    }
+
     /*********click listeners ********/
-    public void switchSchedule(View v) {
-        ((ScheduleStopAdapter) mList.getAdapter()).switchDirection();
+    public void switchSchedule(View view) {
+        //return isInbound
+        final int width = Utils.getScreenWidth(this);
+        Log.d(TAG, "FAB click in schedule screen");
+        final AnimatorSet set = new AnimatorSet();
+        if(((ScheduleStopAdapter) mList.getAdapter()).switchDirection()) {
+            ObjectAnimator.ofFloat(view, "rotation", 540f).start();
+            //mItems = getArguments().getStringArray(IN_STOPS_LIST);
+            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+            set.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
+                    .before(ObjectAnimator.ofFloat(mList, "translationX", -width, 0));
+        } else {
+            ObjectAnimator.ofFloat(view, "rotation", -540f).start();
+            //TODO -> call the schedule service to get the latest times
+            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+
+            set.play(ObjectAnimator.ofFloat(mList, "translationX", 0, -width))
+                    .before(ObjectAnimator.ofFloat(mList, "translationX", width, 0));
+        }
+        set.start();
     }
 
     public void setList(View v) {
@@ -150,7 +181,7 @@ public class ShowScheduleActivity extends AppCompatActivity {
             Log.d(TAG, "service completed");
             final Bundle b = intent.getExtras();
 
-            if(b == null || b.getBoolean(FullScheduleService.TAG)) {
+            if(b == null || b.getBoolean(ShowScheduleService.TAG)) {
                 Log.w(TAG, "error fetching schedule");
                 Toast.makeText(ShowScheduleActivity.this,
                         getString(R.string.schedSvcErr), Toast.LENGTH_SHORT).show();
@@ -158,28 +189,25 @@ public class ShowScheduleActivity extends AppCompatActivity {
             }
 
             if(mList.getAdapter() == null) {
+                //service returns the schedule day
                 showSchedule(b.getInt(TAG), getSupportActionBar());
+                //should be enough time while that draws to finish parsing the other days...
+                //TODO manage this better, error check schedule object for null
             }
             //at least one schedule is not null, calling the service for the others
             // waiting for a return to make the next call, parallel processing
-            final Intent svc = new Intent(context, FullScheduleService.class);
-            if(FullScheduleService.sWeekdays == null) {
-                svc.putExtra(FullScheduleService.TAG, Calendar.TUESDAY);
+            final Intent svc = new Intent(context, ShowScheduleService.class);
+            if(!ShowScheduleService.sWeekdays.scheduleIsLoaded()) {
+                svc.putExtra(ShowScheduleService.TAG, Calendar.TUESDAY);
                 context.startService(svc);
-                return;
-            }
-            if(FullScheduleService.sSaturday == null) {
-                svc.putExtra(FullScheduleService.TAG, Calendar.SATURDAY);
+            } else if(!ShowScheduleService.sSaturday.scheduleIsLoaded()) {
+                svc.putExtra(ShowScheduleService.TAG, Calendar.SATURDAY);
                 context.startService(svc);
-                return;
-            }
-            if(FullScheduleService.sSunday == null) {
-                svc.putExtra(FullScheduleService.TAG, Calendar.SUNDAY);
+            } else if(!ShowScheduleService.sSunday.scheduleIsLoaded()) {
+                svc.putExtra(ShowScheduleService.TAG, Calendar.SUNDAY);
                 context.startService(svc);
-                return;
             }
 
-            //TODO, call the other days
             if(mProgress != null && mProgress.isShowing()) {
                 mProgress.cancel();
             }

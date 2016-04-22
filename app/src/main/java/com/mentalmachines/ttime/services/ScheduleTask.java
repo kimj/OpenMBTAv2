@@ -41,9 +41,9 @@ public class ScheduleTask extends AsyncTask<Object, Void, Schedule> {
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.SECOND, 0);
 
-        url = FullScheduleService.GETSCHEDULE + sWeekdays.route.id +
-                FullScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                FullScheduleService.TIME_PARAM + "389";
+        url = ShowScheduleService.GETSCHEDULE + sWeekdays.route.id +
+                ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                ShowScheduleService.TIME_PARAM + "389";
         mScheduleType = scheduleType;
         mPeriod = 0;
     }
@@ -57,33 +57,33 @@ public class ScheduleTask extends AsyncTask<Object, Void, Schedule> {
                 c.set(Calendar.HOUR, 6);
                 c.set(Calendar.MINUTE, 30);
                 c.set(Calendar.AM_PM, Calendar.AM);
-                url = FullScheduleService.GETSCHEDULE + sWeekdays.route.id +
-                        FullScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                        FullScheduleService.TIME_PARAM + "149";
+                url = ShowScheduleService.GETSCHEDULE + sWeekdays.route.id +
+                        ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                        ShowScheduleService.TIME_PARAM + "149";
                 break;
             case 2:
                 c.set(Calendar.HOUR, 9);
                 c.set(Calendar.MINUTE, 0);
                 c.set(Calendar.AM_PM, Calendar.AM);
-                url = FullScheduleService.GETSCHEDULE + sWeekdays.route.id +
-                        FullScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                        FullScheduleService.TIME_PARAM + "389";
+                url = ShowScheduleService.GETSCHEDULE + sWeekdays.route.id +
+                        ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                        ShowScheduleService.TIME_PARAM + "389";
                 break;
             case 3:
                 c.set(Calendar.HOUR, 3);
                 c.set(Calendar.MINUTE, 30);
                 c.set(Calendar.AM_PM, Calendar.PM);
-                url = FullScheduleService.GETSCHEDULE + sWeekdays.route.id +
-                        FullScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                        FullScheduleService.TIME_PARAM + "179";
+                url = ShowScheduleService.GETSCHEDULE + sWeekdays.route.id +
+                        ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                        ShowScheduleService.TIME_PARAM + "179";
                 break;
             case 4:
                 c.set(Calendar.HOUR, 6);
                 c.set(Calendar.MINUTE, 30);
                 c.set(Calendar.AM_PM, Calendar.PM);
-                url = FullScheduleService.GETSCHEDULE + sWeekdays.route.id +
-                        FullScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                        FullScheduleService.TIME_PARAM + "330";
+                url = ShowScheduleService.GETSCHEDULE + sWeekdays.route.id +
+                        ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                        ShowScheduleService.TIME_PARAM + "330";
                 break;
         }
     }
@@ -200,26 +200,31 @@ public class ScheduleTask extends AsyncTask<Object, Void, Schedule> {
                                         } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                             token = parser.nextToken();
                                             //Log.d(TAG, tmpTimes.stopId + " time added to stopTime " +
-                                            tmp = ScheduleService.getTime(parser.getValueAsString(), t, strBuild);
+                                            CurrentScheduleService.getTime(parser.getValueAsString(), t, strBuild);
                                             //drop any times out of the period
                                             // the server returns complete trips
                                             // trips that start in this interval may run past the last minute of the period and show twice
                                             if(t.hour <= hours && t.minute < minutes) {
                                                 switch (mPeriod) {
                                                     case MORNING:
-                                                        tmpTimes.morning.add(tmp);
+                                                        if(!tmpTimes.morning.contains(t.toMillis(false)))
+                                                            tmpTimes.morning.add(t.toMillis(false));
                                                         break;
                                                     case AMPEAK:
-                                                        tmpTimes.amPeak.add(tmp);
+                                                        if(!tmpTimes.amPeak.contains(t.toMillis(false)))
+                                                            tmpTimes.amPeak.add(t.toMillis(false));
                                                         break;
                                                     case MIDDAY:
-                                                        tmpTimes.midday.add(tmp);
+                                                        if(!tmpTimes.midday.contains(t.toMillis(false)))
+                                                            tmpTimes.midday.add(t.toMillis(false));
                                                         break;
                                                     case PMPEAK:
-                                                        tmpTimes.pmPeak.add(tmp);
+                                                        if(!tmpTimes.pmPeak.contains(t.toMillis(false)))
+                                                            tmpTimes.pmPeak.add(t.toMillis(false));
                                                         break;
                                                     case NIGHT:
-                                                        tmpTimes.night.add(tmp);
+                                                        if(!tmpTimes.night.contains(t.toMillis(false)))
+                                                            tmpTimes.night.add(t.toMillis(false));
                                                         break;
                                                 }
                                             }

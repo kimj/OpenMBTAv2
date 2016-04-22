@@ -1,6 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.mentalmachines.ttime">
+
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -34,9 +36,10 @@
             android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".services.NavDrawerTask"/>
-        <service android:name=".services.ScheduleService"/>
+        <service android:name=".services.CurrentScheduleService"/>
         <service android:name=".services.StopService"/>
-        <service android:name=".services.FullScheduleService" />
+        <service android:name=".services.ShowScheduleService" />
+        <service android:name=".services.SaveScheduleService" />
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>
