@@ -29,6 +29,9 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ROUTE_ID + " TEXT unique not null, "
             + KEY_ROUTE_NAME + " TEXT unique not null);";
 
+    public static final String BRAINTREE = "Braintree";
+    public static final String ASHMONT = "Ashmont";
+    public static final String KEY_TRIP_NM = "trip_name";
     //Route table keys
     public static final String KEY_ROUTE_MODE = "mode";
     public static final String KEY_ROUTE_MODE_NM = "mode_name";

@@ -1,7 +1,6 @@
 package com.mentalmachines.ttime.services;
 
 import android.os.AsyncTask;
-import android.text.format.Time;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -125,7 +124,7 @@ public class ScheduleTask extends AsyncTask<Object, Void, Schedule> {
             Schedule.StopTimes tmpTimes = null;
             int dirID = 0;
             String tmp;
-            final Time t = new Time();
+            final Calendar t = Calendar.getInstance();
             while (!parser.isClosed()) {
                 //start parsing, get the token
                 JsonToken token = parser.nextToken();
@@ -200,31 +199,31 @@ public class ScheduleTask extends AsyncTask<Object, Void, Schedule> {
                                         } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                             token = parser.nextToken();
                                             //Log.d(TAG, tmpTimes.stopId + " time added to stopTime " +
-                                            CurrentScheduleService.getTime(parser.getValueAsString(), t, strBuild);
+                                            GetTimesForRoute.getTime(parser.getValueAsString(), t, strBuild);
                                             //drop any times out of the period
                                             // the server returns complete trips
                                             // trips that start in this interval may run past the last minute of the period and show twice
-                                            if(t.hour <= hours && t.minute < minutes) {
+                                            if(t.get(Calendar.HOUR_OF_DAY) <= hours && t.get(Calendar.MINUTE) < minutes) {
                                                 switch (mPeriod) {
                                                     case MORNING:
-                                                        if(!tmpTimes.morning.contains(t.toMillis(false)))
-                                                            tmpTimes.morning.add(t.toMillis(false));
+                                                        if(!tmpTimes.morning.contains(t.getTimeInMillis()))
+                                                            tmpTimes.morning.add(t.getTimeInMillis());
                                                         break;
                                                     case AMPEAK:
-                                                        if(!tmpTimes.amPeak.contains(t.toMillis(false)))
-                                                            tmpTimes.amPeak.add(t.toMillis(false));
+                                                        if(!tmpTimes.amPeak.contains(t.getTimeInMillis()))
+                                                            tmpTimes.amPeak.add(t.getTimeInMillis());
                                                         break;
                                                     case MIDDAY:
-                                                        if(!tmpTimes.midday.contains(t.toMillis(false)))
-                                                            tmpTimes.midday.add(t.toMillis(false));
+                                                        if(!tmpTimes.midday.contains(t.getTimeInMillis()))
+                                                            tmpTimes.midday.add(t.getTimeInMillis());
                                                         break;
                                                     case PMPEAK:
-                                                        if(!tmpTimes.pmPeak.contains(t.toMillis(false)))
-                                                            tmpTimes.pmPeak.add(t.toMillis(false));
+                                                        if(!tmpTimes.pmPeak.contains(t.getTimeInMillis()))
+                                                            tmpTimes.pmPeak.add(t.getTimeInMillis());
                                                         break;
                                                     case NIGHT:
-                                                        if(!tmpTimes.night.contains(t.toMillis(false)))
-                                                            tmpTimes.night.add(t.toMillis(false));
+                                                        if(!tmpTimes.night.contains(t.getTimeInMillis()))
+                                                            tmpTimes.night.add(t.getTimeInMillis());
                                                         break;
                                                 }
                                             }

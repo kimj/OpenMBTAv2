@@ -10,6 +10,7 @@ import android.widget.TextView;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.Schedule.StopTimes;
+import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.SaveScheduleService;
 
 import java.util.ArrayList;
@@ -155,12 +156,12 @@ public class ScheduleStopAdapter extends RecyclerView.Adapter<ScheduleStopAdapte
         Collections.sort(interval);
         builder.setLength(0);
         cal.setTimeInMillis(interval.get(0));
-        tmp = SaveScheduleService.timeFormat.format(cal.getTime());
+        tmp = Utils.timeFormat.format(cal.getTime());
         hour = Integer.valueOf(tmp.substring(0, tmp.indexOf(":")));
         builder.append(tmp);
         for(int dex = 1; dex < interval.size(); dex++) {
             cal.setTimeInMillis(interval.get(dex));
-            tmp = SaveScheduleService.timeFormat.format(cal.getTime());
+            tmp = Utils.timeFormat.format(cal.getTime());
             next = Integer.valueOf(tmp.substring(0, tmp.indexOf(":")));
             //start a new line with an hour change
             if(next != hour) {

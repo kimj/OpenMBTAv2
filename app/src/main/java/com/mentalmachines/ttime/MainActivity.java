@@ -23,6 +23,7 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.TextUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -39,12 +40,14 @@ import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.CurrentScheduleService;
+import com.mentalmachines.ttime.services.GetTimesForRoute;
+import com.mentalmachines.ttime.services.LoganScheduleActivity;
+import com.mentalmachines.ttime.services.LoganScheduleSvc;
 import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.SaveScheduleService;
-import com.mentalmachines.ttime.services.ShowScheduleService;
 import com.mentalmachines.ttime.services.StopService;
 
+import java.util.Arrays;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
@@ -52,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public static final String TAG = "MainActivity";
     SharedPreferences mPrefs;
     ExpandableListView mDrawerList;
-    int currentSelection = -1;
+    int mCurrentSelection = -1;
     //This is set to the expandable adapter mode or to -1 when Alerts are showing
     //TODO create a timeout for late night, intent service can hang
     ProgressDialog mPD = null;
@@ -67,8 +70,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         new CheckFavesTable().execute();
         //this task sets the noFaves boolean
 
-        /*Log.d(TAG, "starting svc");
-        startSchedSvc(new Intent(this, CopyDBService.class));*/
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
 
@@ -85,11 +86,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final Intent tnt = new Intent(this, NavDrawerTask.class);
         if(noFaves) {
             Log.i(TAG, "no favorites");
-            currentSelection = RouteExpandableAdapter.SUBWAY;
+            mCurrentSelection = RouteExpandableAdapter.SUBWAY;
             tnt.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
             findViewById(R.id.exp_lines).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         } else {
-            currentSelection = RouteExpandableAdapter.FAVE;
+            mCurrentSelection = RouteExpandableAdapter.FAVE;
             findViewById(R.id.exp_favorite).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         }
         final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
@@ -103,13 +104,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-        mgr.registerReceiver(mScheduleReady, new IntentFilter(CurrentScheduleService.TAG));
+        mgr.registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
 	}
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mScheduleReady);
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(mTimesReady);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mNavDataReady);
     }
 
@@ -134,25 +135,29 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //map menu from the action bar will display the route
                 break;*/
             case R.id.menu_schedule:
-                final Intent svc = new Intent(this, ShowScheduleService.class);
-                if(((RouteFragment)mFragment).mListAdapter != null &&
-                        ((RouteFragment)mFragment).mListAdapter.getItemCount() > 0) {
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
-                } else {
+                //TODO clean up NPE
+                if(((RouteFragment)mFragment).mListAdapter == null &&
+                        ((RouteFragment)mFragment).mListAdapter.getItemCount() == 0) {
                     //show error and return
                     Toast.makeText(this, "Need a route to show the schedule", Toast.LENGTH_SHORT).show();
                     return super.onOptionsItemSelected(item);
                 }
                 final Calendar c = Calendar.getInstance();
+
+                Intent svc = new Intent(this, LoganScheduleSvc.class);
                 if(c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY ||
                         c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-                    svc.putExtra(ShowScheduleService.TAG, c.get(Calendar.DAY_OF_WEEK));
+                    svc.putExtra(LoganScheduleSvc.TAG, c.get(Calendar.DAY_OF_WEEK));
                 } else {
-                    svc.putExtra(ShowScheduleService.TAG, Calendar.TUESDAY);
+                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.TUESDAY);
                 }
+                svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
                 startService(svc);
+
+                final Intent act  = new Intent(this, LoganScheduleActivity.class);
+                act.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
                 //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(this, ShowScheduleActivity.class));
+                startActivity(act);
                 break;
             case R.id.menu_favorites:
                 final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
@@ -190,8 +195,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 findViewById(R.id.fab_in_out).setVisibility(View.GONE);
                 setTitle(getString(R.string.action_alerts));
                 mFavoritesAction.setVisible(false);
-                currentSelection = -1;
-                Log.d(TAG, "reset selection here! " + currentSelection);
+                mCurrentSelection = -1;
+                Log.d(TAG, "reset selection here! " + mCurrentSelection);
                 if(mDrawerList.getTag() != null) {
                     ((View)mDrawerList.getTag()).setSelected(false);
                     mDrawerList.setTag(null);
@@ -230,7 +235,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         }
         //persist the view
         //save the route ID in order to call the route prediction times again when user gets back
-        if(currentSelection > 0) {
+        if(mCurrentSelection > 0) {
             if (mDrawerList.getTag() != null) {
                 View v = (View) mDrawerList.getTag();
                 final String routeId = (String) v.getTag();
@@ -255,14 +260,14 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             } else {
                 final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
-                startSchedSvc(mRouteId);
+                getTimesFromService(mRouteId, "");
             }
         } else {
             if(mFragment.isHidden()) {
                 getSupportFragmentManager().beginTransaction().show(mFragment).commit();
                 Log.d(TAG, "showing hidden fragment");
             }
-            if(currentSelection > 0) {
+            if(mCurrentSelection > 0) {
                 //this is a route fragment, get the latest times
                 ((RouteFragment)mFragment).reloadTimes();
 
@@ -270,19 +275,22 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         }
     }
 
-    void startSchedSvc(String routeId) {
-        if(!Utils.checkNetwork(this)) {
+    void getTimesFromService(String routeId, String routeName) {
+        if (!Utils.checkNetwork(this)) {
             Toast.makeText(this, getString(R.string.chkNet), Toast.LENGTH_SHORT).show();
             return;
-        } else if(routeId == null || routeId.isEmpty()) {
+        } else if(TextUtils.isEmpty(routeId)) {
             Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             return;
         }
-        mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.getting_data), true, true);
-        final Intent tnt = new Intent(MainActivity.this, CurrentScheduleService.class);
+        mPD = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+        final Intent tnt = new Intent(this, GetTimesForRoute.class);
+        if(!TextUtils.isEmpty(routeName)) {
+            tnt.putExtra(DBHelper.KEY_ROUTE_NAME, routeName);
+        }
         tnt.putExtra(DBHelper.KEY_ROUTE_ID, routeId);
         startService(tnt);
-        Log.i(TAG, "starting schedule service with id: " + routeId);
+        Log.i(TAG, "starting get times service with id: " + routeId);
     }
 
     /**
@@ -295,7 +303,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         switch(v.getId()) {
             case R.id.exp_bus:
                 final Intent tnt = new Intent(this, NavDrawerTask.class);
-                currentSelection = RouteExpandableAdapter.BUS;
+                mCurrentSelection = RouteExpandableAdapter.BUS;
                 tnt.putExtra(NavDrawerTask.TAG, DBHelper.BUS_MODE);
                 startService(tnt);
                 findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
@@ -305,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Intent svc = new Intent(this, NavDrawerTask.class);
                 svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
                 startService(svc);
-                currentSelection = RouteExpandableAdapter.SUBWAY;
+                mCurrentSelection = RouteExpandableAdapter.SUBWAY;
                 findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
@@ -321,7 +329,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 } else {
                     findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                     findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
-                    currentSelection = RouteExpandableAdapter.FAVE;
+                    mCurrentSelection = RouteExpandableAdapter.FAVE;
                     //no extras for Favorites service
                     startService(new Intent(this, NavDrawerTask.class));
                 }
@@ -337,10 +345,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         //click listener set on the child view in the nav drawer
         final String routeId = (String) v.getTag();
         Log.i(TAG, "show route " + routeId);
-        final String mRouteId = (String)v.getTag();
-        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, mRouteId).apply();
-        final String mRouteName = (String) v.getTag(R.layout.child_view);
-        setTitle(Route.readableName(this, mRouteName));
+        mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).apply();
+        final String routeName = (String) v.getTag(R.layout.child_view);
+        setTitle(Route.readableName(this, routeName));
         v.setSelected(true);
         if(mDrawerList.getTag() != null) {
             ((View)mDrawerList.getTag()).setSelected(false);
@@ -349,12 +356,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
         findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
         if(Utils.checkNetwork(this)) {
-            mPD = ProgressDialog.show(MainActivity.this, "", getString(R.string.getting_data), true, true);
-            final Intent tnt = new Intent(MainActivity.this, CurrentScheduleService.class);
-            tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mRouteName);
-            tnt.putExtra(DBHelper.KEY_ROUTE_ID, mRouteId);
-            startService(tnt);
-            Log.i(TAG, "starting schedule service with id: " + mRouteId);
+            getTimesFromService(routeId, routeName);
+            Log.i(TAG, "starting get times service with id: " + routeId);
         } else {
             Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
         }
@@ -419,7 +422,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         @Override
         public void onGroupCollapse(int i) {
         //group is always zero for favorites and subway, allow only one open group
-            if(currentSelection == RouteExpandableAdapter.BUS) {
+            if(mCurrentSelection == RouteExpandableAdapter.BUS) {
                 return;
             } else {
                 if(!mDrawerList.isGroupExpanded(i)) {
@@ -431,32 +434,38 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     };
 
     /**
-     * This receiver gets the Route object back from the CurrentScheduleService IntentService class
+     * This receiver gets the Route object back from the GetTimesForRoute IntentService class
      * Either creates a new RouteFragment or resets the data in the recycler view of the fragment
      */
-    BroadcastReceiver mScheduleReady = new BroadcastReceiver() {
+    BroadcastReceiver mTimesReady = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             //the route times are ready. set up the adapter
             if(mPD != null && mPD.isShowing()) {
                 mPD.dismiss();
             }
-            Log.d(TAG, "schedule ready");
+            Log.d(TAG, "times returned");
             //quick callbacks error check, is everything here
             if(MainActivity.this.isFinishing()) {
                 return;
             }
             final Bundle b = intent.getExtras();
-            if(b == null || b.getParcelable(CurrentScheduleService.TAG) == null) {
-                //The service had an error
+            if(b == null) {
+                //Error check, service returns data
                 return;
-                //don't return; Show the stops without the times
             }
-            if(b.getBoolean(TAG)) {
+            if((b.containsKey(TAG) && b.getParcelable(TAG) == null) ||
+                    (b.containsKey(GetTimesForRoute.TAG) && b.getBoolean(GetTimesForRoute.TAG))) {
+                //error conditions, no route object, true boolean
                 Snackbar.make(findViewById(R.id.container),
                         getString(R.string.schedSvcErr), Snackbar.LENGTH_LONG).show();
+
             }
-            final Route r = intent.getExtras().getParcelable(CurrentScheduleService.TAG);
+            //exception from predictions but route and schedule times are good
+            if(b.containsKey(TAG) && b.getParcelable(TAG) == null) {
+                return;
+            }
+            final Route r = intent.getExtras().getParcelable(TAG);
             Log.i(TAG, "good route!");
 
             final String title = getSupportActionBar().getTitle().toString();
@@ -529,7 +538,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
             else {
                 //show the right list after the I/O is done in the bg
-                switch (currentSelection) {
+                switch (mCurrentSelection) {
                     case RouteExpandableAdapter.FAVE:
                         mDrawerList.setAdapter(new RouteExpandableAdapter(
                                 b.getStringArray(DBHelper.KEY_ROUTE_NAME),
@@ -552,7 +561,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                         break;
                 }
 
-                if(currentSelection != RouteExpandableAdapter.BUS) {
+                if(mCurrentSelection != RouteExpandableAdapter.BUS) {
                     mDrawerList.expandGroup(0);
                     //here the list has only one group
                 }

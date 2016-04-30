@@ -19,9 +19,9 @@ import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.RouteFragmentStopAdapter;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.CurrentScheduleService;
+import com.mentalmachines.ttime.services.GetTimesForRoute;
 
-public class RouteFragment extends Fragment{
+public class RouteFragment extends Fragment {
 	/**
 	 * A fragment representing a train or bus line
      * It is displayed in the MainActivity and shows a list of stops to the user
@@ -124,7 +124,7 @@ public class RouteFragment extends Fragment{
         if(Utils.checkNetwork(ctx)) {
             ((SwipeRefreshLayout)getActivity().findViewById(R.id.route_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
-            final Intent tnt = new Intent(ctx, CurrentScheduleService.class);
+            final Intent tnt = new Intent(ctx, GetTimesForRoute.class);
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
             tnt.putExtra(DBHelper.KEY_ROUTE_ID, mListAdapter.mRoute.id);
             ctx.startService(tnt);

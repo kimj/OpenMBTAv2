@@ -33,7 +33,6 @@
         android:layout_toRightOf="@id/stop_alert_btn"
         android:layout_toLeftOf="@id/stop_mapbtn"
         android:padding="18dip"
-        android:text="MBTA stop 1"
         android:textColor="@color/colorPrimaryDark"
         android:background="@android:color/transparent"
         android:textSize="18dp" />
@@ -46,7 +45,6 @@
         android:layout_toRightOf="@id/stop_alert_btn"
         android:gravity="left"
         android:padding="8dip"
-        android:text="MBTA stop 1"
         android:textColor="@android:color/black"
         android:background="@android:color/transparent"
         android:textSize="18dp" />

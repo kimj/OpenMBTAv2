@@ -147,6 +147,13 @@ public class DBCreateStopsRoutes extends IntentService {
                 }
             }
         }
+        Log.i(TAG, "adjusting for 3 red line routes");
+        mDB.execSQL(BRAIN_INBOUND);
+        mDB.execSQL(BRAIN_OUTBOUND);
+        mDB.execSQL(ASHMONT_INBOUND);
+        mDB.execSQL(ASHMONT_OUTBOUND);
+        mDB.execSQL(ROUTE_TABLE_UPDATE);
+
     } //end routes
 
     void parseStopsCall(String route) throws IOException {
@@ -234,5 +241,92 @@ public class DBCreateStopsRoutes extends IntentService {
 
     }
 
+    /************************* Red line scripts **************************/
+    //these strings create extra tables to more easily navigate the red line
+    static final String BRAIN_OUTBOUND = "insert into stops_outbound " +
+            "('route_id','stop_id','stop_name','stop_lat','stop_lon') " +
+            "values ('Braintree','70061','Alewife','42.395428','-71.142483')," +
+            "('Braintree','70063','Davis - Inbound','42.39674','-71.121815')," +
+            "('Braintree','70065','Porter - Inbound','42.3884','-71.119149')," +
+            "('Braintree','70067','Harvard - Inbound','42.373362','-71.118956')," +
+            "('Braintree','70069','Central - Inbound','42.365486','-71.103802')," +
+            "('Braintree','70071','Kendall/MIT - Inbound','42.36249079','-71.08617653')," +
+            "('Braintree','70073','Charles/MGH - Inbound','42.361166','-71.070628')," +
+            "('Braintree','70075','Park Street - to Ashmont/Braintree','42.35639457','-71.0624242')," +
+            "('Braintree','70077','Downtown Crossing - to Ashmont/Braintree','42.355518','-71.060225')," +
+            "('Braintree','70079','South Station - Outbound','42.352271','-71.055242')," +
+            "('Braintree','70081','Broadway - Outbound','42.342622','-71.056967')," +
+            "('Braintree','70083','Andrew - Outbound','42.330154','-71.057655')," +
+            "('Braintree','70095','JFK/UMASS Braintree - Outbound','42.320685','-71.052391')," +
+            "('Braintree','70097','North Quincy - Outbound','42.275275','-71.029583')," +
+            "('Braintree','70099','Wollaston - Outbound','42.2665139','-71.0203369')," +
+            "('Braintree','70101','Quincy Center - Outbound','42.251809','-71.005409')," +
+            "('Braintree','70103','Quincy Adams - Outbound','42.233391','-71.007153')," +
+            "('Braintree','70105','Braintree','42.2078543','-71.0011385');";
+
+    static final String BRAIN_INBOUND = "insert into stops_inbound " +
+            "('route_id','stop_id','stop_name','stop_lat','stop_lon') " +
+            "values ('Braintree','70105','Braintree','42.2078543','-71.0011385')," +
+            "('Braintree','70104','Quincy Adams - Inbound','42.233391','-71.007153')," +
+            "('Braintree','70102','Quincy Center - Inbound','42.251809','-71.005409')," +
+            "('Braintree','70100','Wollaston - Inbound','42.2665139','-71.0203369')," +
+            "('Braintree','70098','North Quincy - Inbound','42.275275','-71.029583')," +
+            "('Braintree','70096','JFK/UMASS Braintree - Inbound','42.320685','-71.052391')," +
+            "('Braintree','70084','Andrew - Inbound','42.330154','-71.057655')," +
+            "('Braintree','70082','Broadway - Inbound','42.342622','-71.056967')," +
+            "('Braintree','70080','South Station - Inbound','42.352271','-71.055242')," +
+            "('Braintree','70078','Downtown Crossing - to Alewife','42.355518','-71.060225')," +
+            "('Braintree','70076','Park Street - to Alewife','42.35639457','-71.0624242')," +
+            "('Braintree','70074','Charles/MGH - Outbound','42.361166','-71.070628')," +
+            "('Braintree','70072','Kendall/MIT - Outbound','42.36249079','-71.08617653')," +
+            "('Braintree','70070','Central - Outbound','42.365486','-71.103802')," +
+            "('Braintree','70068','Harvard - Outbound','42.373362','-71.118956')," +
+            "('Braintree','70066','Porter - Outbound','42.3884','-71.119149')," +
+            "('Braintree','70064','Davis - Outbound','42.39674','-71.121815')," +
+            "('Braintree','70061','Alewife','42.395428','-71.142483');";
+
+    static final String ASHMONT_INBOUND = "insert into stops_inbound " +
+            "('route_id','stop_id','stop_name','stop_lat','stop_lon') values " +
+            "('Ashmont','70094','Ashmont - Inbound','42.284652','-71.064489')," +
+            "('Ashmont','70092','Shawmut - Inbound','42.29312583','-71.06573796')," +
+            "('Ashmont','70090','Fields Corner - Inbound','42.300093','-71.061667')," +
+            "('Ashmont','70088','Savin Hill - Inbound','42.31129','-71.053331')," +
+            "('Ashmont','70086','JFK/UMASS Ashmont - Inbound','42.320685','-71.052391')," +
+            "('Ashmont','70084','Andrew - Inbound','42.330154','-71.057655')," +
+            "('Ashmont','70082','Broadway - Inbound','42.342622','-71.056967')," +
+            "('Ashmont','70080','South Station - Inbound','42.352271','-71.055242')," +
+            "('Ashmont','70078','Downtown Crossing - to Alewife','42.355518','-71.060225')," +
+            "('Ashmont','70076','Park Street - to Alewife','42.35639457','-71.0624242')," +
+            "('Ashmont','70074','Charles/MGH - Outbound','42.361166','-71.070628')," +
+            "('Ashmont','70072','Kendall/MIT - Outbound','42.36249079','-71.08617653')," +
+            "('Ashmont','70070','Central - Outbound','42.365486','-71.103802')," +
+            "('Ashmont','70068','Harvard - Outbound','42.373362','-71.118956')," +
+            "('Ashmont','70066','Porter - Outbound','42.3884','-71.119149')," +
+            "('Ashmont','70064','Davis - Outbound','42.39674','-71.121815')," +
+            "('Ashmont','70061','Alewife','42.395428','-71.142483');";
+
+    static final String ASHMONT_OUTBOUND = "insert into stops_outbound ('route_id','stop_id','stop_name','stop_lat','stop_lon') values " +
+            "('Ashmont','70061','Alewife','42.395428','-71.142483')," +
+            "('Ashmont','70063','Davis - Inbound','42.39674','-71.121815')," +
+            "('Ashmont','70065','Porter - Inbound','42.3884','-71.119149')," +
+            "('Ashmont','70067','Harvard - Inbound','42.373362','-71.118956')," +
+            "('Ashmont','70069','Central - Inbound','42.365486','-71.103802')," +
+            "('Ashmont','70071','Kendall/MIT - Inbound','42.36249079','-71.08617653')," +
+            "('Ashmont','70073','Charles/MGH - Inbound','42.361166','-71.070628')," +
+            "('Ashmont','70075','Park Street - to Ashmont/Braintree','42.35639457','-71.0624242')," +
+            "('Ashmont','70077','Downtown Crossing - to Ashmont/Braintree','42.355518','-71.060225')," +
+            "('Ashmont','70079','South Station - Outbound','42.352271','-71.055242')," +
+            "('Ashmont','70081','Broadway - Outbound','42.342622','-71.056967')," +
+            "('Ashmont','70083','Andrew - Outbound','42.330154','-71.057655')," +
+            "('Ashmont','70085','JFK/UMASS Ashmont - Outbound','42.320685','-71.052391')," +
+            "('Ashmont','70087','Savin Hill - Outbound','42.31129','-71.053331')," +
+            "('Ashmont','70089','Fields Corner - Outbound','42.300093','-71.061667')," +
+            "('Ashmont','70091','Shawmut - Outbound','42.29312583','-71.06573796')," +
+            "('Ashmont','70093','Ashmont - Outbound','42.284652','-71.064489');";
+
+    static final String ROUTE_TABLE_UPDATE = "insert into route_table " +
+            "('mode','route_id','route_name') values " +
+            "('Subway','Ashmont','Ashmont')," +
+            "('Subway','Braintree','Braintree');";
 }//end class
 

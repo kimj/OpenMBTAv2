@@ -36,7 +36,7 @@ import java.util.HashMap;
  * Based on those results, the service will make a call for each period of the schedule day
  * and spawn threads to parse these calls in parallel
  */
-public class ShowScheduleService extends IntentService {
+public class ShowScheduleServiceThreaded extends IntentService {
 
     public static final String TAG = "ShowScheduleService";
     public static volatile Schedule sWeekdays, sSaturday, sSunday;
@@ -58,7 +58,7 @@ public class ShowScheduleService extends IntentService {
     public static final String TIME_PARAM = "&max_time=";
     public static final String GETSCHEDULE = BASE + SCHEDVERB + SUFFIX + ALLHR_PARAM + ROUTEPARAM;
     //required, empty constructor, builds intents
-    public ShowScheduleService() {
+    public ShowScheduleServiceThreaded() {
         super(TAG);
     }
 
@@ -293,14 +293,14 @@ public class ShowScheduleService extends IntentService {
         sch.sLoading[timing] = true;
         //add the parsed times into the schedule
         if(sch.TripsInbound != null) {
-            combineTimes(sch, inboundMap);
+            combineTimes(sch, inboundMap, timing);
             Log.d(TAG, "new size " + inboundMap.size());
          }
         sch.TripsInbound = new Schedule.StopTimes[inboundMap.size()];
         inboundMap.values().toArray(sch.TripsInbound);
 
         if(sch.TripsOutbound != null) {
-            combineTimes(sch, outboundMap);
+            combineTimes(sch, outboundMap, timing);
             Log.d(TAG, "new size " + outboundMap.size());
         }
         sch.TripsOutbound = new Schedule.StopTimes[outboundMap.size()];
@@ -316,7 +316,7 @@ public class ShowScheduleService extends IntentService {
         return true;
     }
 
-    void combineTimes(Schedule sch, HashMap<String, Schedule.StopTimes> map) {
+    void combineTimes(Schedule sch, HashMap<String, Schedule.StopTimes> map, int timing) {
         Schedule.StopTimes tmpTimes, newData;
         Log.d(TAG, "combine times, map size " + map.size());
         for(int dex = 0; dex < sch.TripsInbound.length; dex++) {
@@ -364,35 +364,35 @@ public class ShowScheduleService extends IntentService {
         }
     }
 
-    void startParse(int hour, int minute, int duration, int timing) {
+    void startThread(int hour, int minute, int duration, int timing) {
         c.set(Calendar.HOUR_OF_DAY,hour);
         c.set(Calendar.MINUTE, minute);
         //time set to collect 24hr schedule for tomorrow
         final String url;
         if(mRedLineSpecial) {
-            url = ShowScheduleService.GETSCHEDULE + "Red" +
-                    ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                    ShowScheduleService.TIME_PARAM + duration;
+            url = ShowScheduleServiceThreaded.GETSCHEDULE + "Red" +
+                    ShowScheduleServiceThreaded.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    ShowScheduleServiceThreaded.TIME_PARAM + duration;
         } else {
-            url = ShowScheduleService.GETSCHEDULE + mRoute.id +
-                    ShowScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                    ShowScheduleService.TIME_PARAM + duration;
+            url = ShowScheduleServiceThreaded.GETSCHEDULE + mRoute.id +
+                    ShowScheduleServiceThreaded.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    ShowScheduleServiceThreaded.TIME_PARAM + duration;
         }
-        parseSchedulePeriod(url, timing, scheduleType);
+        new ScheduleCall(url, timing, scheduleType).start();
     }
 
     void getScheduleTimes() {
         setDay(scheduleType);
         c.set(Calendar.SECOND, 0);
-        startParse(0, 0, 389, Schedule.MORNING);
+        startThread(0, 0, 389, Schedule.MORNING);
         //390 minutes, 6.5 hours, takes us through morning
-        startParse(6, 30, 149, Schedule.AMPEAK);
+        startThread(6, 30, 149, Schedule.AMPEAK);
         //2.5 hours through morning peak
-        startParse(9, 0, 389, Schedule.MIDDAY);
+        startThread(9, 0, 389, Schedule.MIDDAY);
         //6.5 hours, takes us through midday
-        startParse(15, 30, 179, Schedule.PMPEAK);
+        startThread(15, 30, 179, Schedule.PMPEAK);
         //evening peak, rush hour done
-        startParse(18, 30, 330, Schedule.NIGHT);
+        startThread(18, 30, 330, Schedule.NIGHT);
         //finish off the scheduleType
         Log.d(TAG, "get schedule times called all threads");
     }
@@ -435,44 +435,14 @@ public class ShowScheduleService extends IntentService {
             if(inCounter == mRoute.mInboundStops.size() &&
                     outCounter == mRoute.mOutboundStops.size()) {
                 Log.i(TAG, "schedule complete from DB");
-                ShowScheduleService.this.sendBroadcast(false);
+                ShowScheduleServiceThreaded.this.sendBroadcast(false);
                 inCounter = 0;
                 outCounter = 0;
             }
         }
     } //end ScheduleQuery
 
-    boolean parseSchedulePeriod(String apiCallString, int timing, int day) {
-        try {
-            switch(day) {
-                case Calendar.TUESDAY:
-                    if(parseSchedulePeriod(sWeekdays, apiCallString, timing)) {
-                        Log.i(TAG, "schedule period completed: " + timing);
-                        return true;
-                    }
-                    break;
-                case Calendar.SATURDAY:
-                    if(parseSchedulePeriod(sSaturday, apiCallString, timing)) {
-                        Log.i(TAG, "schedule period completed: " + timing);
-                        return true;
-                    }
-                    break;
-                case Calendar.SUNDAY:
-                    if(parseSchedulePeriod(sSunday, apiCallString, timing)) {
-                        Log.i(TAG, "schedule period completed: " + timing);
-                        return true;
-                    }
-                    break;
-            }
-
-        } catch (IOException e) {
-            e.printStackTrace();
-            //end service here?
-        }
-        return false;
-    }
-
-    /*private class ScheduleCall extends Thread {
+    private class ScheduleCall extends Thread {
         final String mUrl;
         final int mPeriod;
         final int mScheduleType;
@@ -509,7 +479,7 @@ public class ShowScheduleService extends IntentService {
                 e.printStackTrace();
             }
         }
-    } //end class*/
+    } //end class
 
     volatile static DateFormat timeFormat = new SimpleDateFormat("h:mm a");
     static String getTime(Calendar cal, String stamp) {

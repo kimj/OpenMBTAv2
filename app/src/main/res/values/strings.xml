@@ -16,7 +16,7 @@
     <string name="scheduled">Schedule:</string>
     <string name="actual">Actual:</string>
     <string name="stopMap">Map Stop</string>
-    <string name="stopDetail">View Schedule</string>
+    <string name="stopDetail">Stop Details</string>
     <string name="schedSvcErr">Sorry! There is an error getting times from the MBTA server</string>
     <string name="chkNet">Check the network and try again</string>
     <string name="weekdays">Weekday Schedule</string>

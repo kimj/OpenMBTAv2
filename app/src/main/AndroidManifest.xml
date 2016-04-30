@@ -34,9 +34,15 @@
             android:name="com.mentalmachines.ttime.ShowScheduleActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar"/>
+        <activity
+            android:parentActivityName=".MainActivity"
+            android:name="com.mentalmachines.ttime.services.LoganScheduleActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".services.NavDrawerTask"/>
-        <service android:name=".services.CurrentScheduleService"/>
+        <service android:name=".services.GetTimesForRoute"/>
+        <service android:name=".services.LoganScheduleSvc" />
         <service android:name=".services.StopService"/>
         <service android:name=".services.ShowScheduleService" />
         <service android:name=".services.SaveScheduleService" />

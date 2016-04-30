@@ -7,7 +7,6 @@ import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
-import android.text.format.Time;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -23,6 +22,7 @@ import com.mentalmachines.ttime.objects.StopList;
 import java.io.IOException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
 
@@ -39,13 +39,13 @@ public class StopService extends IntentService {
     public static final String SCHEDHOUR = "&max_time=120";
     public static final String STOPVERB = "schedulebystop";
     public static final String STPREDVERB = "predictionsbystop";
-    public static final String GETPREDICTIMES = CurrentScheduleService.BASE + STPREDVERB + CurrentScheduleService.SUFFIX + STOPPARAM;
-    public static final String GETSTOPTIMES = CurrentScheduleService.BASE + STOPVERB + CurrentScheduleService.SUFFIX + SCHEDHOUR + STOPPARAM;
+    public static final String GETPREDICTIMES = GetTimesForRoute.BASE + STPREDVERB + GetTimesForRoute.SUFFIX + STOPPARAM;
+    public static final String GETSTOPTIMES = GetTimesForRoute.BASE + STOPVERB + GetTimesForRoute.SUFFIX + SCHEDHOUR + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
     StopData mainStop;
     ArrayList<StopData> returnList;
     final StringBuilder strBuild = new StringBuilder(0);
-    final Time t = new Time();
+    final Calendar t = Calendar.getInstance();
     //required, empty constructor, builds intents
     public StopService() {
         super(TAG);
@@ -230,7 +230,7 @@ public class StopService extends IntentService {
                                                 if(stop == null || tmp.isEmpty() || tmp == null) {
                                                     Log.w(TAG, "skipping prediction time field");
                                                 } else {
-                                                    CurrentScheduleService.getTime(tmp, t, strBuild);
+                                                    GetTimesForRoute.getTime(tmp, t, strBuild);
                                                 }
                                                 //This time will go into the stop field below with the pre away key to put min/sec with the time
                                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
@@ -240,7 +240,7 @@ public class StopService extends IntentService {
                                                     Log.w(TAG, "skipping seconds prediction field");
                                                     //this is not possible... pred time always has the away key
                                                 } else {
-                                                    CurrentScheduleService.addAwayTimes(tmp, strBuild);
+                                                    GetTimesForRoute.addAwayTimes(tmp, strBuild);
                                                     Log.d(TAG, "stringbuilder predicTimes" + strBuild.toString());
                                                 }
 
@@ -371,7 +371,7 @@ public class StopService extends IntentService {
                                             token = parser.nextToken();
                                             if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
-                                                CurrentScheduleService.getTime(parser.getValueAsString(), t, strBuild);
+                                                GetTimesForRoute.getTime(parser.getValueAsString(), t, strBuild);
                                                 //put the scheduled time into the string builder
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip

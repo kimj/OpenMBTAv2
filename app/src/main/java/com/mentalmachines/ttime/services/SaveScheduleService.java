@@ -15,6 +15,7 @@ import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.objects.Utils;
 
 import java.io.IOException;
 import java.net.URL;
@@ -33,7 +34,7 @@ public class SaveScheduleService extends IntentService {
 
     public static final String TAG = "SaveScheduleService";
     final Calendar c = Calendar.getInstance();
-
+    boolean mRedLineSpecial = false;
     Route mRoute;
     //http://realtime.mbta.com/developer/api/v2/predictionsbystop?api_key=3G91jIONLkuTMXbnbF7Leg&format=json&stop=70077&include_service_alerts=false
     HashMap<String, String> nameMap = new HashMap<>();
@@ -75,7 +76,10 @@ public class SaveScheduleService extends IntentService {
         }
         mTablename = DBHelper.getRouteTableName(mRoute.id);
         //calls from the schedule activity use the same route
-        Log.d(TAG, "table name " + DBHelper.getRouteTableName(mRoute.id));
+        Log.d(TAG, "table name " + mTablename);
+        if(mRoute.id.contains(DBHelper.ASHMONT) || mRoute.id.contains(DBHelper.BRAINTREE)) {
+            mRedLineSpecial = true;
+        }
         try {
             getScheduleTimes(Calendar.TUESDAY);
             getScheduleTimes(Calendar.SATURDAY);
@@ -93,8 +97,6 @@ public class SaveScheduleService extends IntentService {
      * @param apiCallString the api call for a specific period
      * @return boolean to indicate whether or not to broadcast
      * @throws IOException
-     *
-     * TODO parse directly into the db
      */
     public void parseSchedulePeriod(String apiCallString, int timing, int calendarDay) throws IOException {
         final JsonParser parser = new JsonFactory().createParser(new URL(apiCallString));
@@ -102,7 +104,7 @@ public class SaveScheduleService extends IntentService {
         final Calendar c = Calendar.getInstance();
         Log.d(TAG, "schedule call! " + apiCallString);
         final ContentValues cv = new ContentValues();
-
+        boolean skiptrip = false;
         int hrs, mins, dirID = 0;
         String tmp, stopID = "";
         Long stamp;
@@ -146,7 +148,16 @@ public class SaveScheduleService extends IntentService {
                         while (!JsonToken.END_ARRAY.equals(token)) {
                             //running through the trips, read the trip array into times
                             token = parser.nextToken();
-                            if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
+                            if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP_NM.equals(parser.getCurrentName())) {
+                                token = parser.nextToken();
+                                if(mRedLineSpecial && !parser.getValueAsString().contains(mRoute.id)) {
+                                    //save this trip
+                                    skiptrip = true;
+                                } else {
+                                    skiptrip = false;
+                                }
+                                //Log.d(TAG, "skiptrip? " + skiptrip);
+                            } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.STOP.equals(parser.getCurrentName())) {
                                 //put the times into the Schedule's stop times object...
                                 token = parser.nextToken();
                                 if (!JsonToken.START_ARRAY.equals(token)) {
@@ -162,45 +173,46 @@ public class SaveScheduleService extends IntentService {
 
                                     } else if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
-                                        tmp = parser.getValueAsString();
-                                        stamp = 1000 * Long.valueOf(tmp);
-                                        getTime(c, tmp);
-                                        //save the epoch time, sort before display
-                                        hrs = c.get(Calendar.HOUR_OF_DAY);
-                                        mins = c.get(Calendar.MINUTE);
+                                        if(!skiptrip) {
+                                            tmp = parser.getValueAsString();
+                                            stamp = 1000 * Long.valueOf(tmp);
+                                            Utils.getTime(c, tmp);
+                                            //save the epoch time, sort before display
+                                            hrs = c.get(Calendar.HOUR_OF_DAY);
+                                            mins = c.get(Calendar.MINUTE);
 
-                                        cv.put(DBHelper.KEY_STOPID, stopID);
-                                        cv.put(DBHelper.KEY_STOPNM, nameMap.get(stopID));
-                                        cv.put(DBHelper.KEY_DIR_ID, dirID);
-                                        cv.put(DBHelper.KEY_DAY, calendarDay);
-                                        cv.put(DBHelper.KEY_DTIME, stamp);
-                                        if(timing == 0 && (hrs < 6 ||
-                                                (hrs == 6 && mins < 30))) {
-                                            cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MORNING);
-                                        } else if((hrs > 6 && hrs < 9) ||
-                                                (hrs == 9 && mins == 0) ||
-                                                (hrs == 6 && mins > 30)) {
-                                            cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.AMPEAK);
-                                        } else if((hrs > 9 && hrs < 15) ||
-                                                (hrs == 9 && mins > 0) ||
-                                                (hrs == 15 && mins < 30)) {
-                                            cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MIDDAY);
-                                        } else if((hrs > 14 && hrs < 18) ||
-                                                (hrs == 18 && mins < 30) ||
-                                                (hrs == 15 && mins > 30)) {
-                                            cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.PMPEAK);
-                                        } else if(hrs > 18 ||
-                                                (hrs == 18 && mins > 30)) {
-                                            cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.NIGHT);
+                                            cv.put(DBHelper.KEY_STOPID, stopID);
+                                            cv.put(DBHelper.KEY_STOPNM, nameMap.get(stopID));
+                                            cv.put(DBHelper.KEY_DIR_ID, dirID);
+                                            cv.put(DBHelper.KEY_DAY, calendarDay);
+                                            cv.put(DBHelper.KEY_DTIME, stamp);
+                                            if(timing == 0 && (hrs < 6 ||
+                                                    (hrs == 6 && mins < 30))) {
+                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MORNING);
+                                            } else if((hrs > 6 && hrs < 9) ||
+                                                    (hrs == 9 && mins == 0) ||
+                                                    (hrs == 6 && mins > 30)) {
+                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.AMPEAK);
+                                            } else if((hrs > 9 && hrs < 15) ||
+                                                    (hrs == 9 && mins > 0) ||
+                                                    (hrs == 15 && mins < 30)) {
+                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MIDDAY);
+                                            } else if((hrs > 14 && hrs < 18) ||
+                                                    (hrs == 18 && mins < 30) ||
+                                                    (hrs == 15 && mins > 30)) {
+                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.PMPEAK);
+                                            } else if(hrs > 18 ||
+                                                    (hrs == 18 && mins > 30)) {
+                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.NIGHT);
+                                            }
+                                            //using replace in case of possible duplicates, check for existing
+                                            //Log.d(TAG, "content values: " + cv.toString());
+                                            if(cv.containsKey(DBHelper.KEY_TRIP_PERIOD)) {
+                                                db.replace(mTablename, "_id", cv);
+                                            }
+                                            strBuild.setLength(0);
+                                            cv.clear();
                                         }
-                                        //using replace in case of possible duplicates, check for existing
-                                        //Log.d(TAG, "content values: " + cv.toString());
-                                        if(cv.containsKey(DBHelper.KEY_TRIP_PERIOD)) {
-                                            db.replace(mTablename, "_id", cv);
-                                        }
-                                        strBuild.setLength(0);
-                                        cv.clear();
-
                                     }
                                 }//end stop array, all stops in the trip are set
                                 token = JsonToken.NOT_AVAILABLE;
@@ -238,9 +250,10 @@ public class SaveScheduleService extends IntentService {
 
         int tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
         //time set to collect 24hr schedule for tomorrow
-        String url = ShowScheduleService.GETSCHEDULE + mRoute.id +
-                ShowScheduleService.DATETIMEPARAM + tstamp +
-                ShowScheduleService.TIME_PARAM + "389";
+        String url = ShowScheduleService.GETSCHEDULE
+                + (mRedLineSpecial? "Red" : mRoute.id)
+                + ShowScheduleService.DATETIMEPARAM + tstamp
+                + ShowScheduleService.TIME_PARAM + "389";
         //390 minutes, 6.5 hours, takes us through morning
 
         parseSchedulePeriod(url, Schedule.MORNING, calendarDay);
@@ -251,7 +264,7 @@ public class SaveScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = ShowScheduleService.GETSCHEDULE + mRoute.id +
+        url = ShowScheduleService.GETSCHEDULE + (mRedLineSpecial? "Red" : mRoute.id) +
                 ShowScheduleService.DATETIMEPARAM + tstamp +
                 ShowScheduleService.TIME_PARAM + "149";
         parseSchedulePeriod(url, Schedule.AMPEAK, calendarDay);
@@ -262,7 +275,7 @@ public class SaveScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 0);
         c.set(Calendar.AM_PM, Calendar.AM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = ShowScheduleService.GETSCHEDULE + mRoute.id +
+        url = ShowScheduleService.GETSCHEDULE + (mRedLineSpecial? "Red" : mRoute.id) +
                 ShowScheduleService.DATETIMEPARAM + tstamp +
                 ShowScheduleService.TIME_PARAM + "389";
         //6.5 hours, takes us through midday
@@ -273,7 +286,7 @@ public class SaveScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = ShowScheduleService.GETSCHEDULE + mRoute.id +
+        url = ShowScheduleService.GETSCHEDULE + (mRedLineSpecial? "Red" : mRoute.id) +
                 ShowScheduleService.DATETIMEPARAM + tstamp +
                 ShowScheduleService.TIME_PARAM + "179";
         parseSchedulePeriod(url, Schedule.PMPEAK, calendarDay);
@@ -284,7 +297,7 @@ public class SaveScheduleService extends IntentService {
         c.set(Calendar.MINUTE, 30);
         c.set(Calendar.AM_PM, Calendar.PM);
         tstamp = Long.valueOf(c.getTimeInMillis()/1000).intValue();
-        url = ShowScheduleService.GETSCHEDULE + mRoute.id +
+        url = ShowScheduleService.GETSCHEDULE + (mRedLineSpecial? "Red" : mRoute.id) +
                 ShowScheduleService.DATETIMEPARAM + tstamp +
                 ShowScheduleService.TIME_PARAM + "330";
         parseSchedulePeriod(url, Schedule.NIGHT, calendarDay);
@@ -292,11 +305,6 @@ public class SaveScheduleService extends IntentService {
         Log.d(TAG, "calndr check: " + c.get(Calendar.HOUR) + ":" + c.get(Calendar.MINUTE));
     }
 
-    public static final DateFormat timeFormat = new SimpleDateFormat("h:mm a");
-    String getTime(Calendar cal, String stamp) {
-        cal.setTimeInMillis(1000 * Long.valueOf(stamp));
-        return timeFormat.format(cal.getTime());
-    }
 
 }//end class
 
