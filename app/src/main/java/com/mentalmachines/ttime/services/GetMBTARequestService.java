@@ -68,6 +68,7 @@ public class GetMBTARequestService extends IntentService {
             if(b == null) {
                 Log.d(TAG, "starting alerts svc");
                 mDB = TTimeApp.sHelper.getWritableDatabase();
+                Log.i("TTime", ALERTS);
                 parseAlertsCall(new JsonFactory().createParser(new URL(ALERTS)));
             } else {
                 Log.e(TAG, "not starting svc for route " + b.getString(TAG));
