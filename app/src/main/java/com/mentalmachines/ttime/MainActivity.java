@@ -39,6 +39,7 @@ import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.services.FullScheduleService;
 import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.ScheduleService;
 import com.mentalmachines.ttime.services.StopService;
@@ -129,6 +130,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             case R.id.menu_map:
                 //map menu from the action bar will display the route
                 break;*/
+            case R.id.menu_schedule:
+                final Intent svc = new Intent(this, FullScheduleService.class);
+                svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute.id);
+                startService(svc);
+                Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, ShowScheduleActivity.class));
+                break;
             case R.id.menu_favorites:
                 final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
                 if(DBHelper.setFavorite(r.name, r.id)) {

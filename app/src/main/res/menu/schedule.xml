@@ -1,0 +1,25 @@
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:context="com.mentalmachines.ttime.ShowScheduleActivity" >
+    <!--
+    <item
+        android:id="@+id/menu_map"
+        android:title="@string/action_alerts"
+        android:icon="@android:drawable/ic_menu_mapmode"
+        app:showAsAction="always"/>
+     -->
+    <item
+        android:id="@+id/menu_weekdays"
+        android:title="@string/weekdays"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/menu_saturdays"
+        android:title="@string/saturdays"
+        app:showAsAction="never"/>
+    <item
+        android:id="@+id/menu_sunday"
+        android:title="@string/sunday"
+        app:showAsAction="never"/>
+
+</menu>
