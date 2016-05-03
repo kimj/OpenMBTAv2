@@ -45,7 +45,7 @@
         <service android:name=".services.LoganScheduleSvc" />
         <service android:name=".services.StopService"/>
         <service android:name=".services.ShowScheduleService" />
-        <service android:name=".services.SaveScheduleService" />
+        <service android:name=".services.LoganSaveScheduleToDBSvc" />
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>

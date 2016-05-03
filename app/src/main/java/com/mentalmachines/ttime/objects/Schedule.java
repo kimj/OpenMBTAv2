@@ -71,7 +71,7 @@ public class Schedule{
     public static final int MIDDAY = 2;
     public static final int PMPEAK = 3;
     public static final int NIGHT = 4;
-    final String[] selection = {DBHelper.KEY_TRIP_PERIOD, DBHelper.KEY_DTIME};
+    final String[] selection = { DBHelper.KEY_DTIME};
     final String whereClause = DBHelper.KEY_STOPID + " LIKE '";
     final String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";
 
@@ -79,7 +79,7 @@ public class Schedule{
         final Cursor c = db.query(DBHelper.getRouteTableName(route.id),
                 selection,
                 whereClause + stopID + moreWhere + day, null, //parameters embedded into where clause
-                DBHelper.KEY_TRIP_PERIOD, null, "_id ASC");
+                null, null, "_id ASC");
                 //String groupBy, String having, String orderBy)
         if(!c.moveToFirst()) {
             Log.w(TAG, "issue reading schedule table for stop: " + stopID);
@@ -158,7 +158,6 @@ public class Schedule{
             cv.put(DBHelper.KEY_STOPNM, stopName);
             cv.put(DBHelper.KEY_DIR_ID, direction);
             cv.put(DBHelper.KEY_DAY, day);
-            cv.put(DBHelper.KEY_TRIP_PERIOD, 0);
             cv.put(DBHelper.KEY_DTIME, schedtime);
             Log.d(TAG, "creating table: " + db.insert(table, "_id", cv));
             cv.clear();
@@ -169,7 +168,6 @@ public class Schedule{
             cv.put(DBHelper.KEY_STOPNM, stopName);
             cv.put(DBHelper.KEY_DIR_ID, direction);
             cv.put(DBHelper.KEY_DAY, day);
-            cv.put(DBHelper.KEY_TRIP_PERIOD, 1);
             cv.put(DBHelper.KEY_DTIME, schedtime);
             db.insert(table, "_id", cv);
             cv.clear();
@@ -179,7 +177,6 @@ public class Schedule{
             cv.put(DBHelper.KEY_STOPNM, stopName);
             cv.put(DBHelper.KEY_DIR_ID, direction);
             cv.put(DBHelper.KEY_DAY, day);
-            cv.put(DBHelper.KEY_TRIP_PERIOD, 2);
             cv.put(DBHelper.KEY_DTIME, schedtime);
             db.insert(table, "_id", cv);
             cv.clear();
@@ -190,7 +187,6 @@ public class Schedule{
             cv.put(DBHelper.KEY_STOPNM, stopName);
             cv.put(DBHelper.KEY_DIR_ID, direction);
             cv.put(DBHelper.KEY_DAY, day);
-            cv.put(DBHelper.KEY_TRIP_PERIOD, 3);
             cv.put(DBHelper.KEY_DTIME, schedtime);
             db.insert(table, "_id", cv);
             cv.clear();
@@ -201,7 +197,6 @@ public class Schedule{
             cv.put(DBHelper.KEY_STOPNM, stopName);
             cv.put(DBHelper.KEY_DIR_ID, direction);
             cv.put(DBHelper.KEY_DAY, day);
-            cv.put(DBHelper.KEY_TRIP_PERIOD, 4);
             cv.put(DBHelper.KEY_DTIME, schedtime);
             db.insert(table, "_id", cv);
             cv.clear();

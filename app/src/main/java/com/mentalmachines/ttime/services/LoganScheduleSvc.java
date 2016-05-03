@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -61,6 +62,13 @@ public class LoganScheduleSvc extends IntentService {
         super(TAG);
     }
 
+    public static Intent newInstance(Context ctx, Route r, int scheduleType) {
+        final Intent tnt = new Intent(ctx, LoganScheduleSvc.class);
+        tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
+        tnt.putExtra(TAG, scheduleType);
+        return tnt;
+    }
+
     /**
      * The extra on the intent tells the service what to do, which call to make
      * @param intent
@@ -71,6 +79,7 @@ public class LoganScheduleSvc extends IntentService {
         //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
         Log.d(TAG, "handle intent");
+
         if(b == null || !b.containsKey(TAG)) {
             //error, service requires 2 extras
             sendBroadcast(true);
@@ -119,46 +128,59 @@ public class LoganScheduleSvc extends IntentService {
         } else {
             Log.w(TAG, "error in service, route is not set " + mRoute.name);
         }
-        ScheduleLogan.clearMaps();
-        Log.i(TAG, "maps cleared" + mRoute.name);
+
         LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
     }
 
-    public static void setDay(Calendar c, int dayOfWeek) {
+    public static Calendar setDay(Calendar c, int dayOfWeek) {
         c = Calendar.getInstance();
-        final int today = c.get(Calendar.DAY_OF_YEAR);
+        final int today = c.get(Calendar.DAY_OF_WEEK);
         c.set(Calendar.DAY_OF_WEEK, dayOfWeek);
         // The past day of week [ May include today ]
-        if(c.get(Calendar.DAY_OF_YEAR) < today) {
+        if(dayOfWeek < today) {
             c.add(Calendar.DATE, 7);
+            Log.v(TAG, "adding days");
         }
+        return c;
     }
 
     void startParse(int hour, int minute, int duration) {
-        c.set(Calendar.HOUR_OF_DAY,hour);
+        c = setDay(c, scheduleType);
+        c.set(Calendar.HOUR_OF_DAY, hour);
         c.set(Calendar.MINUTE, minute);
         //time set to collect 24hr schedule for tomorrow
+        final String stamp;
         final String url;
+        if(hour == 0) {
+            //2 hr = 7200000 ms
+            stamp = Long.valueOf((c.getTimeInMillis() - 720000)/1000).toString();
+            //don't want to miss any trips that started the previous day
+        } else {
+            stamp = Long.valueOf(c.getTimeInMillis()/1000).toString();
+        }
+        Log.d(TAG, "stamp: " + stamp);
+        final Calendar cal = Calendar.getInstance();
+        cal.setTimeInMillis(Long.valueOf(stamp)*1000);
+        Log.d(TAG, "day with stamp: " + cal.get(Calendar.DAY_OF_WEEK)); //Utils.timeFormat.format(cal.getTime()));
         if(mRedLineSpecial) {
             url = LoganScheduleSvc.GETSCHEDULE + "Red" +
-                    LoganScheduleSvc.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    LoganScheduleSvc.DATETIMEPARAM + stamp +
                     LoganScheduleSvc.TIME_PARAM + duration;
         } else {
             url = LoganScheduleSvc.GETSCHEDULE + mRoute.id +
-                    LoganScheduleSvc.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    LoganScheduleSvc.DATETIMEPARAM + stamp +
                     LoganScheduleSvc.TIME_PARAM + duration;
         }
+
         parseSchedulePeriod(url);
     }
 
     void getScheduleTimes() {
-        setDay(c, scheduleType);
+        c = setDay(c, scheduleType);
         c.set(Calendar.SECOND, 0);
-        ScheduleLogan.makeMaps(mRoute);
-        c.set(Calendar.DAY_OF_WEEK, scheduleType-1);
-        startParse(22, 0, 509);
+
+        startParse(0, 0, 509);
         //startParse(0, 0, 389);
-        c.set(Calendar.DAY_OF_WEEK, scheduleType);
         //390 minutes, 6.5 hours, takes us through morning
         startParse(6, 30, 149);
         //2.5 hours through morning peak
@@ -184,7 +206,7 @@ public class LoganScheduleSvc extends IntentService {
             }
             Log.i(TAG, "route check? " + mRoute.id);
             final InputStream stream = connection.getInputStream();
-            ScheduleLogan.readJsonStream(stream, scheduleType);
+            ScheduleLogan.readJsonStream(stream, scheduleType, mRoute);
             stream.close();
             connection.disconnect();
         } catch (IOException e) {

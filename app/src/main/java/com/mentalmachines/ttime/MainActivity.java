@@ -41,6 +41,7 @@ import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
+import com.mentalmachines.ttime.services.LoganSaveScheduleToDBSvc;
 import com.mentalmachines.ttime.services.LoganScheduleActivity;
 import com.mentalmachines.ttime.services.LoganScheduleSvc;
 import com.mentalmachines.ttime.services.NavDrawerTask;
@@ -165,9 +166,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                     noFaves = false;
-                    final Intent tnt = new Intent(this, SaveScheduleService.class);
-                    tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
-                    startService(tnt);
+                    startService(LoganSaveScheduleToDBSvc.newInstance(this, r));
                     Log.v(TAG, "saving favorite route schedule: " + r.name);
                 } else {
                     mFavoritesAction.setChecked(false);

@@ -123,27 +123,49 @@ public class LoganScheduleActivity extends AppCompatActivity {
     void showSchedule(int scheduleDay, ActionBar ab) {
         switch(scheduleDay) {
             case Calendar.TUESDAY:
-                mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+
                 ab.setTitle(Route.readableName(this, mRoute.name));
                 ab.setSubtitle(getString(R.string.weekdays));
-                Log.d(TAG, "set new weekday adapter");
+                if(!weekdayDone) {
+                    mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+                    Intent svc = new Intent(this, LoganScheduleSvc.class);
+                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.TUESDAY);
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
+                    startService(svc);
+                    Log.d(TAG, "get weekday");
+                } else {
+                    Log.d(TAG, "set new weekday adapter");
+                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                }
                 break;
             case Calendar.SUNDAY:
-                mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
                 ab.setTitle(Route.readableName(this, mRoute.name));
                 ab.setSubtitle(getString(R.string.sunday));
-                Log.d(TAG, "set new sunday adapter");
+
+                if(!sundayDone) {
+                    mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+                    Intent svc = new Intent(this, LoganScheduleSvc.class);
+                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SUNDAY);
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
+                    startService(svc);
+                } else {
+                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                    Log.d(TAG, "set new sunday adapter");
+                }
                 break;
             case Calendar.SATURDAY:
-                /*if(ScheduleLogan.mSaturdaysIn == null && ScheduleLogan.mSaturdaysOut == null) {
+                if(!saturdayDone) {
                     mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
-                    Log.w(TAG, "schedules still loading");
-                    return;
-                }*/
-                mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                    Intent svc = new Intent(this, LoganScheduleSvc.class);
+                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SATURDAY);
+                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
+                    startService(svc);
+                } else {
+                    Log.d(TAG, "set new saturday adapter");
+                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                }
                 ab.setTitle(Route.readableName(this, mRoute.name));
                 ab.setSubtitle(getString(R.string.saturdays));
-                Log.d(TAG, "set new saturday adapter");
                 break;
         }
         //Is this a one way route? hide the FAB
@@ -201,47 +223,22 @@ public class LoganScheduleActivity extends AppCompatActivity {
                 Log.e(TAG, "fatal error fetching schedule, no route");
                 return;
             }
-            Log.d(TAG, "route sent from schedule svc " + mRoute.name);
-            if(mList.getAdapter() == null || mList.getAdapter().getItemCount() == 0) {
-                //service returns the schedule day
-                final int scheduleDay = b.getInt(TAG);
-                showSchedule(scheduleDay, getSupportActionBar());
-                switch(scheduleDay) {
-                    case Calendar.TUESDAY:
-                        weekdayDone = true;
-                        break;
-                    case Calendar.SATURDAY:
-                        saturdayDone = true;
-                        break;
-                    case Calendar.SUNDAY:
-                        sundayDone = true;
-                        break;
-                }
-                if(!weekdayDone) {
-                    Intent svc = new Intent(context, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.TUESDAY);
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
-                    startService(svc);
-                    return;
-                }
-                if(!saturdayDone) {
-                    Intent svc = new Intent(context, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SATURDAY);
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
-                    startService(svc);
-                    return;
-                }
-                if(!sundayDone) {
-                    Intent svc = new Intent(context, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SUNDAY);
-                    svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
-                    startService(svc);
-                    return;
-                }
-            } else {
-                Log.d(TAG, "adapter already set");
-            }
 
+            final int scheduleDay = b.getInt(TAG);
+            Log.d(TAG, "day " + scheduleDay + " route sent from schedule svc " + mRoute.name);
+            showSchedule(scheduleDay, getSupportActionBar());
+
+            switch(scheduleDay) {
+                case Calendar.TUESDAY:
+                    weekdayDone = true;
+                    break;
+                case Calendar.SATURDAY:
+                    saturdayDone = true;
+                    break;
+                case Calendar.SUNDAY:
+                    sundayDone = true;
+                    break;
+            }
         }
     };
 

@@ -28,7 +28,7 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
     final Route mRoute;
     final int mScheduleDay;
     private boolean mIsInbound = true;
-    final Calendar mCal = Calendar.getInstance();
+    Calendar mCal = Calendar.getInstance();
     final long midnight;
 
     //Constructor creates inbound by default, can switch to outbound
@@ -36,8 +36,15 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
         super();
         mScheduleDay = scheduleDay;
         mRoute = route;
-        LoganScheduleSvc.setDay(mCal, scheduleDay);
+        //The day never shows in the adapter - TODO, skip
+        mCal = LoganScheduleSvc.setDay(mCal, scheduleDay);
         midnight = mCal.getTimeInMillis();
+        for(StopData data: mRoute.mOutboundStops){
+            Log.d(TAG, "out count: " + data.getScheduleArray(mScheduleDay).size());
+        }
+        for(StopData data: mRoute.mInboundStops){
+            Log.d(TAG, "inbound: " + data.getScheduleArray(mScheduleDay).size());
+        }
     }
 
     @Override
@@ -102,11 +109,12 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
         timestamps = s.getScheduleArray(mScheduleDay);
         Collections.sort(timestamps);
         holder.mDir.setText(s.stopName);
+        Log.w(TAG, "loading times for stop:" + s.stopName);
         enumerateTimes(timestamps, holder);
     }
 
     void enumerateTimes(ArrayList<Long> stopTimes, ScheduleViewHolder holder) {
-        if(stopTimes == null || stopTimes.size() == 0) {
+        if(stopTimes.size() == 0) {
             holder.mMorning.setText("");
             holder.mAMPeak.setText("");
             holder.mMidday.setText("");
@@ -120,7 +128,8 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
         Collections.sort(stopTimes);
         long timestamp, limit;
         int dex, curr_hr = -1;
-        LoganScheduleSvc.setDay(mCal, mScheduleDay);
+        //TODO - is this necessary? The day never shows
+        mCal = LoganScheduleSvc.setDay(mCal, mScheduleDay);
         mCal.set(Calendar.HOUR, 6);
         mCal.set(Calendar.MINUTE, 30);
         mCal.set(Calendar.AM_PM, Calendar.AM);
@@ -292,6 +301,7 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
     }
 
     public boolean switchDirection() {
+        Log.d(TAG, "switch direction");
         mIsInbound = !mIsInbound;
         notifyDataSetChanged();
         return mIsInbound;

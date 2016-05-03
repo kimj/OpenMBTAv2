@@ -1,5 +1,7 @@
 package com.mentalmachines.ttime.objects;
 
+import android.content.ContentValues;
+import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
 import com.bluelinelabs.logansquare.LoganSquare;
@@ -20,12 +22,12 @@ import java.util.HashMap;
 public class ScheduleLogan {
     public static final String TAG = "ScheduleLogan";
 
-    final String[] selection = {DBHelper.KEY_TRIP_PERIOD, DBHelper.KEY_DTIME};
+    /*//final String[] selection = {DBHelper.KEY_TRIP_PERIOD, DBHelper.KEY_DTIME};
     final String whereClause = DBHelper.KEY_STOPID + " LIKE '";
-    final String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";
-    final static HashMap<String, StopData> inBoundTimes = new HashMap<>();
-    final static HashMap<String, StopData> outBoundTimes = new HashMap<>();
+    final String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";*/
+
     final static Calendar checkStamp = Calendar.getInstance();
+
     @JsonField
     public String route_id;
 
@@ -35,35 +37,67 @@ public class ScheduleLogan {
     public ScheduleLogan() { }
     //empty constructor for Logan Square
 
-    public static final Comparator<StopObject> ORDER = new Comparator<StopObject>() {
-        public int compare(StopObject obj1, StopObject obj2) {
-            return Long.valueOf(obj2.sch_dep_dt).compareTo(obj1.sch_dep_dt);
-        }
-    };
+    public static Route readJsonStream(InputStream response, int calendarDay, Route route) throws IOException {
+        //Log.d(TAG, "sizes: " + route.mOutboundStops.size() + ":" + route.mInboundStops.size());
 
-    public static void clearMaps() {
-        inBoundTimes.clear();
-        outBoundTimes.clear();
-    }
-
-    public static void makeMaps(Route r) {
-        for(StopData data: r.mInboundStops) {
-            inBoundTimes.put(data.stopId, data);
-        }
-        for(StopData data: r.mOutboundStops) {
-            outBoundTimes.put(data.stopId, data);
-        }
-    }
-
-    public static void readJsonStream(InputStream response, int calendarDay) throws IOException {
-        Log.d(TAG, "sizes: " + inBoundTimes.size() + ":" + outBoundTimes.size());
-        boolean directionInbound;
-        StopData stop;
         ArrayList<Long> stopTimes;
         long timestamp;
         ScheduleLogan root = LoganSquare.parse(response, ScheduleLogan.class);
-        Log.d(TAG, "route check" + root.route_id + " " +
-                "dir size: " + root.direction.size());
+
+        for (DirectionObject data : root.direction) {
+
+            if (data.direction_id == 1)  {
+                if(route.mInboundStops != null && route.mInboundStops.size() > 0) {
+                    for (StopData routeStop : route.mInboundStops) {
+                        stopTimes = routeStop.getScheduleArray(calendarDay);
+                        for (TripObject vehicle : data.trip) {
+                            //match times from server to stops in the route
+                            for (StopObject s : vehicle.stop) {
+                                timestamp = s.sch_dep_dt * 1000;
+                                checkStamp.setTimeInMillis(timestamp);
+                                if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
+                                    //exclude any overrun to the next day
+                                    if (routeStop.stopId.equals(s.stop_id)
+                                            && !stopTimes.contains(timestamp)) {
+                                        stopTimes.add(timestamp);
+                                    }
+                                }
+                            }
+                        }//end trips
+                    } //end inBound stops on route
+                } else {
+                    Log.v(TAG, "route is missing inbound stops " + route.name);
+                }
+            } else {
+                if(route.mOutboundStops != null || route.mOutboundStops.size() > 0) {
+                    for (StopData routeStop : route.mOutboundStops) {
+                        stopTimes = routeStop.getScheduleArray(calendarDay);
+                        //match above for outbound
+                        for (TripObject vehicle : data.trip) {
+                            //Log.d(TAG, "stop size: " + vehicle.stop.size());
+                            for (StopObject s : vehicle.stop) {
+                                timestamp = s.sch_dep_dt * 1000;
+                                checkStamp.setTimeInMillis(timestamp);
+                                if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
+                                    if (routeStop.stopId.equals(s.stop_id)
+                                        && !stopTimes.contains(timestamp)) {
+                                        stopTimes.add(timestamp);
+                                    }
+                                }
+                            }
+                        }//end trips
+                    } //end outBound stops on route
+                } else {
+                    Log.v(TAG, "route is missing outbound stops " + route.name);
+                }
+            }
+
+        }//end direction
+
+        return route;
+    }
+        /*
+        THis was working okay, want to dump the map collection
 
         for(DirectionObject data: root.direction) {
             directionInbound = data.direction_id == 0? false:true;
@@ -79,16 +113,59 @@ public class ScheduleLogan {
                         } else {
                             stop = outBoundTimes.get(s.stop_id);
                         }
-                        stopTimes = stop.getScheduleArray(calendarDay);
-                        if(!stopTimes.contains(timestamp)) {
-                            stopTimes.add(timestamp);
+                        if(stop == null) {
+                            Log.w(TAG, "missing stop!");
+                        } else {
+                            stopTimes = stop.getScheduleArray(calendarDay);
+                            if(!stopTimes.contains(timestamp)) {
+                                stopTimes.add(timestamp);
+                            }
                         }
+
                     }
 
                 }
             }
             Log.d(TAG, "sizes: " + inBoundTimes.size() + ":" + outBoundTimes.size());
+        }*/
+
+
+    public static void loadScheduleIntoDB(SQLiteDatabase db,
+               int calendarDay, InputStream response, Route route) throws IOException {
+        //Route and Schedule data is fully populated, now create table
+        db.execSQL(DBHelper.getRouteTableSql(route.id));
+        //index the table after the data is loaded
+        final String table = DBHelper.getRouteTableName(route.id);
+        ContentValues cv = new ContentValues();
+        boolean directionInbound;
+        StopData stop;
+        long timestamp;
+        ScheduleLogan root = LoganSquare.parse(response, ScheduleLogan.class);
+        Log.d(TAG, "route check" + root.route_id + " " +
+                "dir size: " + root.direction.size());
+        for(DirectionObject data: root.direction) {
+            directionInbound = data.direction_id == 0? false:true;
+            //Log.dTAG, "trips size: " + data.trip.size());
+            for(TripObject vehicle: data.trip)  {
+                //Log.d(TAG, "stop size: " + vehicle.stop.size());
+                for(StopObject s: vehicle.stop) {
+                    timestamp = s.sch_dep_dt * 1000;
+                    checkStamp.setTimeInMillis(timestamp);
+                    if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
+                        cv.put(DBHelper.KEY_STOPID, s.stop_id);
+                        cv.put(DBHelper.KEY_STOPNM, s.stop_name);
+                        cv.put(DBHelper.KEY_DIR_ID, data.direction_id);
+                        cv.put(DBHelper.KEY_DAY, calendarDay);
+                        cv.put(DBHelper.KEY_DTIME, timestamp);
+                        Log.d(TAG, "creating table: " +
+                                db.insertWithOnConflict(table, "_id", cv, SQLiteDatabase.CONFLICT_IGNORE));
+                        cv.clear();
+                    }
+
+                }
+            }
         }
+        Log.d(TAG, "finished table entries " + calendarDay + ":" + route.name);
     }
 
     @JsonObject
@@ -111,6 +188,8 @@ public class ScheduleLogan {
         public String stop_id;
         @JsonField
         public long sch_dep_dt;
+        @JsonField
+        public String stop_name;
     }
 
     /**

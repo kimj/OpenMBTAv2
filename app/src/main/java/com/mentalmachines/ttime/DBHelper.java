@@ -61,7 +61,6 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String KEY_TRIP = "trip";
     public static final String KEY_VEHICLE = "vehicle";
-    public static final String KEY_TRIP_PERIOD = "period";
     public static final String KEY_DAY = "schedule_day";
     public static final String KEY_DTIME = "sch_dep_dt";
 
@@ -72,7 +71,6 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_STOPID + " TEXT not null,"
             + KEY_STOPNM + " TEXT not null,"
             + KEY_DIR_ID + " NUMERIC not null,"
-            + KEY_TRIP_PERIOD + " NUMERIC not null,"
             + KEY_DAY + " NUMERIC not null,"
             + KEY_DTIME + " NUMERIC not null);";
 

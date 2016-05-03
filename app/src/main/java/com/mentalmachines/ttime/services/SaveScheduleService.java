@@ -105,7 +105,7 @@ public class SaveScheduleService extends IntentService {
         Log.d(TAG, "schedule call! " + apiCallString);
         final ContentValues cv = new ContentValues();
         boolean skiptrip = false;
-        int hrs, mins, dirID = 0;
+        int dirID = 0;
         String tmp, stopID = "";
         Long stamp;
 
@@ -178,38 +178,17 @@ public class SaveScheduleService extends IntentService {
                                             stamp = 1000 * Long.valueOf(tmp);
                                             Utils.getTime(c, tmp);
                                             //save the epoch time, sort before display
-                                            hrs = c.get(Calendar.HOUR_OF_DAY);
-                                            mins = c.get(Calendar.MINUTE);
+
 
                                             cv.put(DBHelper.KEY_STOPID, stopID);
                                             cv.put(DBHelper.KEY_STOPNM, nameMap.get(stopID));
                                             cv.put(DBHelper.KEY_DIR_ID, dirID);
                                             cv.put(DBHelper.KEY_DAY, calendarDay);
                                             cv.put(DBHelper.KEY_DTIME, stamp);
-                                            if(timing == 0 && (hrs < 6 ||
-                                                    (hrs == 6 && mins < 30))) {
-                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MORNING);
-                                            } else if((hrs > 6 && hrs < 9) ||
-                                                    (hrs == 9 && mins == 0) ||
-                                                    (hrs == 6 && mins > 30)) {
-                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.AMPEAK);
-                                            } else if((hrs > 9 && hrs < 15) ||
-                                                    (hrs == 9 && mins > 0) ||
-                                                    (hrs == 15 && mins < 30)) {
-                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.MIDDAY);
-                                            } else if((hrs > 14 && hrs < 18) ||
-                                                    (hrs == 18 && mins < 30) ||
-                                                    (hrs == 15 && mins > 30)) {
-                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.PMPEAK);
-                                            } else if(hrs > 18 ||
-                                                    (hrs == 18 && mins > 30)) {
-                                                cv.put(DBHelper.KEY_TRIP_PERIOD, Schedule.NIGHT);
-                                            }
+
                                             //using replace in case of possible duplicates, check for existing
                                             //Log.d(TAG, "content values: " + cv.toString());
-                                            if(cv.containsKey(DBHelper.KEY_TRIP_PERIOD)) {
-                                                db.replace(mTablename, "_id", cv);
-                                            }
+
                                             strBuild.setLength(0);
                                             cv.clear();
                                         }

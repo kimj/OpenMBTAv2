@@ -26,6 +26,7 @@ public class Utils {
     private static int sWidth = -1;
 
     public static final DateFormat timeFormat = new SimpleDateFormat("h:mm a");
+    //note schedule times do not need multiplication
     public static String getTime(Calendar cal, String stamp) {
         cal.setTimeInMillis(1000 * Long.valueOf(stamp));
         return timeFormat.format(cal.getTime());
