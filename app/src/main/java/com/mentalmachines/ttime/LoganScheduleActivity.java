@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.services;
+package com.mentalmachines.ttime;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -21,13 +21,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.LoganScheduleAdapter;
-import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.ScheduleLogan;
 import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.LoganScheduleSvc;
 
 import java.util.Calendar;
 

@@ -36,7 +36,7 @@
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:parentActivityName=".MainActivity"
-            android:name="com.mentalmachines.ttime.services.LoganScheduleActivity"
+            android:name=".LoganScheduleActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar"/>
 

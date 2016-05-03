@@ -9,24 +9,16 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.ShowScheduleActivity;
+import com.mentalmachines.ttime.LoganScheduleActivity;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.ScheduleLogan;
-import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Calendar;
-import java.util.Collections;
-import java.util.HashMap;
 
 /**
  * Created by emezias on 1/11/16.
@@ -44,6 +36,7 @@ public class LoganScheduleSvc extends IntentService {
     public static final String TAG = "LoganScheduleSvc";
     //boolean to help with threading/error handling when switching between the days
     Calendar c = Calendar.getInstance();
+    volatile int mParseCounter = 0;
     volatile boolean mRedLineSpecial = false;
     public static volatile Route mRoute;
     public static volatile int scheduleType;
@@ -173,7 +166,7 @@ public class LoganScheduleSvc extends IntentService {
                     LoganScheduleSvc.TIME_PARAM + duration;
         }
 
-        parseSchedulePeriod(url);
+        new ParseScheduleTimes(url).start();
     }
 
     void getScheduleTimes() {
@@ -191,8 +184,22 @@ public class LoganScheduleSvc extends IntentService {
         //evening peak, rush hour done
         startParse(18, 30, 330);
         //finish off the scheduleType
-
         sendBroadcast(false);
+    }
+
+    class ParseScheduleTimes extends Thread {
+
+        final String apiCall;
+
+        public ParseScheduleTimes(String url) {
+            apiCall = url;
+        }
+
+        @Override
+        public void run() {
+            super.run();
+            parseSchedulePeriod(apiCall);
+        }
     }
 
     void parseSchedulePeriod(String apiCallString) {
@@ -207,9 +214,13 @@ public class LoganScheduleSvc extends IntentService {
             }
             Log.i(TAG, "route check? " + mRoute.id);
             final InputStream stream = connection.getInputStream();
-            ScheduleLogan.readJsonStream(stream, scheduleType, mRoute);
+            mRoute = ScheduleLogan.readJsonStream(stream, scheduleType, mRoute);
             stream.close();
             connection.disconnect();
+
+            if(++mParseCounter == 5) {
+                sendBroadcast(false);
+            }
         } catch (IOException e) {
             e.printStackTrace();
             Log.e(TAG, "error calling server " + e.getMessage());

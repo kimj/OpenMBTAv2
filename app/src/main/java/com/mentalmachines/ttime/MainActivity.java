@@ -42,13 +42,10 @@ import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
 import com.mentalmachines.ttime.services.LoganSaveScheduleToDBSvc;
-import com.mentalmachines.ttime.services.LoganScheduleActivity;
 import com.mentalmachines.ttime.services.LoganScheduleSvc;
 import com.mentalmachines.ttime.services.NavDrawerTask;
-import com.mentalmachines.ttime.services.SaveScheduleService;
 import com.mentalmachines.ttime.services.StopService;
 
-import java.util.Arrays;
 import java.util.Calendar;
 
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
