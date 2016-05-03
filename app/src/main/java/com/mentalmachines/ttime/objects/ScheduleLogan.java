@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.objects;
 
 import android.content.ContentValues;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
@@ -22,9 +23,10 @@ import java.util.HashMap;
 public class ScheduleLogan {
     public static final String TAG = "ScheduleLogan";
 
-    /*//final String[] selection = {DBHelper.KEY_TRIP_PERIOD, DBHelper.KEY_DTIME};
-    final String whereClause = DBHelper.KEY_STOPID + " LIKE '";
-    final String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";*/
+    final static String[] selection = {DBHelper.KEY_DTIME};
+    //TODO drop stop name from table?
+    final static String whereClause = DBHelper.KEY_STOPID + " LIKE '";
+    final static String moreWhere = "' AND " + DBHelper.KEY_DAY + "=";
 
     final static Calendar checkStamp = Calendar.getInstance();
 
@@ -137,14 +139,11 @@ public class ScheduleLogan {
         //index the table after the data is loaded
         final String table = DBHelper.getRouteTableName(route.id);
         ContentValues cv = new ContentValues();
-        boolean directionInbound;
-        StopData stop;
         long timestamp;
         ScheduleLogan root = LoganSquare.parse(response, ScheduleLogan.class);
         Log.d(TAG, "route check" + root.route_id + " " +
                 "dir size: " + root.direction.size());
         for(DirectionObject data: root.direction) {
-            directionInbound = data.direction_id == 0? false:true;
             //Log.dTAG, "trips size: " + data.trip.size());
             for(TripObject vehicle: data.trip)  {
                 //Log.d(TAG, "stop size: " + vehicle.stop.size());
@@ -167,6 +166,40 @@ public class ScheduleLogan {
         }
         Log.d(TAG, "finished table entries " + calendarDay + ":" + route.name);
     }
+
+    public static Route loadTimesFromDB(SQLiteDatabase db, Route route, int scheduleDay) {
+        final String table = DBHelper.getRouteTableName(route.id);
+        if(route.mInboundStops != null && route.mInboundStops.size() > 0) {
+            route.mInboundStops = queryTimesForDirection(db, table, route.mInboundStops, scheduleDay);
+        }
+        //now the other way...
+        if(route.mOutboundStops != null && route.mOutboundStops.size() > 0) {
+            route.mOutboundStops = queryTimesForDirection(db, table, route.mOutboundStops, scheduleDay);
+        }
+        return route;
+    }
+
+    static ArrayList<StopData> queryTimesForDirection(SQLiteDatabase db, String table, ArrayList<StopData> routeStops, int scheduleDay) {
+        Cursor c = null;
+        ArrayList<Long> times;
+        for(StopData data: routeStops) {
+            if(data.getScheduleArray(scheduleDay).size() == 0) {
+                c = db.query(table, selection, whereClause + data.stopId + moreWhere + scheduleDay,
+                        null, null, null, null);
+                times = data.getScheduleArray(scheduleDay);
+                if(c.moveToFirst()) {
+                    do {
+                        times.add(c.getLong(0));
+                    } while(c.moveToNext());
+                }
+            }
+        }
+        if(c != null && !c.isClosed()) {
+            c.close();
+        }
+        return routeStops;
+    }
+
 
     @JsonObject
     public static class DirectionObject {

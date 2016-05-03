@@ -3,12 +3,14 @@ package com.mentalmachines.ttime.services;
 import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.ShowScheduleActivity;
+import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Schedule;
 import com.mentalmachines.ttime.objects.ScheduleLogan;
@@ -99,22 +101,21 @@ public class LoganScheduleSvc extends IntentService {
             return;
         }
 
-        if(mRoute.id.contains(DBHelper.ASHMONT) || mRoute.id.contains(DBHelper.BRAINTREE)) {
-            mRedLineSpecial = true;
-        }
-        getScheduleTimes();
         //Route passed in from MainActivity is fully populated
-        /*if(DBHelper.checkForScheduleTable(mRoute.id)) {
+        if(DBHelper.checkForScheduleTable(mRoute.id)) {
             //read the times from the DB instead of calling the MBTA
             Log.d(TAG, "creating schedule from database: " + mRoute.name);
             final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
             //each stop data object kicks off a thread to read from the db
-            //new ScheduleQuery(db, scheduleType, mRoute.mInboundStops, true).start();
-            //new ScheduleQuery(db, scheduleType, mRoute.mOutboundStops, false).start();
+            ScheduleLogan.loadTimesFromDB(db, mRoute, scheduleType);
+            sendBroadcast(false);
         } else {
             Log.d(TAG, "creating schedule from network: " + mRoute.name);
+            if(mRoute.id.contains(DBHelper.ASHMONT) || mRoute.id.contains(DBHelper.BRAINTREE)) {
+                mRedLineSpecial = true;
+            }
             getScheduleTimes();
-        }*/
+        }
 
     }
 
