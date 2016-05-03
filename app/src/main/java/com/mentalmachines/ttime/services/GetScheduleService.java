@@ -9,10 +9,10 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.LoganScheduleActivity;
+import com.mentalmachines.ttime.ScheduleActivity;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.ScheduleLogan;
+import com.mentalmachines.ttime.objects.ScheduleParser;
 import com.mentalmachines.ttime.objects.Utils;
 
 import java.io.IOException;
@@ -31,9 +31,9 @@ import java.util.Calendar;
  * Based on those results, the service will make a call for each period of the schedule day
  * and spawn threads to parse these calls in parallel
  */
-public class LoganScheduleSvc extends IntentService {
+public class GetScheduleService extends IntentService {
 
-    public static final String TAG = "LoganScheduleSvc";
+    public static final String TAG = "GetScheduleService";
     //boolean to help with threading/error handling when switching between the days
     Calendar c = Calendar.getInstance();
     volatile int mParseCounter = 0;
@@ -53,12 +53,12 @@ public class LoganScheduleSvc extends IntentService {
     public static final String TIME_PARAM = "&max_time=";
     public static final String GETSCHEDULE = BASE + SCHEDVERB + SUFFIX + ALLHR_PARAM + ROUTEPARAM;
     //required, empty constructor, builds intents
-    public LoganScheduleSvc() {
+    public GetScheduleService() {
         super(TAG);
     }
 
     public static Intent newInstance(Context ctx, Route r, int scheduleType) {
-        final Intent tnt = new Intent(ctx, LoganScheduleSvc.class);
+        final Intent tnt = new Intent(ctx, GetScheduleService.class);
         tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
         tnt.putExtra(TAG, scheduleType);
         return tnt;
@@ -100,7 +100,7 @@ public class LoganScheduleSvc extends IntentService {
             Log.d(TAG, "creating schedule from database: " + mRoute.name);
             final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
             //each stop data object kicks off a thread to read from the db
-            ScheduleLogan.loadTimesFromDB(db, mRoute, scheduleType);
+            ScheduleParser.loadTimesFromDB(db, mRoute, scheduleType);
             sendBroadcast(false);
         } else {
             Log.d(TAG, "creating schedule from network: " + mRoute.name);
@@ -116,7 +116,7 @@ public class LoganScheduleSvc extends IntentService {
         Log.d(TAG, "end show schedule service");
         final Intent returnResults = new Intent(TAG);
         returnResults.putExtra(TAG, hasError);
-        returnResults.putExtra(LoganScheduleActivity.TAG, scheduleType);
+        returnResults.putExtra(ScheduleActivity.TAG, scheduleType);
         if(!hasError) {
             returnResults.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
         } else {
@@ -157,13 +157,13 @@ public class LoganScheduleSvc extends IntentService {
         cal.setTimeInMillis(Long.valueOf(stamp)*1000);
         Log.d(TAG, "day with stamp: " + cal.get(Calendar.DAY_OF_WEEK)); //Utils.timeFormat.format(cal.getTime()));
         if(mRedLineSpecial) {
-            url = LoganScheduleSvc.GETSCHEDULE + "Red" +
-                    LoganScheduleSvc.DATETIMEPARAM + stamp +
-                    LoganScheduleSvc.TIME_PARAM + duration;
+            url = GetScheduleService.GETSCHEDULE + "Red" +
+                    GetScheduleService.DATETIMEPARAM + stamp +
+                    GetScheduleService.TIME_PARAM + duration;
         } else {
-            url = LoganScheduleSvc.GETSCHEDULE + mRoute.id +
-                    LoganScheduleSvc.DATETIMEPARAM + stamp +
-                    LoganScheduleSvc.TIME_PARAM + duration;
+            url = GetScheduleService.GETSCHEDULE + mRoute.id +
+                    GetScheduleService.DATETIMEPARAM + stamp +
+                    GetScheduleService.TIME_PARAM + duration;
         }
 
         new ParseScheduleTimes(url).start();
@@ -214,7 +214,7 @@ public class LoganScheduleSvc extends IntentService {
             }
             Log.i(TAG, "route check? " + mRoute.id);
             final InputStream stream = connection.getInputStream();
-            mRoute = ScheduleLogan.readJsonStream(stream, scheduleType, mRoute);
+            mRoute = ScheduleParser.readJsonStream(stream, scheduleType, mRoute);
             stream.close();
             connection.disconnect();
 

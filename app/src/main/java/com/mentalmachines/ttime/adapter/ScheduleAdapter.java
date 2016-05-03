@@ -11,7 +11,7 @@ import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.LoganScheduleSvc;
+import com.mentalmachines.ttime.services.GetScheduleService;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -23,8 +23,8 @@ import java.util.Collections;
  * Schedule data is held in a hashmap of longs (stop objects)
  */
 
-public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdapter.ScheduleViewHolder> {
-    public static final String TAG = "LoganScheduleAdapter";
+public class ScheduleAdapter extends RecyclerView.Adapter<ScheduleAdapter.ScheduleViewHolder> {
+    public static final String TAG = "ScheduleAdapter";
     final Route mRoute;
     final int mScheduleDay;
     private boolean mIsInbound = true;
@@ -32,12 +32,12 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
     final long midnight;
 
     //Constructor creates inbound by default, can switch to outbound
-    public LoganScheduleAdapter(int scheduleDay, Route route) {
+    public ScheduleAdapter(int scheduleDay, Route route) {
         super();
         mScheduleDay = scheduleDay;
         mRoute = route;
         //The day never shows in the adapter - TODO, skip
-        mCal = LoganScheduleSvc.setDay(mCal, scheduleDay);
+        mCal = GetScheduleService.setDay(mCal, scheduleDay);
         midnight = mCal.getTimeInMillis();
         for(StopData data: mRoute.mOutboundStops){
             Log.d(TAG, "out count: " + data.getScheduleArray(mScheduleDay).size());
@@ -129,7 +129,7 @@ public class LoganScheduleAdapter extends RecyclerView.Adapter<LoganScheduleAdap
         long timestamp, limit;
         int dex, curr_hr = -1;
         //TODO - is this necessary? The day never shows
-        mCal = LoganScheduleSvc.setDay(mCal, mScheduleDay);
+        mCal = GetScheduleService.setDay(mCal, mScheduleDay);
         mCal.set(Calendar.HOUR, 6);
         mCal.set(Calendar.MINUTE, 30);
         mCal.set(Calendar.AM_PM, Calendar.AM);

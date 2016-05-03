@@ -5,13 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.ScheduleLogan;
+import com.mentalmachines.ttime.objects.ScheduleParser;
 import com.mentalmachines.ttime.objects.Utils;
 
 import java.io.IOException;
@@ -28,7 +27,7 @@ import java.util.Calendar;
  * Based on those results, the service will make a call for each period of the schedule day
  * and spawn threads to parse these calls in parallel
  */
-public class LoganSaveScheduleToDBSvc extends IntentService {
+public class SaveFavoriteSchedule extends IntentService {
 
     public static final String TAG = "SaveScheduleToDBSvc";
     //boolean to help with threading/error handling when switching between the days
@@ -38,12 +37,12 @@ public class LoganSaveScheduleToDBSvc extends IntentService {
     Calendar c = Calendar.getInstance();
 
     //required, empty constructor, builds intents
-    public LoganSaveScheduleToDBSvc() {
+    public SaveFavoriteSchedule() {
         super(TAG);
     }
 
     public static Intent newInstance(Context ctx, Route r) {
-        final Intent tnt = new Intent(ctx, LoganSaveScheduleToDBSvc.class);
+        final Intent tnt = new Intent(ctx, SaveFavoriteSchedule.class);
         tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
         return tnt;
     }
@@ -97,19 +96,19 @@ public class LoganSaveScheduleToDBSvc extends IntentService {
         //time set to collect 24hr schedule for tomorrow
         final String url;
         if(mRedLineSpecial) {
-            url = LoganScheduleSvc.GETSCHEDULE + "Red" +
-                    LoganScheduleSvc.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                    LoganScheduleSvc.TIME_PARAM + duration;
+            url = GetScheduleService.GETSCHEDULE + "Red" +
+                    GetScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    GetScheduleService.TIME_PARAM + duration;
         } else {
-            url = LoganScheduleSvc.GETSCHEDULE + mRoute.id +
-                    LoganScheduleSvc.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
-                    LoganScheduleSvc.TIME_PARAM + duration;
+            url = GetScheduleService.GETSCHEDULE + mRoute.id +
+                    GetScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
+                    GetScheduleService.TIME_PARAM + duration;
         }
         return url;
     }
 
     void getScheduleTimes(int scheduleType) {
-        c = LoganScheduleSvc.setDay(c, scheduleType);
+        c = GetScheduleService.setDay(c, scheduleType);
         c.set(Calendar.SECOND, 0);
 
         c.set(Calendar.DAY_OF_WEEK, scheduleType-1);
@@ -139,7 +138,7 @@ public class LoganSaveScheduleToDBSvc extends IntentService {
             }
             Log.i(TAG, "route check? " + mRoute.id);
             final InputStream stream = connection.getInputStream();
-            ScheduleLogan.loadScheduleIntoDB(mDB, scheduleType, stream, mRoute);
+            ScheduleParser.loadScheduleIntoDB(mDB, scheduleType, stream, mRoute);
             stream.close();
             connection.disconnect();
         } catch (IOException e) {

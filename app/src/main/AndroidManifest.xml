@@ -36,16 +36,16 @@
             android:theme="@style/AppTheme.NoActionBar"/>
         <activity
             android:parentActivityName=".MainActivity"
-            android:name=".LoganScheduleActivity"
+            android:name=".ScheduleActivity"
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar"/>
 
         <service android:name=".services.NavDrawerTask"/>
         <service android:name=".services.GetTimesForRoute"/>
-        <service android:name=".services.LoganScheduleSvc" />
+        <service android:name=".services.GetScheduleService" />
         <service android:name=".services.StopService"/>
         <service android:name=".services.ShowScheduleService" />
-        <service android:name=".services.LoganSaveScheduleToDBSvc" />
+        <service android:name=".services.SaveFavoriteSchedule" />
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>

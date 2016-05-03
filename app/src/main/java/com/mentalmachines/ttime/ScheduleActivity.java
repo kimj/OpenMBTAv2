@@ -21,18 +21,18 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.LoganScheduleAdapter;
+import com.mentalmachines.ttime.adapter.ScheduleAdapter;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.LoganScheduleSvc;
+import com.mentalmachines.ttime.services.GetScheduleService;
 
 import java.util.Calendar;
 
-public class LoganScheduleActivity extends AppCompatActivity {
+public class ScheduleActivity extends AppCompatActivity {
 	/**
 	 * An activity showing a stop or list of stops selected from a route
 	 */
-    public static final String TAG = "LoganScheduleActivity";
+    public static final String TAG = "ScheduleActivity";
     ProgressDialog mProgress = null;
     public RecyclerView mList;
     public Route mRoute;
@@ -49,7 +49,7 @@ public class LoganScheduleActivity extends AppCompatActivity {
         }
         //Schedule Service is launched before start Activity
         LocalBroadcastManager.getInstance(this).registerReceiver(mScheduleReady,
-                new IntentFilter(LoganScheduleSvc.TAG));
+                new IntentFilter(GetScheduleService.TAG));
         mList = (RecyclerView) findViewById(R.id.sch_list);
     }
 
@@ -125,14 +125,14 @@ public class LoganScheduleActivity extends AppCompatActivity {
                 ab.setSubtitle(getString(R.string.weekdays));
                 if(!weekdayDone) {
                     mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
-                    Intent svc = new Intent(this, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.TUESDAY);
+                    Intent svc = new Intent(this, GetScheduleService.class);
+                    svc.putExtra(GetScheduleService.TAG, Calendar.TUESDAY);
                     svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
                     startService(svc);
                     Log.d(TAG, "get weekday");
                 } else {
                     Log.d(TAG, "set new weekday adapter");
-                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                    mList.setAdapter(new ScheduleAdapter(scheduleDay, mRoute));
                 }
                 break;
             case Calendar.SUNDAY:
@@ -141,25 +141,25 @@ public class LoganScheduleActivity extends AppCompatActivity {
 
                 if(!sundayDone) {
                     mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
-                    Intent svc = new Intent(this, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SUNDAY);
+                    Intent svc = new Intent(this, GetScheduleService.class);
+                    svc.putExtra(GetScheduleService.TAG, Calendar.SUNDAY);
                     svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
                     startService(svc);
                 } else {
-                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                    mList.setAdapter(new ScheduleAdapter(scheduleDay, mRoute));
                     Log.d(TAG, "set new sunday adapter");
                 }
                 break;
             case Calendar.SATURDAY:
                 if(!saturdayDone) {
                     mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
-                    Intent svc = new Intent(this, LoganScheduleSvc.class);
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.SATURDAY);
+                    Intent svc = new Intent(this, GetScheduleService.class);
+                    svc.putExtra(GetScheduleService.TAG, Calendar.SATURDAY);
                     svc.putExtra(DBHelper.KEY_ROUTE_ID, mRoute);
                     startService(svc);
                 } else {
                     Log.d(TAG, "set new saturday adapter");
-                    mList.setAdapter(new LoganScheduleAdapter(scheduleDay, mRoute));
+                    mList.setAdapter(new ScheduleAdapter(scheduleDay, mRoute));
                 }
                 ab.setTitle(Route.readableName(this, mRoute.name));
                 ab.setSubtitle(getString(R.string.saturdays));
@@ -178,7 +178,7 @@ public class LoganScheduleActivity extends AppCompatActivity {
         final int width = Utils.getScreenWidth(this);
         Log.d(TAG, "FAB click in schedule screen");
         final AnimatorSet set = new AnimatorSet();
-        if(((LoganScheduleAdapter) mList.getAdapter()).switchDirection()) {
+        if(((ScheduleAdapter) mList.getAdapter()).switchDirection()) {
             ObjectAnimator.ofFloat(view, "rotation", 540f).start();
             //mItems = getArguments().getStringArray(IN_STOPS_LIST);
             ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
@@ -196,7 +196,7 @@ public class LoganScheduleActivity extends AppCompatActivity {
     }
 
     public void setList(View v) {
-        Toast.makeText(LoganScheduleActivity.this, "change schedule...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(ScheduleActivity.this, "change schedule...", Toast.LENGTH_SHORT).show();
     }
     /*********end listeners ********/
 
@@ -206,9 +206,9 @@ public class LoganScheduleActivity extends AppCompatActivity {
             Log.d(TAG, "service completed");
             final Bundle b = intent.getExtras();
 
-            if(b == null || b.getBoolean(LoganScheduleSvc.TAG)) {
+            if(b == null || b.getBoolean(GetScheduleService.TAG)) {
                 Log.w(TAG, "error fetching schedule");
-                Toast.makeText(LoganScheduleActivity.this,
+                Toast.makeText(ScheduleActivity.this,
                         getString(R.string.schedSvcErr), Toast.LENGTH_SHORT).show();
 
             }

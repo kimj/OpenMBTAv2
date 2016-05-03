@@ -14,14 +14,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
 
 @JsonObject
-public class ScheduleLogan {
-    public static final String TAG = "ScheduleLogan";
+public class ScheduleParser {
+    public static final String TAG = "ScheduleParser";
 
     final static String[] selection = {DBHelper.KEY_DTIME};
     //TODO drop stop name from table?
@@ -36,7 +32,7 @@ public class ScheduleLogan {
     @JsonField
     public ArrayList<DirectionObject> direction;
 
-    public ScheduleLogan() { }
+    public ScheduleParser() { }
     //empty constructor for Logan Square
 
     public static Route readJsonStream(InputStream response, int calendarDay, Route route) throws IOException {
@@ -44,7 +40,7 @@ public class ScheduleLogan {
 
         ArrayList<Long> stopTimes;
         long timestamp;
-        ScheduleLogan root = LoganSquare.parse(response, ScheduleLogan.class);
+        ScheduleParser root = LoganSquare.parse(response, ScheduleParser.class);
 
         for (DirectionObject data : root.direction) {
 
@@ -140,7 +136,7 @@ public class ScheduleLogan {
         final String table = DBHelper.getRouteTableName(route.id);
         ContentValues cv = new ContentValues();
         long timestamp;
-        ScheduleLogan root = LoganSquare.parse(response, ScheduleLogan.class);
+        ScheduleParser root = LoganSquare.parse(response, ScheduleParser.class);
         Log.d(TAG, "route check" + root.route_id + " " +
                 "dir size: " + root.direction.size());
         for(DirectionObject data: root.direction) {

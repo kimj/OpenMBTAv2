@@ -40,10 +40,10 @@ import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.GetScheduleService;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
-import com.mentalmachines.ttime.services.LoganSaveScheduleToDBSvc;
-import com.mentalmachines.ttime.services.LoganScheduleSvc;
 import com.mentalmachines.ttime.services.NavDrawerTask;
+import com.mentalmachines.ttime.services.SaveFavoriteSchedule;
 import com.mentalmachines.ttime.services.StopService;
 
 import java.util.Calendar;
@@ -142,17 +142,17 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 }
                 final Calendar c = Calendar.getInstance();
 
-                Intent svc = new Intent(this, LoganScheduleSvc.class);
+                Intent svc = new Intent(this, GetScheduleService.class);
                 if(c.get(Calendar.DAY_OF_WEEK) == Calendar.SUNDAY ||
                         c.get(Calendar.DAY_OF_WEEK) == Calendar.SATURDAY) {
-                    svc.putExtra(LoganScheduleSvc.TAG, c.get(Calendar.DAY_OF_WEEK));
+                    svc.putExtra(GetScheduleService.TAG, c.get(Calendar.DAY_OF_WEEK));
                 } else {
-                    svc.putExtra(LoganScheduleSvc.TAG, Calendar.TUESDAY);
+                    svc.putExtra(GetScheduleService.TAG, Calendar.TUESDAY);
                 }
                 svc.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
                 startService(svc);
 
-                final Intent act  = new Intent(this, LoganScheduleActivity.class);
+                final Intent act  = new Intent(this, ScheduleActivity.class);
                 act.putExtra(DBHelper.KEY_ROUTE_ID, ((RouteFragment)mFragment).mListAdapter.mRoute);
                 //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
                 startActivity(act);
@@ -163,7 +163,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mFavoritesAction.setChecked(true);
                     mFavoritesAction.setIcon(android.R.drawable.star_big_on);
                     noFaves = false;
-                    startService(LoganSaveScheduleToDBSvc.newInstance(this, r));
+                    startService(SaveFavoriteSchedule.newInstance(this, r));
                     Log.v(TAG, "saving favorite route schedule: " + r.name);
                 } else {
                     mFavoritesAction.setChecked(false);
