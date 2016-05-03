@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -18,6 +19,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
+import com.mentalmachines.ttime.fragments.AlertDetailFragment;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
@@ -82,8 +84,18 @@ public class StopDetailActivity extends AppCompatActivity {
         //click listener in the t_stop layout
         final String alertId = (String) v.getTag();
         Log.d(TAG, "open alert " + alertId);
-        Toast.makeText(this, "open alert " + alertId, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "open alert stop detail" + alertId, Toast.LENGTH_SHORT).show();
+
+        FragmentManager fm = getSupportFragmentManager();
+        AlertDetailFragment alertsDetailFragment = new AlertDetailFragment();
+
+        Bundle args = new Bundle();
+        args.putString("alertId", alertId);
+        alertsDetailFragment.setArguments(args);
+        fm.beginTransaction().add(R.id.container, alertsDetailFragment).addToBackStack(null).commit();
+
     }
+
 
     void setList() {
         if(mStopDetail.mainStop.stopName.contains(" - ")) {

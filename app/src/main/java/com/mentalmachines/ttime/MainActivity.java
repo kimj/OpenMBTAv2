@@ -16,6 +16,7 @@ import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -403,8 +404,20 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public void openAlerts(View v) {
         //click listener in the route fragment recycler view
         final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
-        Log.d(TAG, "open alert " + stop.stopAlert);
-        Toast.makeText(this, "open alert " + stop.stopAlert, Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "open alert main activity" + stop.stopAlert, Toast.LENGTH_SHORT).show();
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        AlertsFragment alertsFragment = (AlertsFragment) fragmentManager.findFragmentByTag(AlertsFragment.TAG);
+        if (alertsFragment != null) {
+            alertsFragment.updateAlertsListView(stop.stopAlert);
+            fragmentManager.beginTransaction().add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
+        } else {
+            Bundle alertFragmentArguments = new Bundle();
+            alertsFragment = new AlertsFragment();
+            alertFragmentArguments.putString("alertId", stop.stopAlert);
+            alertsFragment.setArguments(alertFragmentArguments);
+            fragmentManager.beginTransaction().add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
+        }
+
         //geo:0,0?q=lat,lng(label)
         //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
     }
@@ -602,4 +615,24 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             return null;
         }
     }
+
+    /*public void switchFragment(String fragmentTag){
+        FragmentManager fm = getSupportFragmentManager();
+        FragmentTransaction ft = fm.beginTransaction();
+
+
+        if(fm.findFragmentByTag() != null) {
+            RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(fragmentTah);
+            if(mFragment == frag) {
+                ((RouteFragment) mFragment).resetRoute(r);
+            } else if(mFragment == null) {
+                ft.show(frag).commit();
+                mFragment = frag;
+            } else {
+                ft.hide(mFragment).show(frag).commit();
+                frag.resetRoute(r);
+                mFragment = frag;
+            }
+        }
+    }*/
 }

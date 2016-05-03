@@ -3,12 +3,13 @@ package com.mentalmachines.ttime.fragments;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.util.Log;
+import android.support.v4.app.FragmentManager;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ListView;
 
 import com.mentalmachines.ttime.DBHelper;
@@ -24,9 +25,10 @@ import java.util.ArrayList;
 public class AlertsFragment extends Fragment {
 
     private static final String LINE_NAME = "line";
-    private static final String TAG = "AlertsFragment";
+    public static final String TAG = "AlertsFragment";
 
     ListView alertsListView;
+    ArrayList<Alert> alerts;
     AlertsAdapter alertsAdapter;
 
     @Override
@@ -50,6 +52,7 @@ public class AlertsFragment extends Fragment {
         return inflater.inflate(R.layout.alerts_fragment, container, false);
     }
 
+
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -57,8 +60,43 @@ public class AlertsFragment extends Fragment {
         //startService(new Intent(this, GetMBTARequestService.class));
         //can start the service in the MainActivity before calling the fragment
         alertsListView = (ListView) view.findViewById(R.id.listViewAlerts);
-        ArrayList<Alert> alerts =  DBHelper.getAllAlerts();
-        Log.i(TAG, "alerts to show: " + alerts.size());
+
+        final FragmentManager fragmentManager = getActivity().getSupportFragmentManager();
+
+        Bundle arguments = getArguments();
+        String alertId = "";
+        if (arguments != null){
+            alertId = arguments.getString("alertId");
+        }
+        alertsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
+                Alert alert = alerts.get(position);
+                AlertDetailFragment alertDetailFragment = new AlertDetailFragment();
+                Bundle arguments = new Bundle();
+                arguments.putString("alertId", alert.alert_id);
+                alertDetailFragment.setArguments(arguments);
+                fragmentManager.beginTransaction().add(R.id.container, alertDetailFragment).addToBackStack(null).commit();
+            }
+        });
+
+        if (alertId != null || alertId != ""){
+            alerts = DBHelper.getAlertsByStopAlertId(alertId);
+        }  else {
+            alerts = DBHelper.getAllAlerts() ;
+        }
+
+        AlertsAdapter alertsAdapter = new AlertsAdapter(getActivity(), R.layout.alert_item_layout, alerts);
+        alertsListView.setAdapter(alertsAdapter);
+    }
+
+    public void updateAlertsListView(String alertId){
+        ArrayList<Alert> alerts = new ArrayList<>();
+        if (alertId != null){
+            // alerts = DBHelper.getAlertByRouteId(alertId);
+        }  else {
+            alerts =  DBHelper.getAllAlerts();
+        }
         AlertsAdapter alertsAdapter = new AlertsAdapter(getActivity(), R.layout.alert_item_layout, alerts);
         alertsListView.setAdapter(alertsAdapter);
     }

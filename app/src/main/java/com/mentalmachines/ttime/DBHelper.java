@@ -322,4 +322,58 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return alerts;
     }
+
+    public static Alert getAlertById(String alertId){
+        SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
+                "KEY_ALERT_ID = ?", new String[]{ alertId }, null, null, null, null);
+
+        Alert alert = new Alert();
+        if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
+            alert .alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
+            alert .effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
+            alert .effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
+            alert.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
+            alert.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
+            alert.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
+            alert.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
+            alert.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
+            alert.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
+            alert.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
+            alert.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
+            alert.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
+            alert.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+            alertsCursor.close();
+        }
+        return alert;
+    }
+
+    public static ArrayList<Alert> getAlertsByStopAlertId(String alertId){
+        SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+
+        String sqlString = "SELECT * FROM alerts WHERE alert_id IN (SELECT DISTINCT alert_id FROM stops_inbound WHERE alert_id IS NOT NULL AND route_id = (SELECT route_id FROM stops_inbound WHERE alert_id = ?));";
+        Cursor alertsCursor = db.rawQuery(sqlString, new String[] {alertId});
+        ArrayList<Alert> alerts = new ArrayList<Alert>();
+        if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
+            do {
+                Alert a = new Alert();
+                a.alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
+                a.effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
+                a.effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
+                a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
+                a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
+                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
+                a.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
+                a.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
+                a.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
+                a.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
+                a.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
+                a.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
+                a.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+                alerts.add(a);
+            } while (alertsCursor.moveToNext());
+            alertsCursor.close();
+        }
+        return alerts;
+    }
 }
