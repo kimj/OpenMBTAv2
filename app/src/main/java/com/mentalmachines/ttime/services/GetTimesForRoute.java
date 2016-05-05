@@ -244,7 +244,6 @@ public class GetTimesForRoute extends IntentService {
         final Intent returnResults = new Intent(TAG);
         returnResults.putExtra(MainActivity.TAG, route);
         returnResults.putExtra(TAG, hasError);
-
         LocalBroadcastManager.getInstance(ctx).sendBroadcast(returnResults);
     }
 

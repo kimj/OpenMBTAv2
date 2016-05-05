@@ -5,6 +5,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.NavUtils;
@@ -14,15 +15,18 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.RecyclerView;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
 import com.mentalmachines.ttime.fragments.AlertDetailFragment;
+import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.SaveFavorites;
 import com.mentalmachines.ttime.services.StopService;
 
 public class StopDetailActivity extends AppCompatActivity {
@@ -32,6 +36,7 @@ public class StopDetailActivity extends AppCompatActivity {
     private static final String TAG = "StopDetailActivity";
     public RecyclerView mList;
     public StopList mStopDetail;
+    MenuItem mFavoritesAction;
     ProgressDialog mProgress = null;
 
     @Override
@@ -61,15 +66,41 @@ public class StopDetailActivity extends AppCompatActivity {
             mProgress.cancel();
         }
     }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.stopscreen, menu);
+        if(menu != null) {
+            mFavoritesAction = menu.getItem(0);
+            mFavoritesAction.setVisible(true);
+        }
+        return super.onCreateOptionsMenu(menu);
+    }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
+        super.onOptionsItemSelected(item);
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
         switch (item.getItemId()) {
             // Respond to the action bar's Up/Home button
             case android.R.id.home:
                 NavUtils.navigateUpFromSameTask(this);
                 return true;
+
+            case R.id.menu_favorites:
+                if(mStopDetail != null)
+                new CheckFavorite(true).execute(mStopDetail.mainStop.stopId);
+                break;
+            case R.id.menu_alerts:
+                //This piece will always create a new alert fragment
+                Toast.makeText(this, "TO DO", Toast.LENGTH_SHORT).show();
+                break;
+            case R.id.menu_settings:
+                Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
+                break;
         }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -96,7 +127,6 @@ public class StopDetailActivity extends AppCompatActivity {
 
     }
 
-
     void setList() {
         if(mStopDetail.mainStop.stopName.contains(" - ")) {
             setTitle(mStopDetail.mainStop.stopName.substring(0,
@@ -105,8 +135,8 @@ public class StopDetailActivity extends AppCompatActivity {
             setTitle(mStopDetail.mainStop.stopName);
         }
 
-        StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
-        adapterList = mStopDetail.mStopList.toArray(adapterList);
+        final StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
+        mStopDetail.mStopList.toArray(adapterList);
         mList.setAdapter(new StopDetailAdapter(adapterList));
         Log.d(TAG, "set new adapter");
         ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(false);
@@ -150,10 +180,57 @@ public class StopDetailActivity extends AppCompatActivity {
                 return;
             }
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
+            new CheckFavorite(false).execute(mStopDetail.mainStop.stopId);
             Log.d(TAG, mStopDetail.mainStop.stopName +
                     " data check, stop detail list size " + mStopDetail.mStopList.size());
             setList();
         }
     };
+
+    /**
+     *
+     */
+    class CheckFavorite extends AsyncTask<String, Void, Boolean> {
+        boolean menuCall;
+
+        /**
+         * pushing the db I/O into a background thread
+         * this sets the button's display, does not yet save the change
+         * @param change, is this a menu click to change the favorite value or a call to read it
+         */
+        public CheckFavorite(boolean change) {
+            menuCall = change;
+        }
+
+        @Override
+        protected Boolean doInBackground(String[] params) {
+            if(menuCall) {
+               menuCall = Favorite.isStopFavorite(params[0]);
+               if(menuCall) {
+                   //remove favorite stop from table
+                   Favorite.dropFavoriteStop(params[0]);
+               } else {
+                   //start Intent service to save stop to the faves table
+                   final Intent tnt = SaveFavorites.newInstance(
+                           StopDetailActivity.this, mStopDetail.mainStop.stopId);
+                   startService(tnt);
+               }
+                return !menuCall;
+            }
+            return Favorite.isStopFavorite(params[0]);
+        }
+
+        @Override
+        protected void onPostExecute(Boolean o) {
+            super.onPostExecute(o);
+            if(o) {
+                mFavoritesAction.setChecked(true);
+                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+            } else {
+                mFavoritesAction.setChecked(false);
+                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+            }
+        }
+    }
 
 }

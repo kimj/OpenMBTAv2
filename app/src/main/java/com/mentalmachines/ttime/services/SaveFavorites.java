@@ -5,10 +5,12 @@ import android.content.Context;
 import android.content.Intent;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.ScheduleParser;
 import com.mentalmachines.ttime.objects.Utils;
@@ -26,10 +28,12 @@ import java.util.Calendar;
  * For busy routes, using the maxtrips value of 100 did not get the full day
  * Based on those results, the service will make a call for each period of the schedule day
  * and spawn threads to parse these calls in parallel
+ *
+ * TODO combine this class with the GetScheduleService
  */
-public class SaveFavoriteSchedule extends IntentService {
+public class SaveFavorites extends IntentService {
 
-    public static final String TAG = "SaveScheduleToDBSvc";
+    public static final String TAG = "SaveFavorites";
     //boolean to help with threading/error handling when switching between the days
     volatile boolean mRedLineSpecial = false;
     Route mRoute;
@@ -37,13 +41,26 @@ public class SaveFavoriteSchedule extends IntentService {
     Calendar c = Calendar.getInstance();
 
     //required, empty constructor, builds intents
-    public SaveFavoriteSchedule() {
+    public SaveFavorites() {
         super(TAG);
     }
 
     public static Intent newInstance(Context ctx, Route r) {
-        final Intent tnt = new Intent(ctx, SaveFavoriteSchedule.class);
+        final Intent tnt = new Intent(ctx, SaveFavorites.class);
         tnt.putExtra(DBHelper.KEY_ROUTE_ID, r);
+        return tnt;
+    }
+
+    public static Intent newInstance(Context ctx, String stopId, int dirId) {
+        final Intent tnt = new Intent(ctx, SaveFavorites.class);
+        tnt.putExtra(DBHelper.STOP, stopId);
+        tnt.putExtra(DBHelper.KEY_DIR, dirId);
+        return tnt;
+    }
+
+    public static Intent newInstance(Context ctx, String stopId) {
+        final Intent tnt = new Intent(ctx, SaveFavorites.class);
+        tnt.putExtra(DBHelper.STOP, stopId);
         return tnt;
     }
 
@@ -61,6 +78,26 @@ public class SaveFavoriteSchedule extends IntentService {
         if(b == null) {
             //error, service requires 2 extras
             Log.e(TAG, "missing route extra");
+            return;
+        }
+        //is it a stop?
+        if(b.containsKey(DBHelper.KEY_DIR)) {
+            final boolean result = Favorite.setFavorite(
+                    b.getString(DBHelper.STOP, null),
+                    b.getInt(DBHelper.KEY_DIR));
+            sendSignal(result);
+            return;
+        } else if(b.containsKey(DBHelper.STOP)) {
+            final String stopid = b.getString(DBHelper.STOP, null);
+            final int dir = Favorite.getStopDirection(stopid);
+            final boolean result;
+            if(dir < 0) {
+                result = true; //has error
+            } else {
+                result = Favorite.setFavorite(
+                        b.getString(DBHelper.STOP, null), dir);
+            }
+            sendSignal(result);
             return;
         }
 
@@ -148,6 +185,12 @@ public class SaveFavoriteSchedule extends IntentService {
         }
     }
 
+    public void sendSignal(boolean hasError) {
+        final Intent returnResults = new Intent(TAG);
+        returnResults.putExtra(TAG, hasError);
+
+        LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
+    }
 
 }//end class
 

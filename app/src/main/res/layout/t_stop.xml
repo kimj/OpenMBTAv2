@@ -26,28 +26,39 @@
         android:onClick="openAlerts"
         android:background="@android:color/transparent"  />
     <TextView
-        android:id="@+id/stop_desc"
+        android:id="@+id/stop_route"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_toRightOf="@id/stop_alert_btn"
         android:layout_toLeftOf="@id/stop_mapbtn"
-        android:padding="18dip"
-        android:textColor="@color/colorPrimaryDark"
+        android:paddingTop="18dip"
+        android:textColor="@android:color/black"
+        android:fontFamily="bold"
         android:background="@android:color/transparent"
         android:textSize="18dp" />
+    <TextView
+        android:id="@+id/stop_desc"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginLeft="8dp"
+        android:layout_toRightOf="@id/stop_alert_btn"
+        android:layout_below="@id/stop_route"
+        android:textColor="@color/colorPrimaryDark"
+        android:background="@android:color/transparent"
+        android:textSize="16dp" />
     <TextView
         android:id="@+id/stop_eta"
         android:layout_width="wrap_content"
         android:layout_height="match_parent"
         android:layout_marginLeft="@dimen/def_margin"
+        android:paddingBottom="@dimen/def_padding"
         android:layout_below="@id/stop_desc"
         android:layout_toRightOf="@id/stop_alert_btn"
         android:gravity="left"
-        android:padding="8dip"
         android:textColor="@android:color/black"
         android:background="@android:color/transparent"
-        android:textSize="18dp" />
+        android:textSize="16dp" />
     <View android:id="@+id/divider"
         android:layout_width="match_parent"
         android:layout_height="1dp"

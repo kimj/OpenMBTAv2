@@ -1,6 +1,5 @@
 package com.mentalmachines.ttime;
 
-import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -23,11 +22,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String STOPS_INB_TABLE = "stops_inbound";
     public static final String STOPS_OUT_TABLE = "stops_outbound";
     public static final String FAVS_TABLE = "favorites_table";
-
-    String CREATE_FAVS_TABLE  = TABLE_PREFIX + FAVS_TABLE + "("
-            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ROUTE_ID + " TEXT unique not null, "
-            + KEY_ROUTE_NAME + " TEXT unique not null);";
+    public static final String FAVESTOPS_TABLE = "favorites_stops";
 
     public static final String BRAINTREE = "Braintree";
     public static final String ASHMONT = "Ashmont";
@@ -41,12 +36,6 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String KEY_ROUTE = "route";
     public static final String BUS_MODE = "Bus";
     public static final String SUBWAY_MODE = "Subway";
-
-    String CREATE_DB_TABLE_ROUTE  = TABLE_PREFIX + DB_ROUTE_TABLE + "("
-            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_ROUTE_MODE + " TEXT not null, "
-            + KEY_ROUTE_ID + " TEXT unique not null, "
-            + KEY_ROUTE_NAME + " TEXT unique not null);";
 
     //Stop keys, some duplication with routes
     public static final String KEY_DIR = "direction";
@@ -66,6 +55,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String TBL_PREFIX = "SCH";
     public static final String INDX_PREFIX = "DEX";
+    public static final String KEY_ID = "_id";
 
     static String SCHEDULE_COLS = "(_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_STOPID + " TEXT not null,"
@@ -75,6 +65,27 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_DTIME + " NUMERIC not null);";
 
     public static final String TABLE_PREFIX = "create table if not exists ";
+
+    String CREATE_FAVS_TABLE  = TABLE_PREFIX + FAVS_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT unique not null, "
+            + KEY_ROUTE_NAME + " TEXT unique not null);";
+    private static final String ROUTE_FAVS_DEX = "CREATE UNIQUE INDEX ROUTE_FAVS_DEX ON " + FAVS_TABLE + "("
+            + KEY_ROUTE_NAME + ");";
+
+    String CREATE_FAVESTOPS_TABLE  = TABLE_PREFIX + FAVESTOPS_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_STOPID + " TEXT not null, "
+            + KEY_DIR_ID + " NUMERIC not null);";
+
+    private static final String FAVESTOPS_DEX = "CREATE UNIQUE INDEX FAVESTOPS_DEX ON " + FAVESTOPS_TABLE + "("
+            + KEY_STOPID + ", " + KEY_DIR_ID + ");";
+
+    String CREATE_DB_TABLE_ROUTE  = TABLE_PREFIX + DB_ROUTE_TABLE + "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_MODE + " TEXT not null, "
+            + KEY_ROUTE_ID + " TEXT unique not null, "
+            + KEY_ROUTE_NAME + " TEXT unique not null);";
 
     public static String getRouteTableName(String routeID) {
         if(routeID.contains("-")) {
@@ -189,12 +200,15 @@ public class DBHelper extends SQLiteOpenHelper {
         db.execSQL(CREATE_DB_TABLE_ROUTE);
         db.execSQL(CREATE_DB_TABLE_ALERTS);
         db.execSQL(CREATE_FAVS_TABLE);
+        db.execSQL(CREATE_FAVESTOPS_TABLE);
 
         db.execSQL(TABLE_PREFIX + STOPS_INB_TABLE + STOPS_COLS);
         db.execSQL(TABLE_PREFIX + STOPS_OUT_TABLE + STOPS_COLS);
         db.execSQL(RTINDEX);
         db.execSQL(STOP_IN_DEX);
         db.execSQL(STOP_OUT_DEX);
+        db.execSQL(FAVESTOPS_DEX);
+        db.execSQL(ROUTE_FAVS_DEX);
     }
 
     public DBHelper(Context context) {
@@ -213,43 +227,6 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         Log.w(TAG, "bad cursor, no array");
         return null;
-    }
-
-    public static boolean checkFavorite(String routeNm) {
-        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        final boolean isFavorite = checkFavorite(db, routeNm);
-        return isFavorite;
-    }
-
-    public static boolean checkFavorite(SQLiteDatabase db, String routeNm) {
-        final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
-        final boolean returnVal;
-        returnVal = c.getCount() != 0;
-        c.close();
-        return returnVal;
-    }
-
-    public static boolean setFavorite(String routeNm, String routeId) {
-        final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
-        final boolean isFavorite;
-        final Cursor c = db.query(FAVS_TABLE, null, KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
-        if(c.getCount() > 0) {
-            //not a favorite and found in the table
-            Log.i(TAG, "dropping favorite " + routeNm + db.delete(
-                    FAVS_TABLE, KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
-            isFavorite = false;
-        } else {
-            final ContentValues cv = new ContentValues();
-            cv.put(KEY_ROUTE_NAME, routeNm);
-            cv.put(KEY_ROUTE_ID, routeId);
-            Log.i(TAG, "adding favorite " + routeNm + " row:" + db.insert(
-                    FAVS_TABLE, "_id", cv));
-            cv.clear();
-            isFavorite = true;
-        }
-
-        c.close();
-        return isFavorite;
     }
 
     public static String getRouteName(SQLiteDatabase db, String routeID) {

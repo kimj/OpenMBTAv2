@@ -37,9 +37,10 @@ public class ScheduleParser {
 
     public static Route readJsonStream(InputStream response, int calendarDay, Route route) throws IOException {
         //Log.d(TAG, "sizes: " + route.mOutboundStops.size() + ":" + route.mInboundStops.size());
-
-        ArrayList<Long> stopTimes;
-        long timestamp;
+        boolean redLineSpecial = false;
+        if(route.id.contains(DBHelper.ASHMONT) || route.id.contains(DBHelper.BRAINTREE)) {
+            redLineSpecial = true;
+        }
         ScheduleParser root = LoganSquare.parse(response, ScheduleParser.class);
 
         for (DirectionObject data : root.direction) {
@@ -47,19 +48,10 @@ public class ScheduleParser {
             if (data.direction_id == 1)  {
                 if(route.mInboundStops != null && route.mInboundStops.size() > 0) {
                     for (StopData routeStop : route.mInboundStops) {
-                        stopTimes = routeStop.getScheduleArray(calendarDay);
                         for (TripObject vehicle : data.trip) {
-                            //match times from server to stops in the route
-                            for (StopObject s : vehicle.stop) {
-                                timestamp = s.sch_dep_dt * 1000;
-                                checkStamp.setTimeInMillis(timestamp);
-                                if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
-                                    //exclude any overrun to the next day
-                                    if (routeStop.stopId.equals(s.stop_id)
-                                            && !stopTimes.contains(timestamp)) {
-                                        stopTimes.add(timestamp);
-                                    }
-                                }
+                            if(!redLineSpecial || vehicle.trip_name.contains(route.id)) {
+                                //trip is part of the special Ashmont/Braintree routes
+                                routeStop.setScheduleArray(tripsLoop(routeStop, vehicle.stop, calendarDay), calendarDay);
                             }
                         }//end trips
                     } //end inBound stops on route
@@ -69,19 +61,9 @@ public class ScheduleParser {
             } else {
                 if(route.mOutboundStops != null || route.mOutboundStops.size() > 0) {
                     for (StopData routeStop : route.mOutboundStops) {
-                        stopTimes = routeStop.getScheduleArray(calendarDay);
-                        //match above for outbound
                         for (TripObject vehicle : data.trip) {
-                            //Log.d(TAG, "stop size: " + vehicle.stop.size());
-                            for (StopObject s : vehicle.stop) {
-                                timestamp = s.sch_dep_dt * 1000;
-                                checkStamp.setTimeInMillis(timestamp);
-                                if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
-                                    if (routeStop.stopId.equals(s.stop_id)
-                                        && !stopTimes.contains(timestamp)) {
-                                        stopTimes.add(timestamp);
-                                    }
-                                }
+                            if(!redLineSpecial || vehicle.trip_name.contains(route.id)) {
+                                routeStop.setScheduleArray(tripsLoop(routeStop, vehicle.stop, calendarDay), calendarDay);
                             }
                         }//end trips
                     } //end outBound stops on route
@@ -94,70 +76,59 @@ public class ScheduleParser {
 
         return route;
     }
-        /*
-        THis was working okay, want to dump the map collection
 
-        for(DirectionObject data: root.direction) {
-            directionInbound = data.direction_id == 0? false:true;
-            Log.d(TAG, "trips size: " + data.trip.size());
-            for(TripObject vehicle: data.trip)  {
-                //Log.d(TAG, "stop size: " + vehicle.stop.size());
-                for(StopObject s: vehicle.stop) {
-                    timestamp = s.sch_dep_dt * 1000;
-                    checkStamp.setTimeInMillis(timestamp);
-                    if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
-                        if(directionInbound) {
-                            stop = inBoundTimes.get(s.stop_id);
-                        } else {
-                            stop = outBoundTimes.get(s.stop_id);
-                        }
-                        if(stop == null) {
-                            Log.w(TAG, "missing stop!");
-                        } else {
-                            stopTimes = stop.getScheduleArray(calendarDay);
-                            if(!stopTimes.contains(timestamp)) {
-                                stopTimes.add(timestamp);
-                            }
-                        }
-
-                    }
-
+    static ArrayList<Long> tripsLoop(StopData stop, ArrayList<StopObject> trips, int calendarDay) {
+        long timestamp;
+        //match times to stops in the route object
+        ArrayList<Long> stopTimes = stop.getScheduleArray(calendarDay);
+        for (StopObject s : trips) {
+            timestamp = s.sch_dep_dt * 1000;
+            checkStamp.setTimeInMillis(timestamp);
+            if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
+                //exclude any overrun to the next day
+                if (stop.stopId.equals(s.stop_id)
+                        && !stopTimes.contains(timestamp)) {
+                    stopTimes.add(timestamp);
                 }
             }
-            Log.d(TAG, "sizes: " + inBoundTimes.size() + ":" + outBoundTimes.size());
-        }*/
-
+        }
+        return stopTimes;
+    }
 
     public static void loadScheduleIntoDB(SQLiteDatabase db,
                int calendarDay, InputStream response, Route route) throws IOException {
-        //Route and Schedule data is fully populated, now create table
+        //Route data is fully populated, now create table using Logan Square
+        boolean redLineSpecial = false;
+        if(route.id.contains(DBHelper.ASHMONT) || route.id.contains(DBHelper.BRAINTREE)) {
+            redLineSpecial = true;
+        }
         db.execSQL(DBHelper.getRouteTableSql(route.id));
         //index the table after the data is loaded
         final String table = DBHelper.getRouteTableName(route.id);
         ContentValues cv = new ContentValues();
         long timestamp;
         ScheduleParser root = LoganSquare.parse(response, ScheduleParser.class);
-        Log.d(TAG, "route check" + root.route_id + " " +
-                "dir size: " + root.direction.size());
+
         for(DirectionObject data: root.direction) {
             //Log.dTAG, "trips size: " + data.trip.size());
             for(TripObject vehicle: data.trip)  {
-                //Log.d(TAG, "stop size: " + vehicle.stop.size());
-                for(StopObject s: vehicle.stop) {
-                    timestamp = s.sch_dep_dt * 1000;
-                    checkStamp.setTimeInMillis(timestamp);
-                    if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
-                        cv.put(DBHelper.KEY_STOPID, s.stop_id);
-                        cv.put(DBHelper.KEY_STOPNM, s.stop_name);
-                        cv.put(DBHelper.KEY_DIR_ID, data.direction_id);
-                        cv.put(DBHelper.KEY_DAY, calendarDay);
-                        cv.put(DBHelper.KEY_DTIME, timestamp);
-                        Log.d(TAG, "creating table: " +
-                                db.insertWithOnConflict(table, "_id", cv, SQLiteDatabase.CONFLICT_IGNORE));
-                        cv.clear();
+                if(!redLineSpecial || vehicle.trip_name.contains(route.id)) {
+                    for(StopObject s: vehicle.stop) {
+                        timestamp = s.sch_dep_dt * 1000;
+                        checkStamp.setTimeInMillis(timestamp);
+                        if(checkStamp.get(Calendar.DAY_OF_WEEK) == calendarDay) {
+                            cv.put(DBHelper.KEY_STOPID, s.stop_id);
+                            cv.put(DBHelper.KEY_STOPNM, s.stop_name);
+                            cv.put(DBHelper.KEY_DIR_ID, data.direction_id);
+                            cv.put(DBHelper.KEY_DAY, calendarDay);
+                            cv.put(DBHelper.KEY_DTIME, timestamp);
+                            //Log.d(TAG, "creating table: " +
+                            db.insertWithOnConflict(table, "_id", cv, SQLiteDatabase.CONFLICT_IGNORE);
+                            cv.clear();
+                        }
                     }
-
                 }
+
             }
         }
         Log.d(TAG, "finished table entries " + calendarDay + ":" + route.name);
@@ -208,6 +179,8 @@ public class ScheduleParser {
     @JsonObject
     public static class TripObject {
         @JsonField
+        String trip_name;
+        @JsonField
         public ArrayList<StopObject> stop;
     }
 
@@ -220,29 +193,4 @@ public class ScheduleParser {
         @JsonField
         public String stop_name;
     }
-
-    /**
-     * KEY_STOPID + " TEXT not null,"
-     + KEY_STOPNM + " TEXT not null,"
-     + KEY_DIR_ID + " NUMERIC not null,"
-     + KEY_TRIP_PERIOD + " NUMERIC not null,"
-     + KEY_DAY + " NUMERIC not null,"
-     + KEY_DTIME*
-     * Creator required for class implementing the parcelable interface.
-
-    public static final Parcelable.Creator<Schedule> CREATOR = new Creator<Schedule>() {
-
-        @Override
-        public Schedule createFromParcel(Parcel parcel) {
-            final Route route = parcel.readTypedObject(Route.CREATOR);
-            Schedule schedule = new Schedule(route);
-
-            return schedule;
-        }
-
-        @Override
-        public Schedule[] newArray(int size) {
-            return new Schedule[size];
-        }
-    };  */
 }

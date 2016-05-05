@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime.objects;
 
+import android.database.Cursor;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
@@ -35,6 +36,18 @@ public class StopData implements Parcelable {
         stopAlert = makeCopy.stopAlert;
     }
 
+    public StopData(Cursor c) {
+        //call after move to first or move to next
+        stopId = c.getString(0);
+        stopName = c.getString(1);
+        stopLat = c.getString(2);
+        stopLong = c.getString(3);
+        stopAlert = c.getString(4);
+    }
+    /*
+    KEY_STOPID, KEY_STOPNM, KEY_STOPLT, KEY_STOPLN, KEY_ALERT_ID
+     */
+
     public ArrayList<Long> getScheduleArray(int scheduleType) {
         switch(scheduleType) {
             case Calendar.TUESDAY:
@@ -46,6 +59,18 @@ public class StopData implements Parcelable {
         }
         Log.w(TAG, "weird schedule type");
         return null;
+    }
+
+    public void setScheduleArray(ArrayList<Long> newdata, int scheduleType) {
+        switch(scheduleType) {
+            case Calendar.TUESDAY:
+                weekdayTimestamps = newdata;
+            case Calendar.SATURDAY:
+                saturdayTimestamps = newdata;
+            case Calendar.SUNDAY:
+                sundayTimestamps = newdata;
+        }
+        Log.w(TAG, "bad schedule type");
     }
 
     @Override

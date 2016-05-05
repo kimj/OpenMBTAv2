@@ -58,7 +58,7 @@ public class Route implements Parcelable {
      */
     public static ArrayList<StopData> makeStops(Cursor stopNameCursor) {
         if (stopNameCursor.getCount() > 0 && stopNameCursor.moveToFirst()) {
-            ArrayList<StopData> stopList = new ArrayList<>(stopNameCursor.getCount());
+            final ArrayList<StopData> stopList = new ArrayList<>(stopNameCursor.getCount());
             StopData data;
             do {
                 data = new StopData();

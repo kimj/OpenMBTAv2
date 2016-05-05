@@ -10,6 +10,8 @@ import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.objects.Favorite;
+import com.mentalmachines.ttime.objects.StopList;
 
 /**
  * Created by emezias on 2/5/16.
@@ -36,6 +38,8 @@ public class NavDrawerTask extends IntentService {
         final Cursor c;
         if(b == null) {
             //favorites selected
+            tnt.putExtra(DBHelper.STOP, new StopList(null, Favorite.getFavoriteStops()));
+            //tnt.putExtra(DBHelper.STOP, Favorite.getFavoriteStops());
             c = db.query(DBHelper.FAVS_TABLE,
                     mRouteProjection,
                     null, null, null, null, null);

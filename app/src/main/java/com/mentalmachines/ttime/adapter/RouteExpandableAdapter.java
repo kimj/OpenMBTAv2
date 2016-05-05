@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.adapter;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -12,6 +13,7 @@ import android.widget.TextView;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Route;
+import com.mentalmachines.ttime.objects.StopData;
 
 import java.util.ArrayList;
 
@@ -33,14 +35,33 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     public final int mMode;
     //subway/favorites children arrays -> route names and ids, bus group names
     public final String[] rtNames, rtIds, busGroups;
+    public final StopData[] stops;
     //route names and ids for bus groups
     int[][] busChildren = null;
 
-    public RouteExpandableAdapter(String[] names, String[] ids, int mode) {
-        mMode = mode;
+    public RouteExpandableAdapter(String[] names, String[] ids, StopData[] stopsList) {
+        mMode = FAVE;
+        rtNames = names;
+        stops = stopsList;
+        busGroups = null;
+        rtIds = ids;
+        if(stopsList != null && stopsList.length > 0) {
+            Log.v(TAG, "stopList: " + stopsList.length);
+            for(StopData data: stopsList) {
+                Log.v(TAG, "stopList: " + data.stopName);
+            }
+        } else {
+            Log.w(TAG, "no favorite stops");
+        }
+
+    }
+
+    public RouteExpandableAdapter(String[] names, String[] ids) {
+        mMode = SUBWAY;
         rtNames = names;
         rtIds = ids;
         busGroups = null;
+        stops = null;
     }
 
     public RouteExpandableAdapter(String[] names, String[] ids, Context ctx) {
@@ -49,29 +70,48 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         rtIds = ids;
         busGroups = ctx.getResources().getStringArray(R.array.nav_groups);
         busChildren = new int[busGroups.length][];
+        stops = null;
     }
 
     @Override
     public int getGroupCount() {
-        if(mMode != BUS) {
-            return 1;
+        switch (mMode) {
+            case BUS:
+                return busGroups.length;
+            case FAVE:
+                int sz = 0;
+                if(stops != null && stops.length > 0) sz++;
+                if(rtNames != null && rtNames.length > 0) sz++;
+                return sz;
+            case SUBWAY:
+                return 1;
         }
-        return busGroups.length;
+        return 0;
     }
 
     @Override
     public int getChildrenCount(int groupPosition) {
-        if(mMode == BUS && rtNames != null) {
-            if(busChildren[groupPosition] == null) {
-                busChildren[groupPosition] = getChildren(groupPosition);
-            }
-            return busChildren[groupPosition].length;
-        } else if(rtNames != null) {
-            return rtNames.length;
+        switch(mMode) {
+            case BUS:
+                if (rtNames != null) {
+                    if (busChildren[groupPosition] == null) {
+                        busChildren[groupPosition] = getChildren(groupPosition);
+                    }
+                    return busChildren[groupPosition].length;
+                }
+            case SUBWAY:
+                if (rtNames != null) {
+                    return rtNames.length;
+                }
+            case FAVE:
+                if (stops != null && groupPosition == 0) {
+                    return stops.length;
+                } else if (rtNames != null) {
+                    return rtNames.length;
+                }
         }
         return 0;
         //if the db is initializing, these might be null
-
     }
 
     @Override
@@ -81,10 +121,20 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
 
     @Override
     public Object getChild(int groupPosition, int childPosition) {
-        if(mMode == BUS) {
-            return busGroups[groupPosition];
+        switch(mMode) {
+            case BUS:
+                return busGroups[groupPosition];
+            case SUBWAY:
+                return rtNames[childPosition];
+            case FAVE:
+                //stops are first!
+                if(groupPosition == 0 && stops != null) {
+                    return stops[childPosition];
+                } else if(rtNames != null){
+                    return rtNames[childPosition];
+                }
         }
-        return rtNames[childPosition];
+        return null;
     }
 
     @Override
@@ -109,15 +159,15 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
             //inflate a new group view
             convertView = LayoutInflater.from(ctx).inflate(R.layout.group_view, null);
         }
-        //Group position zero has the silver line bg, merges selected button into the list
-        if(groupPosition > 0) {
-            convertView.setBackgroundResource(R.drawable.bg_mattapanroute);
-            //Only bus mode has more than one group
-        } else {
-            convertView.setBackgroundResource(R.drawable.bg_silverroute);
-        }
+
         switch(mMode) {
             case BUS:
+                //Group position zero has the silver line bg, merges selected button into the list
+                if(groupPosition > 0) {
+                    convertView.setBackgroundResource(R.drawable.bg_mattapanroute);
+                } else {
+                    convertView.setBackgroundResource(R.drawable.bg_silverroute);
+                }
                 ((TextView) convertView).setText(busGroups[groupPosition]);
                 break;
             case SUBWAY:
@@ -126,8 +176,16 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 //TODO this goes in strings
                 break;
             case FAVE:
-                ((TextView) convertView).setText(ctx.getString(R.string.favorites));
-                ((ExpandableListView)parent).expandGroup(groupPosition);
+                //two groups possible
+                if(stops != null && stops.length > 0 && groupPosition == 0) {
+                    ((TextView) convertView).setText(ctx.getString(R.string.stops_fav));
+                    convertView.setBackgroundResource(R.drawable.bg_silverroute);
+                    ((ExpandableListView)parent).expandGroup(groupPosition);
+                } else if(rtNames != null && rtNames.length > 0) {
+                    ((TextView) convertView).setText(ctx.getString(R.string.routes_fav));
+                    convertView.setBackgroundResource(R.drawable.bg_silverroute);
+                    ((ExpandableListView)parent).expandGroup(groupPosition);
+                }
                 break;
         }
 
@@ -152,20 +210,35 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 final int rtIndex = busChildren[groupPosition][childPosition];
                 convertView.setTag(rtIds[rtIndex]);
                 colorView((TextView) convertView, rtNames[rtIndex]);
-                if(v != null && ((TextView)v).getText().equals(rtNames[rtIndex])) {
-                    convertView.setSelected(true);
-                }
                 break;
             case SUBWAY:
-            case FAVE:
                 colorView((TextView) convertView, rtNames[childPosition]);
                 convertView.setTag(rtIds[childPosition]);
-                if(v != null && ((TextView)v).getText().equals(rtNames[childPosition])) {
-                    convertView.setSelected(true);
-                }
+                break;
+            case FAVE:
+                switch (groupPosition) {
+                    case 0:
+                        if(stops != null && stops.length > 0) {
+                            ((TextView) convertView).setTextColor(Color.BLACK);
+                            Log.d(TAG, "stop name set here " + stops[childPosition].stopName);
+                            convertView.setBackgroundResource(R.drawable.bg_busroute);
+                            ((TextView) convertView).setText(stops[childPosition].stopName);
+                            convertView.setTag(stops[childPosition]);
+                        } else if(rtNames != null && rtNames.length > 0) {
+                            colorView((TextView) convertView, rtNames[childPosition]);
+                            convertView.setTag(rtIds[childPosition]);
+                        }
+                        break;
+                    case 1:
+                        if(rtNames != null && rtNames.length > 0) {
+                            colorView((TextView) convertView, rtNames[childPosition]);
+                            convertView.setTag(rtIds[childPosition]);
+                        }
+                        break;
+                } //end fave switch
                 break;
         }
-
+        if(v != null) v.setSelected(false);
         return convertView;
     }
 
@@ -190,7 +263,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         } else if(routeNm.contains("Orange")) {
             tv.setBackgroundResource(R.drawable.bg_orangeroute);
             tv.setText(routeNm);
-        } else if(routeNm.contains("Red")) {
+        } else if(routeNm.contains("Red") || routeNm.contains("Ashmont") || routeNm.contains("Braintree")) {
             tv.setBackgroundResource(R.drawable.bg_redroute);
             tv.setText(routeNm);
         } else if(routeNm.contains("Silver")) {

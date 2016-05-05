@@ -1,6 +1,8 @@
 package com.mentalmachines.ttime.adapter;
 
 import android.support.v7.widget.RecyclerView;
+import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -52,15 +54,27 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
      */
     @Override
     public void onBindViewHolder(final StopViewHolder holder, int position) {
-        StopData s = items[position];
-        if(s == null || s.schedTimes.isEmpty()) {
+        if(items == null || position >= items.length) {
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
+            Log.w(TAG, "bad stop position: " + position);
         } else {
+            final StopData s = items[position];
+            holder.mStopRoutename.setText(s.stopName);
             //alert header text gets set in the alert field instead of the alert id
-            holder.mStopDescription.setText(s.schedTimes);
-            holder.mETA.setText(s.predicTimes);
+            if(TextUtils.isEmpty(s.schedTimes)) {
+                holder.mStopDescription.setText("");
+            } else {
+                holder.mStopDescription.setText(s.schedTimes);
+
+            }
+            if(TextUtils.isEmpty(s.predicTimes)) {
+                holder.mETA.setText("");
+            } else {
+                holder.mETA.setText(s.predicTimes);
+            }
+
             //TODO create new layout
             if(s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
@@ -73,6 +87,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
     }
 
     public class StopViewHolder extends RecyclerView.ViewHolder {
+        public final TextView mStopRoutename;
         public final TextView mStopDescription;
         public final TextView mETA;
         public final ImageButton mAlertBtn;
@@ -80,6 +95,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
         //set a tag on the parent view for the two buttons to read
         public StopViewHolder(View itemView) {
             super(itemView);
+            mStopRoutename = (TextView) itemView.findViewById(R.id.stop_route);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_alert_btn);

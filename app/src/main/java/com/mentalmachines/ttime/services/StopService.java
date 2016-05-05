@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 
 /**
  * Created by emezias on 1/11/16.
@@ -62,23 +63,26 @@ public class StopService extends IntentService {
         final Bundle b = intent.getExtras();
         mainStop = b.getParcelable(TAG);
 
-        final ArrayList<StopData> nearby = new ArrayList<>();
-        nearby.add(new StopData(mainStop));
+        final HashMap<String, StopData> nearby = new HashMap<>();
+        nearby.put(mainStop.stopId, mainStop);
 
         final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
                 null, null, null, null, null, null);
         returnList = Route.makeStops(stopNameCursor);
-        //Log.d(TAG, "inbound total stops" + returnList.size());
+
+        Log.d(TAG, "inbound total stops" + returnList.size());
         float[] results = new float[1];
         final double mainLong = Double.valueOf(mainStop.stopLong);
         final double mainLat = Double.valueOf(mainStop.stopLat);
         for(StopData stop: returnList) {
-            Location.distanceBetween(mainLat, mainLong,
-                    Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
-            //find other stops within ~100ft of the mainStop
-            if(results[0] < 33f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
-                nearby.add(stop);
+            if(!stop.stopId.equals(mainStop.stopId)) {
+                Location.distanceBetween(mainLat, mainLong,
+                        Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
+                //find other stops within ~100ft of the mainStop
+                if(results[0] < 33f) {
+                    nearby.put(stop.stopId, stop);
+                }
             }
         }
         returnList.clear();
@@ -87,52 +91,35 @@ public class StopService extends IntentService {
                 null, null, null, null, null, null);
         returnList = Route.makeStops(stopNameCursor);
         for(StopData stop: returnList) {
-            Location.distanceBetween(mainLong, mainLat,
-                    Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
-            //find other stops within 25m of the mainStop
-            if(results[0] < 25.0f && !stop.stopId.equals(mainStop.stopId) && !nearby.contains(stop)) {
-                nearby.add(stop);
+            if(!stop.stopId.equals(mainStop.stopId)) {
+                Location.distanceBetween(mainLong, mainLat,
+                        Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
+                //find other stops within 25m of the mainStop
+                if(results[0] < 33.0f) {
+                    nearby.put(stop.stopId, stop);
+                }
             }
+
         }
+        returnList.clear();
         Log.d(TAG, "total nearby stops" + nearby.size());
         //now have list of stop ids within 25 meters of the stop passed in
         //call the server for each id and parse the schedule/predictions
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        returnList.clear();
+        returnList.addAll(nearby.values());
         //cleanup completed
-        Collections.sort(nearby, new Comparator<StopData>() {
+        returnList.remove(mainStop);
+        Collections.sort(returnList, new Comparator<StopData>() {
             @Override
             public int compare(final StopData object1, final StopData object2) {
-                return object1.stopId.compareTo(object2.stopId);
+                return object1.stopName.compareTo(object2.stopName);
             }
         });
-        String id = "";
-        for(StopData stp: nearby) {
-            if(stp.stopId.equals(id)) {
-                returnList.add(stp);
-                Log.d(TAG, "stp added? " + id);
-            }
-            id = stp.stopId;
-        } //code to remove any duplicates before parsing
+        returnList.add(0, mainStop);
 
-        if(!returnList.isEmpty()) {
-            for(StopData stp: returnList) {
-                Log.d(TAG, "removing stop data " + nearby.remove(stp));
-            }
-            //would be better to figure out how the dup is getting through
-            returnList.clear();
-            nearby.trimToSize();
-            Log.d(TAG, "new total nearby stops" + nearby.size());
-        }
-        //Collections.copy(returnList, nearby);
         try {
-            for(StopData stop: nearby) {
-                returnList.add(stop);
-                parseStop(stop);
-            }
-            nearby.clear();
             Log.d(TAG, "predictions? " + returnList.size());
             for(StopData stop: returnList) {
                 parseStopPredictions(stop);
@@ -378,7 +365,7 @@ public class StopService extends IntentService {
                                                 tmp = Route.readableName(this, routeName) + " " + directionNm;
                                                 if(stop.schedTimes.isEmpty()) {
                                                     Log.d(TAG, "new routename: " + tmp);
-                                                    strBuild.insert(0, tmp + " " + getString(R.string.scheduled) + "\n");
+                                                    strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
                                                     stop.schedTimes = strBuild.toString();
                                                 } else if(stop.schedTimes.contains(tmp)) {
                                                     //add a new time into the same route/stop
@@ -395,7 +382,7 @@ public class StopService extends IntentService {
                                                     if(newStop == null) {
                                                         newStop = new StopData(stop);
                                                         Log.d(TAG, "new routename: " + tmp);
-                                                        strBuild.insert(0, tmp + " " + getString(R.string.scheduled) + "\n");
+                                                        strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
                                                         newStop.schedTimes = strBuild.toString();
                                                         returnList.add(newStop);
                                                     } else {
@@ -432,31 +419,6 @@ public class StopService extends IntentService {
         if(returnList.isEmpty()) {
             LocalBroadcastManager.getInstance(this).sendBroadcast(returnResults);
             return;
-        }
-        String id = "";
-        final ArrayList<StopData> deleteThese = new ArrayList<>(0);
-        Collections.sort(returnList, new Comparator<StopData>() {
-            @Override
-            public int compare(final StopData object1, final StopData object2) {
-                return object1.schedTimes.compareTo(object2.schedTimes);
-            }
-        });
-        for(StopData stp: returnList) {
-            if(stp.schedTimes.equals(id)) {
-                deleteThese.add(stp);
-                Log.d(TAG, "stp added? " + id);
-            }
-            id = stp.schedTimes;
-        } //code to remove any duplicates before returning
-
-        if(!deleteThese.isEmpty()) {
-            for(StopData stp: deleteThese) {
-                Log.d(TAG, "removing stop data " + returnList.remove(stp));
-            }
-            //would be better to figure out how the dup is getting through
-            returnList.trimToSize();
-            deleteThese.clear();
-            Log.d(TAG, "new total nearby stops" + returnList.size());
         }
         returnResults.putExtra(TAG, new StopList(mainStop, returnList));
         Log.d(TAG, "stops to return? " + returnList.size());
