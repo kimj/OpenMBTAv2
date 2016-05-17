@@ -25,8 +25,8 @@
         app:showAsAction="never"/>
 
     <item
-        android:id="@+id/menu_settings"
-        android:title="@string/action_settings"
+        android:id="@+id/menu_nearby"
+        android:title="@string/action_nearby"
         app:showAsAction="never"/>
 
 </menu>

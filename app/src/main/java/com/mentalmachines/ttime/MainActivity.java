@@ -34,7 +34,7 @@ import android.widget.ExpandableListView;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.RouteExpandableAdapter;
+import com.mentalmachines.ttime.adapter.NavDrawerAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Favorite;
@@ -86,11 +86,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final Intent tnt = new Intent(this, NavDrawerTask.class);
         if(noFaves) {
             Log.i(TAG, "no favorites");
-            mCurrentSelection = RouteExpandableAdapter.SUBWAY;
+            mCurrentSelection = NavDrawerAdapter.SUBWAY;
             tnt.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
             findViewById(R.id.exp_lines).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         } else {
-            mCurrentSelection = RouteExpandableAdapter.FAVE;
+            mCurrentSelection = NavDrawerAdapter.FAVE;
             findViewById(R.id.exp_favorite).setBackgroundColor(getResources().getColor(R.color.silverlineBG));
         }
         final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
@@ -201,8 +201,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mDrawerList.setTag(null);
                 }
                 break;
-            case R.id.menu_settings:
-                Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
+            case R.id.menu_nearby:
+                //Toast.makeText(this, R.string.action_settings, Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(this, NearbyActivity.class));
                 break;
         }
 
@@ -303,7 +304,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         switch(v.getId()) {
             case R.id.exp_bus:
                 final Intent tnt = new Intent(this, NavDrawerTask.class);
-                mCurrentSelection = RouteExpandableAdapter.BUS;
+                mCurrentSelection = NavDrawerAdapter.BUS;
                 tnt.putExtra(NavDrawerTask.TAG, DBHelper.BUS_MODE);
                 startService(tnt);
                 findViewById(R.id.exp_lines).setBackgroundColor(Color.TRANSPARENT);
@@ -313,7 +314,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Intent svc = new Intent(this, NavDrawerTask.class);
                 svc.putExtra(NavDrawerTask.TAG, DBHelper.SUBWAY_MODE);
                 startService(svc);
-                mCurrentSelection = RouteExpandableAdapter.SUBWAY;
+                mCurrentSelection = NavDrawerAdapter.SUBWAY;
                 findViewById(R.id.exp_bus).setBackgroundColor(Color.TRANSPARENT);
                 findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 break;
@@ -330,7 +331,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     }
                     findViewById(R.id.exp_favorite).setBackgroundColor(Color.TRANSPARENT);
                 } else {
-                    mCurrentSelection = RouteExpandableAdapter.FAVE;
+                    mCurrentSelection = NavDrawerAdapter.FAVE;
                     //no extras for Favorites service
                     startService(new Intent(this, NavDrawerTask.class));
                 }
@@ -441,7 +442,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         @Override
         public void onGroupCollapse(int i) {
         //group is always zero for favorites and subway, allow only one open group
-            if(mCurrentSelection == RouteExpandableAdapter.BUS) {
+            if(mCurrentSelection == NavDrawerAdapter.BUS) {
                 return;
             } else {
                 if(!mDrawerList.isGroupExpanded(i)) {
@@ -558,7 +559,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             else {
                 //show the right list after the I/O is done in the bg
                 switch (mCurrentSelection) {
-                    case RouteExpandableAdapter.FAVE:
+                    case NavDrawerAdapter.FAVE:
                         final StopList faveStops = intent.getParcelableExtra(DBHelper.STOP);
                         final StopData[] vals;
                         if(faveStops != null && faveStops.mStopList != null && faveStops.mStopList.size() > 0) {
@@ -567,7 +568,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                         } else {
                             vals = null;
                         }
-                        final RouteExpandableAdapter adapter = new RouteExpandableAdapter(
+                        final NavDrawerAdapter adapter = new NavDrawerAdapter(
                                 b.getStringArray(DBHelper.KEY_ROUTE_NAME),
                                 b.getStringArray(DBHelper.KEY_ROUTE_ID),
                                 vals);
@@ -580,24 +581,24 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                         }
 
                         break;
-                    case RouteExpandableAdapter.BUS:
-                        mDrawerList.setAdapter(new RouteExpandableAdapter(
+                    case NavDrawerAdapter.BUS:
+                        mDrawerList.setAdapter(new NavDrawerAdapter(
                                 b.getStringArray(DBHelper.KEY_ROUTE_NAME),
                                 b.getStringArray(DBHelper.KEY_ROUTE_ID),
                                 context));
                         break;
-                    case RouteExpandableAdapter.SUBWAY:
-                        mDrawerList.setAdapter(new RouteExpandableAdapter(
+                    case NavDrawerAdapter.SUBWAY:
+                        mDrawerList.setAdapter(new NavDrawerAdapter(
                                 b.getStringArray(DBHelper.KEY_ROUTE_NAME),
                                 b.getStringArray(DBHelper.KEY_ROUTE_ID)));
                         mDrawerList.expandGroup(0);
                         break;
                 }
-                /*if(mCurrentSelection == RouteExpandableAdapter.SUBWAY) {
+                /*if(mCurrentSelection == NavDrawerAdapter.SUBWAY) {
                     mDrawerList.expandGroup(0);
                     //here the list has only one group
-                } else if(mCurrentSelection == RouteExpandableAdapter.FAVE) {
-                    switch(((RouteExpandableAdapter)mDrawerList.getAdapter()).getGroupCount()) {
+                } else if(mCurrentSelection == NavDrawerAdapter.FAVE) {
+                    switch(((NavDrawerAdapter)mDrawerList.getAdapter()).getGroupCount()) {
                         case 2:
                             mDrawerList.expandGroup(1);
                         case 1:
@@ -647,6 +648,14 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     }
 
     void showStopDetail(StopData stop) {
+        //mFragment must be route fragment
+        final String mainStopRoute = Route.readableName(this, ((RouteFragment)mFragment).mListAdapter.mRoute.name) + " " +
+                (((RouteFragment)mFragment).mListAdapter.mDirectionId == 0? getString(R.string.outbound): getString(R.string.inbound));
+        if(stop.schedTimes == null) {
+            stop.schedTimes = mainStopRoute;
+        } else {
+            stop.schedTimes = mainStopRoute + stop.schedTimes;
+        }
         Intent tnt = new Intent(this, StopService.class);
         tnt.putExtra(StopService.TAG, stop);
         startActivity(new Intent(this, StopDetailActivity.class));

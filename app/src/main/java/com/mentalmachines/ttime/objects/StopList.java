@@ -7,12 +7,14 @@ import java.util.ArrayList;
 
 /**
  * This class helps present stops that have more than one route
- * Other stops within 35 meters of the main stop are found in the ArrayList
+ * Other stops within 33 meters of the main stop populate the ArrayList
  * It powers the StopDetail activity
+ * also used in the favorites tab of the nav drawer
  */
 public class StopList implements Parcelable {
     public static final String TAG = "StopList";
     public StopData mainStop;
+    //main stop is also in the stop list
     public ArrayList<StopData> mStopList;
 
     public StopList() { }

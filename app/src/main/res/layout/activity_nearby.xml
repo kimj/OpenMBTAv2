@@ -8,22 +8,30 @@
     android:fitsSystemWindows="true">
 
     <android.support.design.widget.AppBarLayout
-
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:theme="@style/AppTheme.AppBarOverlay">
 
         <android.support.v7.widget.Toolbar
-            android:id="@+id/toolbar"
+            android:id="@+id/nr_toolbar"
             android:layout_width="match_parent"
             android:layout_height="?attr/actionBarSize"
             android:background="?attr/colorPrimary"
+            android:layout_alignParentTop="true"
+            app:layout_collapseMode="pin"
             app:popupTheme="@style/AppTheme.PopupOverlay" />
 
+        <com.google.android.gms.maps.MapView
+            android:id="@+id/nr_mapview"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:apiKey="@string/mac_map_dbgkey"
+            android:clickable="true"
+            app:layout_collapseMode="parallax" />
     </android.support.design.widget.AppBarLayout>
 
     <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/route_swipe"
+        android:id="@+id/nr_swipe"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"
@@ -34,14 +42,14 @@
         tools:context=".StopDetailActivity">
 
         <!-- To do text appearance large -->
-        <android.support.v7.widget.RecyclerView
-            android:id="@+id/route_list"
+        <ListView
+            android:id="@+id/nr_stoplist"
             android:layout_width="match_parent"
             android:layout_height="match_parent"
             android:padding="4dp"
             app:layoutManager="LinearLayoutManager"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            tools:context="com.mentalmachines.ttime.MainActivity"
+            tools:context="com.mentalmachines.ttime.NearbyActivity"
             tools:listitem="@layout/t_stop" />
 
     </android.support.v4.widget.SwipeRefreshLayout>

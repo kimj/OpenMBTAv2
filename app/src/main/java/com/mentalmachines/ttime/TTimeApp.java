@@ -125,7 +125,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
             mLocationRequest = LocationRequest.create();
             mLocationRequest.setPriority(LocationRequest.PRIORITY_BALANCED_POWER_ACCURACY);
             mLocationRequest.setInterval(5000); //5s
-            mLocationRequest.setFastestInterval(5000); //5
+            mLocationRequest.setFastestInterval(5000); //5s
         }
 
         try {
@@ -152,6 +152,8 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
                         final Location tmp = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
                         if(tmp != null) {
                             sLastLocation = tmp;
+                        } else {
+                            Log.w(TAG, "bad location! ");
                         }
                     } catch (SecurityException e) {
                         Log.e(TAG, "Location permission error");
@@ -159,10 +161,13 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
                     }
                     LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
                     Log.v(TAG, "timeout broadcast");
+                } else {
+                    Log.w(TAG, "timeout broadcast, request is not running");
+                    LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
                 }
             }
 
-        }, 60000); //cancel location request after 60s
+        }, 60000); //cancel location request after 60s?
 
     }
 
@@ -181,7 +186,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
         }
 
         if(isClientReady(ctx)) {
-            //re use the connected client to get a better read
+            //re use the connected client to get a faster read
             try {
                 final Location tmp = LocationServices.FusedLocationApi.getLastLocation(mLocationClient);
                 if(tmp != null && isLocationFresh(tmp)) {

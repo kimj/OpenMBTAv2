@@ -25,8 +25,8 @@ import java.util.ArrayList;
  * The next groups are bus - organized by bus number
  * The app will be grouping bus numbers by hundreds
  */
-public class RouteExpandableAdapter extends BaseExpandableListAdapter {
-    public static final String TAG = "RouteExpandableAdapter";
+public class NavDrawerAdapter extends BaseExpandableListAdapter {
+    public static final String TAG = "NavDrawerAdapter";
 
     public static final int SUBWAY = 0;
     public static final int BUS = 1;
@@ -39,7 +39,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
     //route names and ids for bus groups
     int[][] busChildren = null;
 
-    public RouteExpandableAdapter(String[] names, String[] ids, StopData[] stopsList) {
+    public NavDrawerAdapter(String[] names, String[] ids, StopData[] stopsList) {
         mMode = FAVE;
         rtNames = names;
         stops = stopsList;
@@ -56,7 +56,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
 
     }
 
-    public RouteExpandableAdapter(String[] names, String[] ids) {
+    public NavDrawerAdapter(String[] names, String[] ids) {
         mMode = SUBWAY;
         rtNames = names;
         rtIds = ids;
@@ -64,7 +64,7 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
         stops = null;
     }
 
-    public RouteExpandableAdapter(String[] names, String[] ids, Context ctx) {
+    public NavDrawerAdapter(String[] names, String[] ids, Context ctx) {
         mMode = BUS;
         rtNames = names;
         rtIds = ids;
@@ -177,13 +177,12 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 break;
             case FAVE:
                 //two groups possible
+                convertView.setBackgroundColor(ctx.getResources().getColor(R.color.silverlineBG));
                 if(stops != null && stops.length > 0 && groupPosition == 0) {
                     ((TextView) convertView).setText(ctx.getString(R.string.stops_fav));
-                    convertView.setBackgroundResource(R.drawable.bg_silverroute);
                     ((ExpandableListView)parent).expandGroup(groupPosition);
                 } else if(rtNames != null && rtNames.length > 0) {
                     ((TextView) convertView).setText(ctx.getString(R.string.routes_fav));
-                    convertView.setBackgroundResource(R.drawable.bg_silverroute);
                     ((ExpandableListView)parent).expandGroup(groupPosition);
                 }
                 break;
@@ -219,9 +218,9 @@ public class RouteExpandableAdapter extends BaseExpandableListAdapter {
                 switch (groupPosition) {
                     case 0:
                         if(stops != null && stops.length > 0) {
-                            ((TextView) convertView).setTextColor(Color.BLACK);
-                            Log.d(TAG, "stop name set here " + stops[childPosition].stopName);
-                            convertView.setBackgroundResource(R.drawable.bg_busroute);
+                            //((TextView) convertView).setTextColor(Color.BLACK);
+                            //Log.d(TAG, "stop name set here " + stops[childPosition].stopName);
+                            convertView.setBackgroundColor(Color.TRANSPARENT);
                             ((TextView) convertView).setText(stops[childPosition].stopName);
                             convertView.setTag(stops[childPosition]);
                         } else if(rtNames != null && rtNames.length > 0) {

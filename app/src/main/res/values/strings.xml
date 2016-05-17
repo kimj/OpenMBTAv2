@@ -14,7 +14,7 @@
     <string name="action_settings">Settings</string>
     <string name="action_schedule">Show Schedule (for this Route)</string>
     <string name="bus_prefix">Bus #</string>
-
+    <string name="boston">Boston</string>
     <string name="noSched">sorry, no schedule available</string>
     <string name="scheduled">Schedule:</string>
     <string name="actual">Actual:</string>
@@ -29,6 +29,10 @@
     <string name="outbound">Outbound</string>
     <string name="wait">Please Wait</string>
     <string name="getting_data">Calling the MBTA</string>
+    <string name="nearby">Nearby Stops</string>
+    <string name="action_nearby">Get Nearby Stops</string>
+
+    <string name="mac_map_dbgkey">AIzaSyByV2xh1lLMrEUNZL2P92JIEQtMYJ4SyTI</string>
 
     <string-array name="transit_methods">
         <item>Bus</item>

@@ -39,6 +39,12 @@
             android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar"/>
 
+        <activity
+            android:parentActivityName=".MainActivity"
+            android:name=".NearbyActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/AppTheme.NoActionBar"/>
+
         <service android:name=".services.NavDrawerTask"/>
         <service android:name=".services.GetTimesForRoute"/>
         <service android:name=".services.GetScheduleService" />

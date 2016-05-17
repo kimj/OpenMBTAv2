@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -44,9 +45,9 @@ public class StopService extends IntentService {
     public static final String GETSTOPTIMES = GetTimesForRoute.BASE + STOPVERB + GetTimesForRoute.SUFFIX + SCHEDHOUR + STOPPARAM;
     //http://realtime.mbta.com/developer/api/v2/schedulebystop?api_key=wX9NwuHnZU2ToO7GmGR9uw&stop=6538&format=json
     StopData mainStop;
-    ArrayList<StopData> returnList;
-    final StringBuilder strBuild = new StringBuilder(0);
-    final Calendar t = Calendar.getInstance();
+
+    final static StringBuilder strBuild = new StringBuilder(0);
+    final static Calendar t = Calendar.getInstance();
     //required, empty constructor, builds intents
     public StopService() {
         super(TAG);
@@ -61,86 +62,136 @@ public class StopService extends IntentService {
         //make the route here in the background
         //make route, read stops from the DB in the background
         final Bundle b = intent.getExtras();
+        if(b == null || !b.containsKey(TAG)) {
+            Log.w(TAG, "stop service missing extras");
+            return;
+        }
         mainStop = b.getParcelable(TAG);
+        final ArrayList<StopData> returnList = createStopList(mainStop);
 
-        final HashMap<String, StopData> nearby = new HashMap<>();
-        nearby.put(mainStop.stopId, mainStop);
+        try {
+            Log.d(TAG, "predictions? " + returnList.size());
+            //for(StopData stop: returnList) {
+            StopData stop;
+            for(int dex = 0; dex < returnList.size(); dex++) {
+                stop = returnList.get(dex);
+                parseStop(stop, returnList);
+                parseStopPredictions(this, stop, returnList);
+            }
+            //This part wraps things up and sends a message back to the activity with data for the stop detail
+            setXtrasAndBroadcast(returnList);
 
-        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
-                null, null, null, null, null, null);
-        returnList = Route.makeStops(stopNameCursor);
+        } catch (IOException e) {
+            Log.e(TAG, "problem with stop service " + e.getMessage());
+            e.printStackTrace();
+            returnList.clear();
+            setXtrasAndBroadcast(returnList);
+        }
+    }
 
-        Log.d(TAG, "inbound total stops" + returnList.size());
+    static void runStopLoop(ArrayList<StopData> stopList, HashMap<String, StopData> nearby,
+                            String stopCode, Double mainLong, Double mainLat) {
         float[] results = new float[1];
-        final double mainLong = Double.valueOf(mainStop.stopLong);
-        final double mainLat = Double.valueOf(mainStop.stopLat);
-        for(StopData stop: returnList) {
-            if(!stop.stopId.equals(mainStop.stopId)) {
+        for(StopData stop: stopList) {
+            if(!stop.stopId.equals(stopCode)) {
                 Location.distanceBetween(mainLat, mainLong,
                         Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
                 //find other stops within ~100ft of the mainStop
                 if(results[0] < 33f) {
                     nearby.put(stop.stopId, stop);
                 }
+
+            } else {
+                Log.d(TAG, "same stop: " + stop.stopId);
             }
         }
-        returnList.clear();
-        Log.d(TAG, "inbound stops" + nearby.size());
+    }
+
+    public static ArrayList<StopData> createStopList(Location findNearHere) {
+        final HashMap<String, StopData> nearby = new HashMap<>();
+
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
+                null, null, null, null, null, null);
+        ArrayList<StopData> stopList = Route.makeStops(stopNameCursor);
+
+        //Log.d(TAG, "inbound total stops " + stopList.size());
+        runStopLoop(stopList, nearby, "", findNearHere.getLongitude(), findNearHere.getLatitude());
+        stopList.clear();
+        //Log.d(TAG, "inbound stops? " + nearby.size());
         stopNameCursor = db.query(true, DBHelper.STOPS_OUT_TABLE, Route.mStopProjection,
                 null, null, null, null, null, null);
-        returnList = Route.makeStops(stopNameCursor);
-        for(StopData stop: returnList) {
-            if(!stop.stopId.equals(mainStop.stopId)) {
-                Location.distanceBetween(mainLong, mainLat,
-                        Double.valueOf(stop.stopLong), Double.valueOf(stop.stopLat), results);
-                //find other stops within 25m of the mainStop
-                if(results[0] < 33.0f) {
-                    nearby.put(stop.stopId, stop);
-                }
-            }
+        stopList = Route.makeStops(stopNameCursor);
+        //Log.d(TAG, "outbound total stops " + stopList.size());
+        runStopLoop(stopList, nearby, "", findNearHere.getLongitude(), findNearHere.getLatitude());
 
-        }
-        returnList.clear();
-        Log.d(TAG, "total nearby stops" + nearby.size());
+        //Log.d(TAG, "total nearby stops" + nearby.size());
         //now have list of stop ids within 25 meters of the stop passed in
         //call the server for each id and parse the schedule/predictions
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        returnList.addAll(nearby.values());
-        //cleanup completed
-        returnList.remove(mainStop);
-        Collections.sort(returnList, new Comparator<StopData>() {
+        stopList.clear();
+        stopList.addAll(nearby.values());
+        //Log.d(TAG, "total stops, hashmap values " + stopList.size());
+
+        Collections.sort(stopList, new Comparator<StopData>() {
             @Override
             public int compare(final StopData object1, final StopData object2) {
                 return object1.stopName.compareTo(object2.stopName);
             }
         });
-        returnList.add(0, mainStop);
+        //Log.d(TAG, "sorted and ready to return, total stops " + stopList.size());
 
-        try {
-            Log.d(TAG, "predictions? " + returnList.size());
-            for(StopData stop: returnList) {
-                parseStopPredictions(stop);
-            }
-            //This part wraps things up and sends a message back to the activity with data for the stop detail
-            setXtrasAndBroadcast();
-
-        } catch (IOException e) {
-            Log.e(TAG, "problem with stop service " + e.getMessage());
-            e.printStackTrace();
-            returnList.clear();
-            setXtrasAndBroadcast();
-        }
+        return stopList;
     }
 
-    void parseStopPredictions(StopData stop) throws IOException {
+    public static ArrayList<StopData> createStopList(StopData mainStop) {
+        final HashMap<String, StopData> nearby = new HashMap<>();
+        nearby.put(mainStop.stopId, mainStop);
+
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
+                null, null, null, null, null, null);
+        ArrayList<StopData> stopList = Route.makeStops(stopNameCursor);
+
+        //Log.d(TAG, "inbound total stops " + stopList.size());
+        final Double mainLat = Double.valueOf(mainStop.stopLat);
+        final Double mainLong = Double.valueOf(mainStop.stopLong);
+        runStopLoop(stopList, nearby, mainStop.stopId, mainLong, mainLat);
+        stopList.clear();
+        //Log.d(TAG, "inbound stops" + nearby.size());
+        stopNameCursor = db.query(true, DBHelper.STOPS_OUT_TABLE, Route.mStopProjection,
+                null, null, null, null, null, null);
+        stopList = Route.makeStops(stopNameCursor);
+        runStopLoop(stopList, nearby, mainStop.stopId, mainLong, mainLat);
+
+        //Log.d(TAG, "total nearby stops" + nearby.size());
+        //now have list of stop ids within 25 meters of the stop passed in
+        //call the server for each id and parse the schedule/predictions
+        if(!stopNameCursor.isClosed()) {
+            stopNameCursor.close();
+        }
+        stopList.clear();
+        stopList.addAll(nearby.values());
+        //cleanup completed
+        stopList.remove(mainStop);
+        Collections.sort(stopList, new Comparator<StopData>() {
+            @Override
+            public int compare(final StopData object1, final StopData object2) {
+                return object1.stopName.compareTo(object2.stopName);
+            }
+        });
+        stopList.add(0, mainStop);
+        return stopList;
+    }
+
+    public static void parseStopPredictions(Context ctx, StopData stop, ArrayList<StopData> returnList) throws IOException {
         //add schedule times and direction to the stops
         String routeName = "", directionNm = "", tmp;
         boolean found = false;
         final JsonParser parser = new JsonFactory().createParser(new URL(GETPREDICTIMES + stop.stopId));
-        Log.d(TAG, "predictions call? " + GETPREDICTIMES + stop.stopId);
+        //Log.d(TAG, "predictions call? " + GETPREDICTIMES + stop.stopId);
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -233,9 +284,9 @@ public class StopService extends IntentService {
 
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip, put the timing data  into the stop
-                                                tmp = Route.readableName(this, routeName) + " " + directionNm;
+                                                tmp = Route.readableName(ctx, routeName) + " " + directionNm;
                                                 if(stop.predicTimes.isEmpty()) {
-                                                    strBuild.insert(0, getString(R.string.actual) + " ");
+                                                    strBuild.insert(0, ctx.getString(R.string.actual) + " ");
                                                     stop.predicTimes = strBuild.toString();
                                                 } else if(stop.schedTimes.contains(tmp)) {
                                                     //add another time to the current stop
@@ -254,7 +305,7 @@ public class StopService extends IntentService {
                                                     }
                                                     if(found) {
                                                         if (stop.predicTimes.isEmpty()) {
-                                                            strBuild.insert(0, getString(R.string.actual) + " ");
+                                                            strBuild.insert(0, ctx.getString(R.string.actual) + " ");
                                                             stop.predicTimes = strBuild.toString();
                                                         } else if(strBuild.length() > 0 && !stop.predicTimes.contains(strBuild.toString())) {
                                                             stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
@@ -283,7 +334,7 @@ public class StopService extends IntentService {
         Log.i(TAG, "parser closed, prediction parsing complete");
     }
 
-    void parseStop(StopData stop) throws IOException {
+    void parseStop(StopData stop, ArrayList<StopData> listdata) throws IOException {
         //add schedule times and direction to the stops
         String routeName = "", directionNm = "", tmp;
         final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
@@ -364,7 +415,7 @@ public class StopService extends IntentService {
                                                 //end of the trip
                                                 tmp = Route.readableName(this, routeName) + " " + directionNm;
                                                 if(stop.schedTimes.isEmpty()) {
-                                                    Log.d(TAG, "new routename: " + tmp);
+                                                    //Log.d(TAG, "new routename: " + tmp);
                                                     strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
                                                     stop.schedTimes = strBuild.toString();
                                                 } else if(stop.schedTimes.contains(tmp)) {
@@ -372,25 +423,25 @@ public class StopService extends IntentService {
                                                     stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
                                                 } else {
                                                     //new stop
-                                                    for(StopData sd: returnList) {
+                                                    for(StopData sd: listdata) {
                                                         if(sd.schedTimes.contains(tmp)) {
-                                                            Log.w(TAG, "found stop");
+                                                            //Log.w(TAG, "found stop");
                                                             newStop = sd;
                                                             break;
                                                         }
                                                     } //end for
                                                     if(newStop == null) {
                                                         newStop = new StopData(stop);
-                                                        Log.d(TAG, "new routename: " + tmp);
+                                                        //Log.d(TAG, "new routename: " + tmp);
                                                         strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
                                                         newStop.schedTimes = strBuild.toString();
-                                                        returnList.add(newStop);
+                                                        listdata.add(newStop);
                                                     } else {
                                                         newStop.schedTimes = newStop.schedTimes + ", " + strBuild.toString();
                                                     }
                                                     stop = newStop;
                                                     newStop = null;
-                                                    Log.d(TAG, "new stop: " + stop.schedTimes);
+                                                    //Log.d(TAG, "new stop: " + stop.schedTimes);
                                                 }
 
                                                 strBuild.setLength(0);
@@ -413,7 +464,7 @@ public class StopService extends IntentService {
         //TODO select alerts and set ids into StopData, as needed
     }
 
-    void setXtrasAndBroadcast() {
+    void setXtrasAndBroadcast(ArrayList<StopData> returnList) {
 
         final Intent returnResults = new Intent(TAG);
         if(returnList.isEmpty()) {

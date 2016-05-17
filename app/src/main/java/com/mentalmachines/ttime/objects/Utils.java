@@ -8,8 +8,6 @@ import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
-import com.mentalmachines.ttime.R;
-
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
