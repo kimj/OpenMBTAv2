@@ -419,14 +419,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         FragmentManager fragmentManager = getSupportFragmentManager();
         AlertsFragment alertsFragment = (AlertsFragment) fragmentManager.findFragmentByTag(AlertsFragment.TAG);
         if (alertsFragment != null) {
+            //found the alerts fragment, show it and hide the showing fragment
             alertsFragment.updateAlertsListView(stop.stopAlert);
-            fragmentManager.beginTransaction().add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
+            fragmentManager.beginTransaction().hide(mFragment).show(alertsFragment).commit();
         } else {
+            //hide the fragment that is showing and add a new alerts fragment
             Bundle alertFragmentArguments = new Bundle();
             alertsFragment = new AlertsFragment();
             alertFragmentArguments.putString("alertId", stop.stopAlert);
             alertsFragment.setArguments(alertFragmentArguments);
-            fragmentManager.beginTransaction().add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
+            fragmentManager.beginTransaction().hide(mFragment).add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
         }
 
         //geo:0,0?q=lat,lng(label)
@@ -649,13 +651,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
     void showStopDetail(StopData stop) {
         //mFragment must be route fragment
-        final String mainStopRoute = Route.readableName(this, ((RouteFragment)mFragment).mListAdapter.mRoute.name) + " " +
-                (((RouteFragment)mFragment).mListAdapter.mDirectionId == 0? getString(R.string.outbound): getString(R.string.inbound));
-        if(stop.schedTimes == null) {
-            stop.schedTimes = mainStopRoute;
-        } else {
-            stop.schedTimes = mainStopRoute + stop.schedTimes;
+        if(mFragment instanceof RouteFragment) {
+            final String mainStopRoute = Route.readableName(this, ((RouteFragment)mFragment).mListAdapter.mRoute.name) + " " +
+                    (((RouteFragment)mFragment).mListAdapter.mDirectionId == 0? getString(R.string.outbound): getString(R.string.inbound));
+            if(stop.schedTimes == null) {
+                stop.schedTimes = mainStopRoute;
+            } else {
+                stop.schedTimes = mainStopRoute + stop.schedTimes;
+            }
         }
+
         Intent tnt = new Intent(this, StopService.class);
         tnt.putExtra(StopService.TAG, stop);
         startActivity(new Intent(this, StopDetailActivity.class));
