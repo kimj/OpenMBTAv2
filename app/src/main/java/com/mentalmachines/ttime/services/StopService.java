@@ -98,8 +98,8 @@ public class StopService extends IntentService {
             if(!stop.stopId.equals(stopCode)) {
                 Location.distanceBetween(mainLat, mainLong,
                         Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
-                //find other stops within ~100ft of the mainStop
-                if(results[0] < 33f) {
+                //find other stops within ~100ft of the mainStop, 35 meters
+                if(results[0] < 35f) {
                     nearby.put(stop.stopId, stop);
                 }
 
