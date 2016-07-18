@@ -30,7 +30,9 @@ import java.util.HashMap;
 
 /**
  * Created by emezias on 1/11/16.
- * This class runs the API requests
+ * Notice the Stop param defined in this service
+ * This class runs the API requests to find stops near a location
+ * Then it gets the schedule and predicted times for those stops
  */
 public class StopService extends IntentService {
 
@@ -268,6 +270,7 @@ public class StopService extends IntentService {
                                                 if(stop == null || tmp.isEmpty() || tmp == null) {
                                                     Log.w(TAG, "skipping prediction time field");
                                                 } else {
+                                                    stop.scheduleTimes.add(1000 * Long.valueOf(tmp));
                                                     GetTimesForRoute.getTime(tmp, t, strBuild);
                                                 }
                                                 //This time will go into the stop field below with the pre away key to put min/sec with the time
@@ -278,6 +281,7 @@ public class StopService extends IntentService {
                                                     Log.w(TAG, "skipping seconds prediction field");
                                                     //this is not possible... pred time always has the away key
                                                 } else {
+                                                    stop.predictionSecs.add(Integer.valueOf(tmp));
                                                     GetTimesForRoute.addAwayTimes(tmp, strBuild);
                                                     Log.d(TAG, "stringbuilder predicTimes" + strBuild.toString());
                                                 }
@@ -340,7 +344,7 @@ public class StopService extends IntentService {
         final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
         Log.d(TAG, "stops call? " + GETSTOPTIMES + stop.stopId);
         StopData newStop = null;
-        int dex;
+
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -409,6 +413,7 @@ public class StopService extends IntentService {
                                             token = parser.nextToken();
                                             if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
+                                                stop.scheduleTimes.add(1000 * Long.valueOf(parser.getValueAsString()));
                                                 GetTimesForRoute.getTime(parser.getValueAsString(), t, strBuild);
                                                 //put the scheduled time into the string builder
                                             } else if(JsonToken.END_OBJECT.equals(token)) {

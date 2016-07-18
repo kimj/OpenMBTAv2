@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime.adapter;
 
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
@@ -11,6 +12,7 @@ import android.widget.TextView;
 
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.objects.Utils;
 
 /**
  * Created by emezias on 1/20/16.
@@ -57,26 +59,25 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
         if(items == null || position >= items.length) {
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
-            holder.mAlertBtn.setVisibility(View.GONE);
             Log.w(TAG, "bad stop position: " + position);
         } else {
             final StopData s = items[position];
+            final Context ctx = holder.mStopRoutename.getContext();
             holder.mStopRoutename.setText(s.stopName);
             //alert header text gets set in the alert field instead of the alert id
             if(TextUtils.isEmpty(s.schedTimes)) {
                 holder.mStopDescription.setText("");
             } else {
-                holder.mStopDescription.setText(s.schedTimes);
-
+                holder.mStopDescription.setText(Utils.trimStopTimes(ctx, s.schedTimes));
             }
             if(TextUtils.isEmpty(s.predicTimes)) {
                 holder.mETA.setText("");
             } else {
-                holder.mETA.setText(s.predicTimes);
+                holder.mETA.setText(Utils.trimStopTimes(ctx, s.predicTimes));
             }
 
             //TODO create new layout
-            if(s.stopAlert != null) {
+            if(!TextUtils.isEmpty(s.stopAlert)) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
                 holder.mAlertBtn.setTag(s.stopAlert);
             } else {
@@ -98,9 +99,8 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             mStopRoutename = (TextView) itemView.findViewById(R.id.stop_route);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
-            mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_alert_btn);
-            //mStopDescription.setTag(itemView);
-            itemView.findViewById(R.id.stop_mapbtn).setVisibility(View.GONE);
+            mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_detail_btn);
+            mAlertBtn.setImageResource(R.drawable.btn_stop_alert);
         }
     }
 }

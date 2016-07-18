@@ -25,7 +25,8 @@ import java.util.Calendar;
 
 /**
  * Created by emezias on 1/11/16.
- * This class runs the API requests
+ * This class runs the API requests to get scheduled and predicted times for an entire route
+ * Some of the constants and methods here are used by the service to get times for a stop or list of stops
  */
 public class GetTimesForRoute extends IntentService {
 
@@ -107,7 +108,9 @@ public class GetTimesForRoute extends IntentService {
         } else {
             value = GETROUTEPREDTIMES + searchRoute.id;
         }
+
         final JsonParser parser = new JsonFactory().createParser(new URL(value));
+
         while (!parser.isClosed()) {
             //start parsing, get the token
             JsonToken token = parser.nextToken();
@@ -201,7 +204,8 @@ public class GetTimesForRoute extends IntentService {
                                         if(skiptrip || stop == null || TextUtils.isEmpty(value)) {
                                             Log.w(TAG, "skipping prediction time field");
                                         } else {
-                                            GetTimesForRoute.getTime(value, t, strBuild);
+                                            stop.scheduleTimes.add(1000 * Long.valueOf(value));
+                                            getTime(value, t, strBuild);
                                             //predicted time is now set into the string builder
                                         }
                                         //This time will go into the stop field below with the pre away key to put min/sec with the time
@@ -212,7 +216,8 @@ public class GetTimesForRoute extends IntentService {
                                             Log.w(TAG, "skipping seconds prediction field");
                                             //this is not possible... pred time always has the away key
                                         } else {
-                                            GetTimesForRoute.addAwayTimes(value, strBuild);
+                                            stop.predictionSecs.add(Integer.valueOf(value));
+                                            addAwayTimes(value, strBuild);
                                             if(!stop.predicTimes.isEmpty()) {
                                                 stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
                                             } else {
@@ -260,6 +265,7 @@ public class GetTimesForRoute extends IntentService {
         } else {
             tmp = GETROUTESCHEDTIMES + searchRoute.id + DATETIMEPARAM + dirID;
         }
+
         final JsonParser parser = new JsonFactory().createParser(new URL(tmp));
         Log.d(TAG, "schedule call? " + tmp);
         dirID = 0;
@@ -347,8 +353,10 @@ public class GetTimesForRoute extends IntentService {
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DTIME.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         tmp = parser.getValueAsString();
-                                        tmp = getTime(tmp, t, strBuild);
+
                                         if(!skiptrip && t.after(now)) {
+                                            stop.scheduleTimes.add(1000 * Long.valueOf(tmp));
+                                            tmp = getTime(tmp, t, strBuild);
                                             if(stop.schedTimes.isEmpty()) {
                                                 stop.schedTimes = tmp;
                                             } else {

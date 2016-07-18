@@ -19,6 +19,8 @@ public class StopData implements Parcelable {
     public String stopId; //to check for alerts
     public String stopLat, stopLong; //to open Map
     public String stopAlert = null;
+    public ArrayList<Long> scheduleTimes = new ArrayList<>();
+    public ArrayList<Integer> predictionSecs = new ArrayList<>();
     public String predicTimes = "";
     public String schedTimes = "";
     //TODO change to TreeSet
@@ -73,6 +75,14 @@ public class StopData implements Parcelable {
         Log.w(TAG, "bad schedule type");
     }
 
+    public String readableStopName() {
+        if(stopName.contains(" - ")) {
+             return stopName.substring(0, stopName.indexOf(" -"));
+        } else {
+             return stopName;
+        }
+    }
+
     @Override
     public int describeContents() {
         return 0;
@@ -88,6 +98,8 @@ public class StopData implements Parcelable {
         dest.writeString(stopAlert);
         dest.writeString(predicTimes);
         dest.writeString(schedTimes);
+        dest.writeList(scheduleTimes);
+        dest.writeList(predictionSecs);
         dest.writeList(weekdayTimestamps);
         dest.writeList(saturdayTimestamps);
         dest.writeList(sundayTimestamps);
@@ -110,11 +122,15 @@ public class StopData implements Parcelable {
             s.stopAlert = source.readString();
             s.predicTimes = source.readString();
             s.schedTimes = source.readString();
-            s.weekdayTimestamps = new ArrayList<Long>();
+            s.scheduleTimes = new ArrayList<>();
+            source.readList(s.scheduleTimes, null);
+            s.predictionSecs = new ArrayList<>();
+            source.readList(s.predictionSecs, null);
+            s.weekdayTimestamps = new ArrayList<>();
             source.readList(s.weekdayTimestamps, null);
-            s.saturdayTimestamps = new ArrayList<Long>();
+            s.saturdayTimestamps = new ArrayList<>();
             source.readList(s.saturdayTimestamps, null);
-            s.sundayTimestamps = new ArrayList<Long>();
+            s.sundayTimestamps = new ArrayList<>();
             source.readList(s.sundayTimestamps, null);
             return s;
         }

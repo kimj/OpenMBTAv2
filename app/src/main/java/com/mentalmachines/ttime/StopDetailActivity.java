@@ -128,12 +128,7 @@ public class StopDetailActivity extends AppCompatActivity {
     }
 
     void setList() {
-        if(mStopDetail.mainStop.stopName.contains(" - ")) {
-            setTitle(mStopDetail.mainStop.stopName.substring(0,
-                    mStopDetail.mainStop.stopName.indexOf(" -")));
-        } else {
-            setTitle(mStopDetail.mainStop.stopName);
-        }
+        setTitle(mStopDetail.mainStop.readableStopName());
 
         final StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
         mStopDetail.mStopList.toArray(adapterList);

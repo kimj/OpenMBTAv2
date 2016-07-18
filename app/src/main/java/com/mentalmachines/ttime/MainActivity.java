@@ -377,21 +377,21 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         This click listener is set on the map button next to the route name */
     /*public void mapRoute(View v) {
         StringBuilder s = new StringBuilder().append("http://maps.google.com/maps?saddr=");
-        StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        StopData stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         s.append(stop.stopLat).append(",").append(stop.stopLong).append("&daddr=");
         Log.d(TAG, "first stop " + stop.stopName);
-        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s.toString()));
         //intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
         startActivity(intent);
         Log.d(TAG, "stop " + stop.stopName);
-        *//*StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        *//*StopData stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         StringBuilder s = new StringBuilder().append("geo:=")
                 .append(stop.stopLat).append(",").append(stop.stopLong).append("?q=");
-        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong)*//*;
         startActivity(new Intent(android.content.Intent.ACTION_VIEW,
                 Uri.parse(s.toString())));
@@ -402,7 +402,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
      * It finds the stop on a map, the Stop Data is set as a tag on the view
      * @param v
      */
-    public void openMap(View v) {
+    public void openMenu(View v) {
         PopupMenu popup = new PopupMenu(v.getContext(), v);
         popup.inflate(R.menu.stop_popup);
         popup.setOnMenuItemClickListener(this);
@@ -415,6 +415,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public void openAlerts(View v) {
         //click listener in the route fragment recycler view
         final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
+        showStopAlert(stop);
+        //geo:0,0?q=lat,lng(label)
+        //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
+        //old code trying to show stop on the map
+    }
+
+    void showStopAlert(StopData stop) {
         Toast.makeText(this, "open alert main activity" + stop.stopAlert, Toast.LENGTH_SHORT).show();
         FragmentManager fragmentManager = getSupportFragmentManager();
         AlertsFragment alertsFragment = (AlertsFragment) fragmentManager.findFragmentByTag(AlertsFragment.TAG);
@@ -430,9 +437,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             alertsFragment.setArguments(alertFragmentArguments);
             fragmentManager.beginTransaction().hide(mFragment).add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
         }
-
-        //geo:0,0?q=lat,lng(label)
-        //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
     }
 
     /**
@@ -644,6 +648,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
                         + Uri.encode(stop.stopName) + ")");
                 startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                break;
+            case R.id.stop_alert:
+                showStopAlert(stop);
                 break;
         }
         return false;
