@@ -1,20 +1,19 @@
 package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
-import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.location.Location;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.TTimeApp;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
@@ -78,7 +77,7 @@ public class StopService extends IntentService {
             for(int dex = 0; dex < returnList.size(); dex++) {
                 stop = returnList.get(dex);
                 parseStop(stop, returnList);
-                parseStopPredictions(this, stop, returnList);
+                parseStopPredictions(stop);
             }
             //This part wraps things up and sends a message back to the activity with data for the stop detail
             setXtrasAndBroadcast(returnList);
@@ -188,10 +187,12 @@ public class StopService extends IntentService {
         return stopList;
     }
 
-    public static void parseStopPredictions(Context ctx, StopData stop, ArrayList<StopData> returnList) throws IOException {
+    public static void parseStopPredictions(StopData stop) throws IOException {
         //add schedule times and direction to the stops
         String routeName = "", directionNm = "", tmp;
-        boolean found = false;
+        int secs = 0;
+        long schTime = 0;
+        stop.predictionTimestamp = System.currentTimeMillis();
         final JsonParser parser = new JsonFactory().createParser(new URL(GETPREDICTIMES + stop.stopId));
         //Log.d(TAG, "predictions call? " + GETPREDICTIMES + stop.stopId);
         while (!parser.isClosed()) {
@@ -246,13 +247,6 @@ public class StopService extends IntentService {
                                     if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_DIR_NM.equals(parser.getCurrentName())) {
                                         token = parser.nextToken();
                                         directionNm = parser.getValueAsString();
-                                        /*if(directionNm.isEmpty()) {
-                                            directionNm = parser.getValueAsString();
-                                            //this assignment should fix a glitch with the first stop to parse
-                                            //stop.predicTimes = "";
-                                        } else {
-                                            directionNm = parser.getValueAsString();
-                                        }*/
                                         Log.d(TAG, "direction id set " + directionNm);
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
                                         //array of trips with stops inside, may be several trips returned
@@ -266,58 +260,32 @@ public class StopService extends IntentService {
                                             if(JsonToken.FIELD_NAME.equals(token) && DBHelper.PRED_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
                                                 tmp = parser.getValueAsString();
-                                                //Log.d(TAG, "predTime?");
-                                                if(stop == null || tmp.isEmpty() || tmp == null) {
+                                                if(stop == null || TextUtils.isEmpty(tmp)) {
                                                     Log.w(TAG, "skipping prediction time field");
                                                 } else {
-                                                    stop.scheduleTimes.add(1000 * Long.valueOf(tmp));
-                                                    GetTimesForRoute.getTime(tmp, t, strBuild);
+                                                    schTime = 1000 * Long.valueOf(tmp);
+                                                    if(!stop.scheduleTimes.contains(schTime)) {
+                                                        stop.scheduleTimes.add(schTime);
+                                                        Log.d(TAG, "adding time: " + schTime);
+                                                    }
                                                 }
                                                 //This time will go into the stop field below with the pre away key to put min/sec with the time
                                             } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
                                                 tmp = parser.getValueAsString();
-                                                if (stop == null || tmp.isEmpty() || tmp == null) {
+                                                if (stop == null || TextUtils.isEmpty(tmp)) {
                                                     Log.w(TAG, "skipping seconds prediction field");
                                                     //this is not possible... pred time always has the away key
                                                 } else {
-                                                    stop.predictionSecs.add(Integer.valueOf(tmp));
-                                                    GetTimesForRoute.addAwayTimes(tmp, strBuild);
-                                                    Log.d(TAG, "stringbuilder predicTimes" + strBuild.toString());
+                                                    secs = Integer.valueOf(tmp);
+                                                    if(!stop.predictionSecs.contains(secs)) {
+                                                        stop.predictionSecs.add(secs);
+                                                        Log.d(TAG, "adding prediction offset: " + tmp);
+                                                    }
                                                 }
 
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip, put the timing data  into the stop
-                                                tmp = Route.readableName(ctx, routeName) + " " + directionNm;
-                                                if(stop.predicTimes.isEmpty()) {
-                                                    strBuild.insert(0, ctx.getString(R.string.actual) + " ");
-                                                    stop.predicTimes = strBuild.toString();
-                                                } else if(stop.schedTimes.contains(tmp)) {
-                                                    //add another time to the current stop
-                                                    if(strBuild.length() > 0 && !stop.predicTimes.contains(strBuild.toString())) {
-                                                        stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
-                                                    }
-                                                } else {
-                                                    //find the right stop data
-                                                    for(StopData s: returnList) {
-                                                        if(s.schedTimes.contains(tmp)) {
-                                                            stop = s;
-                                                            Log.d(TAG, "new stop? " + stop.stopName);
-                                                            found = true;
-                                                            break;
-                                                        }
-                                                    }
-                                                    if(found) {
-                                                        if (stop.predicTimes.isEmpty()) {
-                                                            strBuild.insert(0, ctx.getString(R.string.actual) + " ");
-                                                            stop.predicTimes = strBuild.toString();
-                                                        } else if(strBuild.length() > 0 && !stop.predicTimes.contains(strBuild.toString())) {
-                                                            stop.predicTimes = stop.predicTimes + "\n" + strBuild.toString();
-                                                        }
-                                                        found = false;
-                                                    } //end stop found, could be duplicate data
-                                                }
-
                                                 strBuild.setLength(0);
                                                 //Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);
                                             } //end object
@@ -341,6 +309,7 @@ public class StopService extends IntentService {
     void parseStop(StopData stop, ArrayList<StopData> listdata) throws IOException {
         //add schedule times and direction to the stops
         String routeName = "", directionNm = "", tmp;
+        long schTime = 0;
         final JsonParser parser = new JsonFactory().createParser(new URL(GETSTOPTIMES + stop.stopId));
         Log.d(TAG, "stops call? " + GETSTOPTIMES + stop.stopId);
         StopData newStop = null;
@@ -398,7 +367,7 @@ public class StopService extends IntentService {
                                         directionNm = parser.getValueAsString();
                                         if(directionNm.isEmpty()) {
                                             //this assignment fixes a glitch with the first stop to parse
-                                            stop.schedTimes = "";
+                                            stop.stopRouteDir = "";
                                         }
                                         //Log.d(TAG, "direction id set " + directionNm);
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_TRIP.equals(parser.getCurrentName())) {
@@ -413,23 +382,21 @@ public class StopService extends IntentService {
                                             token = parser.nextToken();
                                             if(JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_SCH_TIME.equals(parser.getCurrentName())) {
                                                 token = parser.nextToken();
-                                                stop.scheduleTimes.add(1000 * Long.valueOf(parser.getValueAsString()));
-                                                GetTimesForRoute.getTime(parser.getValueAsString(), t, strBuild);
+                                                schTime = 1000 * Long.valueOf(parser.getValueAsString());
+                                                if(!stop.scheduleTimes.contains(schTime)) {
+                                                    stop.scheduleTimes.add(schTime);
+                                                }
                                                 //put the scheduled time into the string builder
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip
                                                 tmp = Route.readableName(this, routeName) + " " + directionNm;
-                                                if(stop.schedTimes.isEmpty()) {
+                                                if(stop.stopRouteDir.isEmpty()) {
                                                     //Log.d(TAG, "new routename: " + tmp);
-                                                    strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
-                                                    stop.schedTimes = strBuild.toString();
-                                                } else if(stop.schedTimes.contains(tmp)) {
-                                                    //add a new time into the same route/stop
-                                                    stop.schedTimes = stop.schedTimes + ", " + strBuild.toString();
-                                                } else {
+                                                    stop.stopRouteDir = tmp;
+                                                } else if(!stop.stopRouteDir.equals(tmp)) {
                                                     //new stop
                                                     for(StopData sd: listdata) {
-                                                        if(sd.schedTimes.contains(tmp)) {
+                                                        if(sd.stopRouteDir.equals(tmp)) {
                                                             //Log.w(TAG, "found stop");
                                                             newStop = sd;
                                                             break;
@@ -438,16 +405,16 @@ public class StopService extends IntentService {
                                                     if(newStop == null) {
                                                         newStop = new StopData(stop);
                                                         //Log.d(TAG, "new routename: " + tmp);
-                                                        strBuild.insert(0, tmp + " " + getString(R.string.scheduled));
-                                                        newStop.schedTimes = strBuild.toString();
+                                                        newStop.stopRouteDir = tmp;
+                                                        if(!newStop.scheduleTimes.contains(schTime)) {
+                                                            newStop.scheduleTimes.add(schTime);
+                                                        }
                                                         listdata.add(newStop);
-                                                    } else {
-                                                        newStop.schedTimes = newStop.schedTimes + ", " + strBuild.toString();
                                                     }
                                                     stop = newStop;
                                                     newStop = null;
                                                     //Log.d(TAG, "new stop: " + stop.schedTimes);
-                                                }
+                                                } //else //add a new time into the same route/stop
 
                                                 strBuild.setLength(0);
                                                 //Log.d(TAG, "trip parsed: " + stop.predicTimes + " " + stop.schedTimes);

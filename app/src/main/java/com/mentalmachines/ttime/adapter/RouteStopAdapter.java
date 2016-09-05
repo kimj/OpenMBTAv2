@@ -102,22 +102,10 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
                 holder.mStopDetail.setImageResource(R.drawable.btn_stop_alert);
             }
             //holder.mStopDetail.invalidate();
+            holder.mStopDescription.setText(s.stopName + "\n" + SCHED + " "
+                    + Utils.trimStopTimes(NODATA, s));
+            holder.mETA.setText(Utils.setPredictions(ACTUAL, s));
 
-            if(!TextUtils.isEmpty(s.schedTimes)) {
-                //s.schedTimes is not empty
-                holder.mStopDescription.setText(s.stopName + "\n" + SCHED + " "
-                        + Utils.trimStopTimes(ctx, s.schedTimes));
-            } else if(TextUtils.isEmpty(s.predicTimes)){
-                //both are empty
-                holder.mStopDescription.setText(s.stopName + "\n" + NODATA);
-                holder.mETA.setText("");
-            } else {
-                holder.mStopDescription.setText(s.stopName);
-            }
-
-            if(!TextUtils.isEmpty(s.predicTimes)) {
-                holder.mETA.setText(ACTUAL + " " + Utils.trimStopTimes(ctx, s.predicTimes));
-            }
         }
     }
 
@@ -138,7 +126,7 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
                 final Context ctx = itemView.getContext();
                 SCHED = ctx.getString(R.string.scheduled);
                 ACTUAL = ctx.getString(R.string.actual);
-                NODATA = ctx.getString(R.string.noSched);
+                NODATA = ctx.getString(R.string.stopEmptyString);
             }
         }
     }

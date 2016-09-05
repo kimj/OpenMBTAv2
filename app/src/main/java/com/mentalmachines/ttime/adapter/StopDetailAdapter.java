@@ -14,6 +14,9 @@ import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
 
+import java.util.Arrays;
+import java.util.Comparator;
+
 /**
  * Created by emezias on 1/20/16.
  * This is a simple adapter to fill in the stop,
@@ -23,10 +26,17 @@ import com.mentalmachines.ttime.objects.Utils;
 public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.StopViewHolder> {
     public static final String TAG = "StopDetailAdapter";
     final StopData[] items;
+    public static String SCHED, ACTUAL, NODATA;
 
     public StopDetailAdapter(StopData[] stopList) {
         super();
         items = stopList;
+        Arrays.sort(items, new Comparator<StopData>() {
+            @Override
+            public int compare(StopData o1, StopData o2) {
+                return o1.stopRouteDir.compareTo(o2.stopRouteDir);
+            }
+        });
     }
 
 
@@ -62,19 +72,6 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             Log.w(TAG, "bad stop position: " + position);
         } else {
             final StopData s = items[position];
-            final Context ctx = holder.mStopRoutename.getContext();
-            holder.mStopRoutename.setText(s.stopName);
-            //alert header text gets set in the alert field instead of the alert id
-            if(TextUtils.isEmpty(s.schedTimes)) {
-                holder.mStopDescription.setText("");
-            } else {
-                holder.mStopDescription.setText(Utils.trimStopTimes(ctx, s.schedTimes));
-            }
-            if(TextUtils.isEmpty(s.predicTimes)) {
-                holder.mETA.setText("");
-            } else {
-                holder.mETA.setText(Utils.trimStopTimes(ctx, s.predicTimes));
-            }
 
             //TODO create new layout
             if(!TextUtils.isEmpty(s.stopAlert)) {
@@ -83,6 +80,21 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
                 holder.mAlertBtn.invalidate();
+            }
+            holder.mStopRoutename.setText(s.stopRouteDir);
+            //The utils will report "no schedule data" as needed
+            if(s.scheduleTimes.isEmpty() && s.predictionSecs.isEmpty()) {
+                holder.mStopDescription.setText(NODATA);
+                holder.mETA.setText("");
+                return;
+            } else {
+                holder.mStopDescription.setText(SCHED + " " + Utils.trimStopTimes(NODATA, s));
+            }
+
+            if(s.predictionSecs.isEmpty()) {
+                holder.mETA.setText("");
+            } else {
+                holder.mETA.setText(Utils.setPredictions(ACTUAL, s));
             }
         }
     }
@@ -101,6 +113,12 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_detail_btn);
             mAlertBtn.setImageResource(R.drawable.btn_stop_alert);
+            if(SCHED == null) {
+                final Context ctx = itemView.getContext();
+                SCHED = ctx.getString(R.string.scheduled);
+                ACTUAL = ctx.getString(R.string.actual);
+                NODATA = ctx.getString(R.string.stopEmptyString);
+            }
         }
     }
 }

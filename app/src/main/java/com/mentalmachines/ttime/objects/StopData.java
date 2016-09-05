@@ -19,10 +19,12 @@ public class StopData implements Parcelable {
     public String stopId; //to check for alerts
     public String stopLat, stopLong; //to open Map
     public String stopAlert = null;
+    public String stopRouteDir = ""; //can use the stopAlert string
+    public long predictionTimestamp = 0;
     public ArrayList<Long> scheduleTimes = new ArrayList<>();
     public ArrayList<Integer> predictionSecs = new ArrayList<>();
-    public String predicTimes = "";
-    public String schedTimes = "";
+    //public String predicTimes = "";
+    //public String schedTimes = "";
     //TODO change to TreeSet
     public ArrayList<Long> weekdayTimestamps = new ArrayList<>();
     public ArrayList<Long> saturdayTimestamps = new ArrayList<>();
@@ -36,6 +38,7 @@ public class StopData implements Parcelable {
         stopLat = makeCopy.stopLat;
         stopLong = makeCopy.stopLong;
         stopAlert = makeCopy.stopAlert;
+        predictionTimestamp = makeCopy.predictionTimestamp;
     }
 
     public StopData(Cursor c) {
@@ -96,8 +99,9 @@ public class StopData implements Parcelable {
         dest.writeString(stopLat);
         dest.writeString(stopLong);
         dest.writeString(stopAlert);
-        dest.writeString(predicTimes);
-        dest.writeString(schedTimes);
+        //dest.writeString(predicTimes);
+        //dest.writeString(schedTimes);
+        dest.writeLong(predictionTimestamp);
         dest.writeList(scheduleTimes);
         dest.writeList(predictionSecs);
         dest.writeList(weekdayTimestamps);
@@ -120,8 +124,9 @@ public class StopData implements Parcelable {
             s.stopLat = source.readString();
             s.stopLong = source.readString();
             s.stopAlert = source.readString();
-            s.predicTimes = source.readString();
-            s.schedTimes = source.readString();
+            //s.predicTimes = source.readString();
+            //s.schedTimes = source.readString();
+            s.predictionTimestamp = source.readLong();
             s.scheduleTimes = new ArrayList<>();
             source.readList(s.scheduleTimes, null);
             s.predictionSecs = new ArrayList<>();

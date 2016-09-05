@@ -23,10 +23,12 @@ import com.mentalmachines.ttime.objects.Utils;
 public class NearbyLVAdapter extends BaseAdapter {
     public static final String TAG = "StopDetailAdapter";
     final StopData[] items;
+    String mNoData, mActual, mSchedule = null;
 
     public NearbyLVAdapter(StopData[] stopList) {
         super();
         items = stopList;
+
     }
 
     @Override
@@ -56,6 +58,11 @@ public class NearbyLVAdapter extends BaseAdapter {
             return null;
         }
         final Context ctx = parent.getContext();
+        if(mSchedule == null) {
+            mSchedule = ctx.getString(R.string.scheduled);
+            mNoData = ctx.getString(R.string.stopEmptyString);
+            mActual = ctx.getString(R.string.actual);
+        }
         if(convertView == null) {
             convertView = LayoutInflater.from(ctx)
                     .inflate(R.layout.t_stop, parent, false);
@@ -63,16 +70,8 @@ public class NearbyLVAdapter extends BaseAdapter {
         final StopData s = items[position];
         ((TextView) convertView.findViewById(R.id.stop_route)).setText(s.stopName);
         //alert header text gets set in the alert field instead of the alert id
-        if(TextUtils.isEmpty(s.schedTimes)) {
-            ((TextView) convertView.findViewById(R.id.stop_desc)).setText("");
-        } else {
-            ((TextView) convertView.findViewById(R.id.stop_desc)).setText(Utils.trimStopTimes(ctx, s.schedTimes));
-        }
-        if(TextUtils.isEmpty(s.predicTimes)) {
-            ((TextView) convertView.findViewById(R.id.stop_eta)).setText("");
-        } else {
-            ((TextView) convertView.findViewById(R.id.stop_eta)).setText(Utils.trimStopTimes(ctx, s.predicTimes));
-        }
+        ((TextView) convertView.findViewById(R.id.stop_desc)).setText(mSchedule + " " + Utils.trimStopTimes(mNoData, s));
+        ((TextView) convertView.findViewById(R.id.stop_eta)).setText(Utils.setPredictions(mActual, s));
 
         //TODO create new layout
         final ImageButton alertBtn = (ImageButton) convertView.findViewById(R.id.stop_detail_btn);

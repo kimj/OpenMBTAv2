@@ -661,11 +661,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(mFragment instanceof RouteFragment) {
             final String mainStopRoute = Route.readableName(this, ((RouteFragment)mFragment).mListAdapter.mRoute.name) + " " +
                     (((RouteFragment)mFragment).mListAdapter.mDirectionId == 0? getString(R.string.outbound): getString(R.string.inbound));
-            if(stop.schedTimes == null) {
+            /*if(stop.schedTimes == null) {
                 stop.schedTimes = mainStopRoute;
             } else {
                 stop.schedTimes = mainStopRoute + stop.schedTimes;
             }
+
+            TODO what's this again?*/
         }
 
         Intent tnt = new Intent(this, StopService.class);
