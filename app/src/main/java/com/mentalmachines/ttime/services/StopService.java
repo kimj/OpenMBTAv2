@@ -39,7 +39,7 @@ public class StopService extends IntentService {
 
     //JSON constants for predictive times, data is not in SQLite
     public static final String STOPPARAM = "&stop=";
-    public static final String SCHEDHOUR = "&max_time=120";
+    public static final String SCHEDHOUR = "&max_time=180";
     public static final String STOPVERB = "schedulebystop";
     public static final String STPREDVERB = "predictionsbystop";
     public static final String GETPREDICTIMES = GetTimesForRoute.BASE + STPREDVERB + GetTimesForRoute.SUFFIX + STOPPARAM;
@@ -69,13 +69,15 @@ public class StopService extends IntentService {
         }
         mainStop = b.getParcelable(TAG);
         final ArrayList<StopData> returnList = createStopList(mainStop);
+        Log.i(TAG, "for loop stop: " + mainStop.readableStopName());
 
         try {
-            Log.d(TAG, "predictions? " + returnList.size());
+            Log.d(TAG, "predictions? " + returnList.size() + " main stop: " + mainStop.stopLat);
             //for(StopData stop: returnList) {
             StopData stop;
             for(int dex = 0; dex < returnList.size(); dex++) {
                 stop = returnList.get(dex);
+                Log.i(TAG, "for loop stop: " + stop.readableStopName());
                 parseStop(stop, returnList);
                 parseStopPredictions(stop);
             }
@@ -94,12 +96,14 @@ public class StopService extends IntentService {
                             String stopCode, Double mainLong, Double mainLat) {
         float[] results = new float[1];
         for(StopData stop: stopList) {
+
             if(!stop.stopId.equals(stopCode)) {
                 Location.distanceBetween(mainLat, mainLong,
                         Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
                 //find other stops within ~100ft of the mainStop, 35 meters
-                if(results[0] < 35f) {
+                if(results[0] < 50f) {
                     nearby.put(stop.stopId, stop);
+                    Log.i(TAG, "for loop stop: " + stop.readableStopName());
                 }
 
             } else {

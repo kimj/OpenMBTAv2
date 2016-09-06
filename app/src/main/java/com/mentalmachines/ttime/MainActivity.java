@@ -80,7 +80,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         toggle.syncState();
 
         mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
-        mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
+        final View header = LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null);
+        mDrawerList.addHeaderView(header);
         //shows the subway lines and sets the background on the view as selected
         mDrawerList.setOnGroupCollapseListener(faveSubListener);
         final Intent tnt = new Intent(this, NavDrawerTask.class);
@@ -348,6 +349,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(v.getTag() instanceof StopData) {
             //favorite stop
             showStopDetail((StopData) v.getTag());
+            Log.i(TAG, "show stop click");
         } else {
             final String routeId = (String) v.getTag();
             Log.i(TAG, "show route " + routeId);
@@ -669,7 +671,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
             TODO what's this again?*/
         }
-
+        Log.i(TAG, "show stop detail " + stop.readableStopName());
         Intent tnt = new Intent(this, StopService.class);
         tnt.putExtra(StopService.TAG, stop);
         startActivity(new Intent(this, StopDetailActivity.class));

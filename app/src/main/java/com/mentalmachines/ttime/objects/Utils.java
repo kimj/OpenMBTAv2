@@ -139,7 +139,7 @@ public class Utils {
                     return stringBuilder.toString();
                 }
             } else {
-                Log.d(TAG, "skipping time, #" + dex);
+                Log.d(TAG, "prd, skipping time, #" + dex);
             }
         }
         if(stringBuilder.length() == StopDetailAdapter.ACTUAL.length()+1) {
