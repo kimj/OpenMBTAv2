@@ -640,7 +640,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //favorites service
                 break;
             case R.id.stop_detail:
-                showStopDetail(stop);
+                showStopDetail(stop, getTitle().toString());
                 //stop detail activity registers a receiver to get the stopDetail object it needs
                 break;
             case R.id.stop_location:
@@ -656,6 +656,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 break;
         }
         return false;
+    }
+
+    void showStopDetail(StopData stop, String routename) {
+        //called from the list, not the drawer
+        Log.i(TAG, "show stop detail " + stop.readableStopName());
+        Intent tnt = new Intent(this, StopService.class);
+        tnt.putExtra(StopService.TAG, stop);
+        tnt.putExtra(Route.TAG, routename);
+        startActivity(new Intent(this, StopDetailActivity.class));
+        startService(tnt);
     }
 
     void showStopDetail(StopData stop) {

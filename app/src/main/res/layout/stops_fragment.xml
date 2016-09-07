@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_marginTop="?attr/actionBarSize">
+
+    <TextView
+        android:id="@+id/stopdetail_name"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_margin="8dp"
+        android:fontFamily="bold"
+        android:gravity="center"
+        android:textColor="@android:color/black"
+        android:textSize="18dp" />
+
+    <android.support.v4.widget.SwipeRefreshLayout
+        android:id="@+id/stopdetail_swipe"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/stopdetail_name"
+        android:paddingBottom="@dimen/def_margin"
+        android:paddingLeft="@dimen/def_padding"
+        android:paddingRight="@dimen/def_padding"
+        android:paddingTop="@dimen/def_padding"
+        tools:context=".StopDetailActivity">
+        <!-- To do text appearance large -->
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/stopdetail_list"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="4dp"
+            app:layoutManager="LinearLayoutManager"
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            tools:context="com.mentalmachines.ttime.MainActivity"
+            tools:listitem="@layout/t_stop" />
+        <TextView android:id="@+id/stopdetail_empty"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone"
+            android:gravity="center"
+            android:textSize="32dp"
+            android:textColor="@android:color/black"
+            android:textStyle="italic"
+            android:text="@string/def_text" />
+    </android.support.v4.widget.SwipeRefreshLayout>
+</RelativeLayout>

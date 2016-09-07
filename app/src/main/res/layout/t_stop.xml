@@ -5,6 +5,12 @@
     android:paddingLeft="4dp"
     android:paddingRight="4dp">
     <!-- layout for a stop in a listview -->
+    <View android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginLeft="@dimen/def_margin"
+        android:layout_marginRight="@dimen/def_margin"
+        android:background="@color/colorPrimaryDark" />
     <TextView
         android:id="@+id/stop_route"
         android:layout_width="wrap_content"
@@ -46,11 +52,4 @@
         android:src="@android:drawable/ic_menu_compass"
         android:onClick="openMenu"
         android:background="@android:color/transparent" />
-    <View android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_marginLeft="@dimen/def_margin"
-        android:layout_marginRight="@dimen/def_margin"
-        android:layout_below="@id/stop_eta"
-        android:background="@color/colorPrimaryDark" />
 </RelativeLayout>
