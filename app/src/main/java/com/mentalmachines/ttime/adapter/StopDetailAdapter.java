@@ -76,7 +76,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             }
 
             //TODO create new layout
-            if(s.stopAlert != null) {
+            if(TextUtils.isEmpty(s.stopAlert)) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
                 holder.mAlertBtn.setTag(s.stopAlert);
             } else {

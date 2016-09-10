@@ -20,7 +20,7 @@ import java.util.ArrayList;
  */
 public class AlertDetailFragment extends Fragment {
     ArrayList<Alert> mStopAlerts;
-
+    public static String TAG = "AlertDetailFragment";
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -45,7 +45,6 @@ public class AlertDetailFragment extends Fragment {
             textViewEffectStart.setText(alert.effect_start);
             textViewEffectEnd.setText(alert.effect_end);
         }
-        super.onCreateView(inflater, container, savedInstanceState);
         return view;
     }
 

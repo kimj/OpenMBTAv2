@@ -4,6 +4,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -11,6 +12,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
+import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
@@ -68,6 +70,13 @@ public class AlertsFragment extends Fragment {
         if (arguments != null){
             alertId = arguments.getString("alertId");
         }
+
+        if (!TextUtils.isEmpty(alertId)){
+            alerts = DBHelper.getAlertsByStopAlertId(alertId);
+        }  else {
+            alerts = DBHelper.getAllAlerts() ;
+        }
+
         alertsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
@@ -76,15 +85,9 @@ public class AlertsFragment extends Fragment {
                 Bundle arguments = new Bundle();
                 arguments.putString("alertId", alert.alert_id);
                 alertDetailFragment.setArguments(arguments);
-                fragmentManager.beginTransaction().add(R.id.container, alertDetailFragment).addToBackStack(null).commit();
+                fragmentManager.beginTransaction().replace(R.id.container, alertDetailFragment, AlertDetailFragment.TAG).commit();
             }
         });
-
-        if (alertId != null || alertId != ""){
-            alerts = DBHelper.getAlertsByStopAlertId(alertId);
-        }  else {
-            alerts = DBHelper.getAllAlerts() ;
-        }
 
         AlertsAdapter alertsAdapter = new AlertsAdapter(getActivity(), R.layout.alert_item_layout, alerts);
         alertsListView.setAdapter(alertsAdapter);

@@ -94,7 +94,7 @@ public class RouteFragmentStopAdapter extends RecyclerView.Adapter<RouteFragment
             holder.mETA.setText("");
             holder.mAlertBtn.setVisibility(View.GONE);
         } else {
-            if(s.stopAlert != null) {
+            if(!TextUtils.isEmpty(s.stopAlert) || s.stopAlert != null) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
