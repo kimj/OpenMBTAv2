@@ -54,7 +54,6 @@ public class AlertsFragment extends Fragment {
         return inflater.inflate(R.layout.alerts_fragment, container, false);
     }
 
-
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -68,7 +67,7 @@ public class AlertsFragment extends Fragment {
         Bundle arguments = getArguments();
         String alertId = "";
         if (arguments != null){
-            alertId = arguments.getString("alertId");
+            alertId = arguments.getString(DBHelper.KEY_ALERT_ID);
         }
         alertsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -76,7 +75,7 @@ public class AlertsFragment extends Fragment {
                 Alert alert = alerts.get(position);
                 AlertDetailFragment alertDetailFragment = new AlertDetailFragment();
                 Bundle arguments = new Bundle();
-                arguments.putString("alertId", alert.alert_id);
+                arguments.putString(DBHelper.KEY_ALERT_ID, alert.alert_id);
                 alertDetailFragment.setArguments(arguments);
                 fragmentManager.beginTransaction().add(R.id.container, alertDetailFragment).addToBackStack(null).commit();
             }

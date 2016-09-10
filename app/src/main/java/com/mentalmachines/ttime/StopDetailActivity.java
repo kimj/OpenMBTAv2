@@ -95,6 +95,7 @@ public class StopDetailActivity extends AppCompatActivity {
                 return true;
 
             case R.id.menu_favorites:
+                Log.i(TAG, "favorites change called");
                 if(mStopDetail != null)
                 new CheckFavorite(true).execute(mStopDetail.mainStop.stopId);
                 break;
@@ -127,7 +128,7 @@ public class StopDetailActivity extends AppCompatActivity {
         AlertDetailFragment alertsDetailFragment = new AlertDetailFragment();
 
         Bundle args = new Bundle();
-        args.putString("alertId", alertId);
+        args.putString(DBHelper.KEY_ALERT_ID, alertId);
         alertsDetailFragment.setArguments(args);
         fm.beginTransaction().add(R.id.container, alertsDetailFragment).addToBackStack(null).commit();
 

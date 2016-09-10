@@ -102,7 +102,7 @@ public class NearbyActivity extends AppCompatActivity implements OnMapReadyCallb
         AlertDetailFragment alertsDetailFragment = new AlertDetailFragment();
 
         Bundle args = new Bundle();
-        args.putString("alertId", alertId);
+        args.putString(DBHelper.KEY_ALERT_ID, alertId);
         alertsDetailFragment.setArguments(args);
         fm.beginTransaction().add(R.id.container, alertsDetailFragment).addToBackStack(null).commit();
 

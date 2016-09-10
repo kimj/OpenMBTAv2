@@ -27,7 +27,7 @@ public class RouteFragment extends Fragment {
      * It is displayed in the MainActivity and shows a list of stops to the user
      * There is a FAB to switch directions
 	 */
-    private static final String TAG = "RouteFragment";
+    public static final String TAG = "RouteFragment";
 
     public boolean mInbound = true;
     public RecyclerView mList;

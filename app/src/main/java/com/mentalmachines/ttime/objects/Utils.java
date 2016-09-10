@@ -4,11 +4,21 @@ import android.content.Context;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
 
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
+import com.mentalmachines.ttime.fragments.AlertsFragment;
+import com.mentalmachines.ttime.fragments.RouteFragment;
+import com.mentalmachines.ttime.fragments.StopDetailFragment;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -30,6 +40,59 @@ public class Utils {
     public static String getTime(Calendar cal, String stamp) {
         cal.setTimeInMillis(1000 * Long.valueOf(stamp));
         return timeFormat.format(cal.getTime());
+    }
+
+    /**
+     * Here is the fragment transaction, screen transition
+     * @param ctx Context is needed to create the Fragment Manager
+     * @param oldFragment this is the fragment that needs to hide
+     * @param newFragmentName this is the new fragment, identified by the TAG string
+     * @param dataObject some fragments take an object parameter to newInstance, that's the last parameter
+     * @return the fragment that is now showing
+     */
+    public static Fragment fragmentChange(AppCompatActivity ctx, Fragment oldFragment, String newFragmentName, Object dataObject) {
+        final FragmentManager mgr = ctx.getSupportFragmentManager();
+        final FragmentTransaction tx = mgr.beginTransaction().setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+        if(oldFragment != null) {
+            tx.hide(oldFragment);
+        }
+        Fragment newFragment = null;
+        switch (newFragmentName) {
+            case RouteFragment.TAG:
+                if(mgr.findFragmentByTag(((Route) dataObject).id) != null) {
+                    newFragment = mgr.findFragmentByTag(((Route) dataObject).id);
+                    tx.show(newFragment);
+                } else {
+                    newFragment = RouteFragment.newInstance((Route) dataObject);
+                    tx.add(R.id.container, newFragment, ((Route) dataObject).id).addToBackStack(((Route) dataObject).id);
+                }
+                break;
+            case StopDetailFragment.TAG:
+                if(mgr.findFragmentByTag(((StopData) dataObject).stopId) != null) {
+                    newFragment = mgr.findFragmentByTag(((StopData) dataObject).stopId);
+                    tx.show(newFragment);
+                } else {
+                    newFragment = StopDetailFragment.newInstance((StopData) dataObject);
+                    tx.add(R.id.container, newFragment, ((StopData) dataObject).stopId).addToBackStack(((StopData) dataObject).stopId);
+                }
+                break;
+            case AlertsFragment.TAG:
+                newFragment = new AlertsFragment();
+                Bundle args = new Bundle();
+                //data object parameter is the alert id, should be set with newInstance instead
+                args.putString(DBHelper.KEY_ALERT_ID, (String) dataObject);
+                newFragment.setArguments(args);
+                tx.add(R.id.container, newFragment).addToBackStack(AlertsFragment.TAG);
+                break;
+            /* TODO newInstance, use this function for alerts too
+            case AlertDetailFragment.TAG:
+                break;
+            */
+        }
+        tx.commit();
+        mgr.executePendingTransactions();
+        return newFragment;
+        //may need to check that newFragment is not null
     }
 
     public static int getScreenWidth(Context ctx) {

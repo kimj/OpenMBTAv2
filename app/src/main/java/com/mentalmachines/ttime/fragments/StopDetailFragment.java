@@ -5,7 +5,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -19,28 +18,28 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
-import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.SaveFavorites;
+import com.mentalmachines.ttime.services.CheckFavorite;
 import com.mentalmachines.ttime.services.StopService;
 
 public class StopDetailFragment extends Fragment {
 	/**
 	 * A fragment representing a stop, favorite or detailed from a route
 	 */
-    private static final String TAG = "StopDetailFragment";
+    public static final String TAG = "StopDetailFragment";
     public RecyclerView mList;
-    static StopList mStopDetail;
+    public StopList mStopDetail;
     static ProgressDialog mProgress = null;
 
     //required empty constructor
     public StopDetailFragment() {}
 
-    public static final StopDetailFragment newInstance(Context ctx, StopData stopToShow) {
+    public static final StopDetailFragment newInstance(StopData stopToShow) {
         StopDetailFragment fragment = new StopDetailFragment();
         final Bundle args = new Bundle();
         args.putParcelable(StopService.TAG, stopToShow);
@@ -59,15 +58,15 @@ public class StopDetailFragment extends Fragment {
         //start the service, register the receiver
         LocalBroadcastManager.getInstance(ctx).registerReceiver(mDetailsUpdated,
                 new IntentFilter(StopService.TAG));
-        return inflater.inflate(R.layout.activity_stops, container, false);
+        return inflater.inflate(R.layout.stops_fragment, container, false);
     }
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        mList = (RecyclerView) view.findViewById(R.id.route_list);
-        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)view.findViewById(R.id.route_swipe);
+        mList = (RecyclerView) view.findViewById(R.id.stopdetail_list);
+        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)view.findViewById(R.id.stopdetail_swipe);
         swipeViewGroup.setOnRefreshListener(refreshList);
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
@@ -93,7 +92,7 @@ public class StopDetailFragment extends Fragment {
         mStopDetail.mStopList.toArray(adapterList);
         mList.setAdapter(new StopDetailAdapter(adapterList));
         Log.d(TAG, "set new adapter");
-        ((SwipeRefreshLayout)getView().findViewById(R.id.route_swipe)).setRefreshing(false);
+        ((SwipeRefreshLayout)getView().findViewById(R.id.stopdetail_swipe)).setRefreshing(false);
     }
 
 
@@ -109,7 +108,7 @@ public class StopDetailFragment extends Fragment {
     public void reloadTimes() {
         Log.d(TAG, "reload times");
         if(Utils.checkNetwork(getContext())) {
-            ((SwipeRefreshLayout)getView().findViewById(R.id.route_swipe)).setRefreshing(true);
+            ((SwipeRefreshLayout)getView().findViewById(R.id.stopdetail_swipe)).setRefreshing(true);
             //the main activity broadcast receiver will reload the data into the adapter and list
             final Intent tnt = new Intent(getContext(), StopService.class);
             tnt.putExtra(StopService.TAG, mStopDetail.mainStop);
@@ -134,7 +133,10 @@ public class StopDetailFragment extends Fragment {
                 return;
             }
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
-            new CheckFavorite(false).execute(mStopDetail.mainStop.stopId);
+            Log.i(TAG, "favorites change called");
+
+            new CheckFavorite(((MainActivity)getActivity()).mFavoritesAction).execute(
+                    getContext(), false, mStopDetail.mainStop.stopId);
             Log.d(TAG, mStopDetail.mainStop.stopName +
                     " data check, stop detail list size " + mStopDetail.mStopList.size());
             ((TextView)getView().findViewById(R.id.stopdetail_name)).setText(mStopDetail.mainStop.stopName);
@@ -142,49 +144,4 @@ public class StopDetailFragment extends Fragment {
         }
     };
 
-    /**
-     * TODO move to activity
-     */
-    class CheckFavorite extends AsyncTask<String, Void, Boolean> {
-        boolean menuCall;
-
-        /**
-         * pushing the db I/O into a background thread
-         * this sets the button's display, does not yet save the change
-         * @param change, is this a menu click to change the favorite value or a call to read it
-         */
-        public CheckFavorite(boolean change) {
-            menuCall = change;
-        }
-
-        @Override
-        protected Boolean doInBackground(String[] params) {
-            if(menuCall) {
-                menuCall = Favorite.isStopFavorite(params[0]);
-                if(menuCall) {
-                    //remove favorite stop from table
-                    Favorite.dropFavoriteStop(params[0]);
-                } else {
-                    //start Intent service to save stop to the faves table
-                    final Intent tnt = SaveFavorites.newInstance(
-                            getContext(), mStopDetail.mainStop.stopId);
-                    getContext().startService(tnt);
-                }
-                return !menuCall;
-            }
-            return Favorite.isStopFavorite(params[0]);
-        }
-
-        /*@Override
-        protected void onPostExecute(Boolean o) {
-            super.onPostExecute(o);
-            if(o) {
-                mFavoritesAction.setChecked(true);
-                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
-            } else {
-                mFavoritesAction.setChecked(false);
-                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
-            }
-        }*/
-    }
 }

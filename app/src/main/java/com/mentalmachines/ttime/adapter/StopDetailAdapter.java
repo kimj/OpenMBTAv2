@@ -14,6 +14,7 @@ import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
 
@@ -25,12 +26,22 @@ import java.util.Comparator;
 
 public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.StopViewHolder> {
     public static final String TAG = "StopDetailAdapter";
-    final StopData[] items;
+    StopData[] items;
     public static String SCHED, ACTUAL, NODATA;
 
     public StopDetailAdapter(StopData[] stopList) {
         super();
-        items = stopList;
+        ArrayList<StopData> itemList = new ArrayList<>();
+        for(StopData s: stopList) {
+            if(!s.scheduleTimes.isEmpty() || !s.predictionSecs.isEmpty()) {
+                //if either one has data, keep it, otherwise drop
+                if(!itemList.contains(s)) {
+                    itemList.add(s);
+                }
+            }
+        }
+        items = new StopData[itemList.size()];
+        items = itemList.toArray(items);
         Arrays.sort(items, new Comparator<StopData>() {
             @Override
             public int compare(StopData o1, StopData o2) {
@@ -83,13 +94,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             }
             holder.mStopRoutename.setText(s.stopRouteDir);
             //The utils will report "no schedule data" as needed
-            if(s.scheduleTimes.isEmpty() && s.predictionSecs.isEmpty()) {
-                holder.mStopDescription.setText(NODATA);
-                holder.mETA.setText("");
-                return;
-            } else {
-                holder.mStopDescription.setText(SCHED + " " + Utils.trimStopTimes(NODATA, s));
-            }
+            holder.mStopDescription.setText(SCHED + " " + Utils.trimStopTimes(NODATA, s));
 
             if(s.predictionSecs.isEmpty()) {
                 holder.mETA.setText("");
