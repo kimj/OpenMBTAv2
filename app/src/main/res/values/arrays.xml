@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="bus_route_names">
+    <item>CT1 - Central Squ., Cambridge B.U. Medical Ctr./Boston Medical Ctr. via M.I.T.</item>
+    <item>CT2 - Sullivan Sta. Ruggles Sta. via Kendall/MIT</item>
+    <item>CT3 - Beth Israel Deaconess Medical Ctr. Andrew Sta. via B.U. Medical Ctr.</item>
+    <item>SL1 - Logan Airport S. Sta. via Waterfront</item>
+    <item>SL2 - Design Ctr. S. Sta. via Waterfront</item>
+    <item>SL4 - Dudley Sta. S. Sta. at Essex Street via Washington St</item>
+    <item>SL5 - Dudley Sta. Downtown Crossing at Temple Place via Washington St</item>
+    <item>1 - Harvard/Holyoke Gate Dudley Staton via Mass. Ave.</item>
+    <item>4 - N. Sta. World Trade Ctr. via Federal Courthouse &amp; S. Sta.</item>
+    <item>5 - City Point McCormack Housing via Andrew Sta.</item>
+    <item>7 - City Point Otis &amp; Summer Streets via Summer Street &amp; S. Sta.</item>
+    <item>8 - Harbor Point/UMass Kenmore Sta. via B.U. Medical Ctr. &amp; Dudley Sta.</item>
+    <item>9 - City Point Copley Squ. via Broadway Sta.</item>
+    <item>10 - City Point Copley Squ. via Andrew Sta. &amp; B.U. Medical Ctr.</item>
+    <item>11 - City Point Downtown BayView</item>
+    <item>14 - Roslindale Sq. Heath Street via Dudley Sta., Grove Hall &amp; Jackson Squ. Sta.</item>
+    <item>15 - Kane Sq. or Fields Corner Sta. Ruggles Sta. via Uphams Corner</item>
+    <item>16 - Forest Hills Sta. Andrew Sta. or UMass via Columbia Road</item>
+    <item>17 - Fields Corner Sta. Andrew Sta. via Uphams Corner &amp; Edward Everett Squ.</item>
+    <item>18 - Ashmont Sta. Andrew Sta. via Fields Corner Sta.</item>
+    <item>19 - Fields Corner Sta. Kenmore or Ruggles Sta. via Grove Hall &amp; Dudley Sta.</item>
+    <item>21 - Ashmont Sta. Forest Hills Sta. via Morton St.</item>
+    <item>22 - Ashmont Sta. Ruggles Sta. via Talbot Ave. &amp; Jackson Sq.</item>
+    <item>23 - Ashmont Sta. Ruggles Sta. via Washington St.</item>
+    <item>24 - Wakefield Ave. &amp; Truman Highway Mattapan or Ashmont Sta. via River Street</item>
+    <item>26 - Ashmont Sta. Norfolk &amp; Morton Belt Line</item>
+    <item>27 - Mattapan Sta. Ashmont Sta. via River St.</item>
+    <item>28 - Mattapan Sta. Ruggles Sta. via Dudley Sta.</item>
+    <item>29 - Mattapan Sta. Jackson Sq., Sta. via Seaver St. &amp; Columbus Ave.</item>
+    <item>30 - Mattapan Sta. Forest Hills Sta. via Cummins Highway &amp; Roslindale Sq.</item>
+    <item>31 - Mattapan Sta. Forest Hills Sta. via Morton St.</item>
+    <item>32 - Wolcott Sq. or Cleary Sq. Forest Hills Sta. via Hyde Park Ave.</item>
+    <item>33 - Dedham Line Mattapan Sta. via River St.</item>
+    <item>34 - Walpole Ctr. or Dedham Line Forest Hills Sta. via Washington St.</item>
+    <item>34E - Walpole Ctr. or Dedham Line Forest Hills Sta. via Washington St.</item>
+    <item>35 - Dedham Mall/Stimson St. Forest Hills Sta. via Belgrade Ave. &amp; Centre St.</item>
+    <item>36 - Charles River Loop or V.A. Hospital Forest Hills Sta. via Belgrade Ave. &amp; Centre St.</item>
+    <item>37 - Baker &amp; Vermont Sts. Forest Hills Sta. via Belgrade Ave. &amp; Centre St.</item>
+    <item>38 - Wren St. Forest Hills Sta. via Centre &amp; S. Streets</item>
+    <item>39 - Forest Hills Sta. Back Bay Sta. via Huntington Ave.</item>
+    <item>40 - Georgetowne Forest Hills Sta. via Washington St. &amp; West Boundary Rd.</item>
+    <item>41 - Centre &amp; Eliot Sts. JFK/UMass Sta. via Dudley Sta., Centre St. &amp; Jackson Sq. Sta.</item>
+    <item>42 - Forest Hills Sta. Dudley Sta. via Washington St.</item>
+    <item>43 - Ruggles Sta. Park &amp; Tremont Sts. via Tremont St.</item>
+    <item>44 - Jackson Sq. Sta. Ruggles Sta. via Seaver St. &amp; Humboldt Ave.</item>
+    <item>45 - Franklin Park Zoo Ruggles Sta. via Blue Hill Ave.</item>
+    <item>47 - Central Sq., Cambridge Broadway Sta. via B.U. Medical Ctr., Dudley Sta. &amp; Longwood Medical Area</item>
+    <item>50 - Cleary Squ. Forest Hills Sta. via Roslindale Squ.</item>
+    <item>51 - Cleveland Circle Forest Hills Sta. via Hancock Village</item>
+    <item>52 - Dedham Mall or Charles River Loop Watertown Yard via Oak Hill &amp; Newton Ctr.</item>
+    <item>55 - Jersey &amp; Queensberry Copley Sq. or Park &amp; Tremont Sts. via Ipswich St.</item>
+    <item>57 - Watertown Yard Kenmore Sta. via Newton Corner &amp; Brighton Ctr.</item>
+    <item>59 - Needham Junction Watertown Sq. via Newtonville</item>
+    <item>60 - Chestnut Hill Kenmore Sta. via Brookline Village &amp; Cypress St.</item>
+    <item>62 - Bedford V.A. Hospital Alewife Sta. via Lexington Ctr. &amp; Arlington Heights</item>
+    <item>64 - Oak Squ. University Park, Cambridge or Kendall/MIT via N. Beacon St.</item>
+    <item>65 - Brighton Ctr. Kenmore Sta. via Washington St., Brookline Village &amp; Brookline Ave.</item>
+    <item>66 - Harvard Squ. Dudley Sta. via Allston &amp; Brookline Village</item>
+    <item>67 - Turkey Hill Alewife Sta. via Arlington Ctr.</item>
+    <item>68 - Harvard/Holyoke Gate Kendall/M.I.T. via Broadway</item>
+    <item>69 - Harvard/Holyoke Gate Lechmere Sta. via Cambridge St.</item>
+    <item>70 - Cedarwood, No. Waltham or Watertown Sq. University Park via Central Sq., Cambridge, Arsenal St. &amp; Western Ave.</item>
+    <item>70A - Cedarwood, No. Waltham or Watertown Sq. University Park via Central Sq., Cambridge, Arsenal St. &amp; Western Ave.</item>
+    <item>71 - Watertown Squ. Harvard Sta. via Mt. Auburn St.</item>
+    <item>72 - Huron Ave. Harvard Sta. via Concord Ave.</item>
+    <item>73 - Waverley Sq. Harvard Sta. via Trapelo Road</item>
+    <item>74 - Belmont Ctr. Harvard Sta. via Concord Ave.</item>
+    <item>75 - Belmont Ctr. Harvard Sta. via Concord Ave.</item>
+    <item>76 - Hanscom/Lincoln Labs Alewife Sta. via Lexington Ctr. &amp; Civil Air Terminal</item>
+    <item>77 - Arlington Heights Harvard Sta. via Massachusetts Ave.</item>
+    <item>78 - Arlmont Village Harvard Sta. via Park Circle</item>
+    <item>79 - Arlington Heights Alewife Sta. via Massachusetts Ave.</item>
+    <item>80 - Arlington Ctr. Lechmere Sta. via Medford Hillside</item>
+    <item>83 - Rindge Ave. Central Sq., Cambridge via Porter Squ. Sta.</item>
+    <item>84 - Arlmont Village Alewife Sta.</item>
+    <item>85 - Spring Hill Kendall/M.I.T. Sta. via Summer St. &amp; Union Sq.</item>
+    <item>86 - Sullivan Sq. Sta. Reservoir (Cleveland Circle) via Harvard</item>
+    <item>87 - Arlington Ctr. or Clarendon Hill Lechmere Sta. via Somerville Ave.</item>
+    <item>88 - Clarendon Hill Lechmere Sta. via Highland Avenue</item>
+    <item>89 - Clarendon Hill or Davis Squ. Sullivan Squ. Sta. via Broadway</item>
+    <item>90 - Davis Squ. Wellington Sta. via Sullivan Squ. Sta. &amp; Assembly Mall</item>
+    <item>91 - Sullivan Sq. Sta. Central Sq., Camb. via Washington St.</item>
+    <item>92 - Assembly Sq. Mall Downtown via Sullivan Sq. Sta., Main St. &amp; Haymarket Sta.</item>
+    <item>93 - Sullivan Sq. Sta. Downtown via Bunker Hill St. &amp; Haymarket Sta.</item>
+    <item>94 - Medford Squ. Davis Sq. Sta. via W. Medford &amp; Medford Hillside</item>
+    <item>95 - West Medford Sullivan Sq. Sta. via Mystic Ave.</item>
+    <item>96 - Medford Sq. Harvard Sta. via George St. &amp; Davis Sq. Sta.</item>
+    <item>97 - Malden Ctr. Sta. Wellington Sta. via Commercial &amp; Hancock Sts.</item>
+    <item>99 - Boston Regional Medical Ctr. Wellington Sta. via Main St. &amp; Malden Ctr. Sta.</item>
+    <item>100 - Elm St. Wellington Sta. via Fellsway</item>
+    <item>101 - Malden Ctr. Sta. Sullivan Squ. Sta. via Salem St., Main St. &amp; Broadway</item>
+    <item>104 - Malden Ctr. Sta. Sullivan Squ. Sta. via Ferry St. &amp; Broadway</item>
+    <item>105 - Malden Ctr. Sta. Sullivan Squ. Sta. via Newland St. Housing</item>
+    <item>106 - Lebanon St., Malden or Franklin Sq. Wellington Sta. via Main St.</item>
+    <item>108 - Linden Squ. Wellington Sta. via Malden Ctr. Sta. &amp; Highland Ave.</item>
+    <item>109 - Linden Squ. Sullivan Squ. Sta. via Glendale Squ.</item>
+    <item>110 - Wonderland or Broadway &amp; Park Ave. Wellington Sta. via Park Ave., &amp; Woodlawn</item>
+    <item>111 - Woodlawn or Broadway &amp; Park Ave. Haymarket Sta. via Mystic River/Tobin Bridge</item>
+    <item>112 - Wellington Sta. Wood Island Sta. via Central Ave., Mystic Mall &amp; Admiral's Hill</item>
+    <item>114 - Bellingham Squ. Maverick Sta.</item>
+    <item>116 - Wonderland Sta. Maverick Sta. via Revere Street</item>
+    <item>117 - Wonderland Sta. Maverick Sta. via Beach St.</item>
+    <item>119 - N.gate Beachmont Sta. via Revere Ctr. &amp; Cooledge Housing</item>
+    <item>120 - Orient Heights Sta. Maverick Sta. via Bennington St., Jeffries Point &amp; Waldemar Loop</item>
+    <item>121 - Wood Island Sta. Maverick Sta. via Lexington Street</item>
+    <item>131 - Melrose Highlands Malden Ctr. Sta. via Oak Grove Sta.</item>
+    <item>132 - Redstone Shopping Ctr. Malden Sta.</item>
+    <item>134 - N. Woburn Wellington Sta. via Woburn Sq., Winchester Ctr., Winthrop St., Medford Sq., Riverside Ave. &amp; Meadow...</item>
+    <item>136 - Reading Depot Malden Sta. via Wakefield, Melrose &amp; Oak Grove Sta.</item>
+    <item>137 - Reading Depot Malden Sta. via N. Ave, Wakefield, Melrose &amp; Oak Grove Sta.</item>
+    <item>170 - Central Sq., Waltham – Dudley Squ.</item>
+    <item>171 - Dudley Sta. Logan Airport via Andrew Sta.</item>
+    <item>201 - Fields Corner or No. Quincy Sta. Fields Corner via Neponset Ave. to Adams St.</item>
+    <item>202 - Fields Corner or No. Quincy Sta. Fields Corner via Adams St. to Neponset Ave.</item>
+    <item>210 - Quincy Ctr. Sta. No. Quincy Sta. or Fields Corner Sta. via Hancock St. &amp; Neponset Ave.</item>
+    <item>211 - Quincy Ctr. Sta. Squantum via Montclair &amp; No. Quincy Sta.</item>
+    <item>212 - Quincy Ctr. Sta. N. Quincy Sta. via Billings Road</item>
+    <item>214 - Quincy Ctr. Sta. Germantown via Sea St. &amp; O'Brien Towers</item>
+    <item>215 - Quincy Ctr. Sta. Ashmont Sta. via W. Quincy &amp; E. Milton Sq.</item>
+    <item>216 - Quincy Ctr. Sta. Houghs Neck via Sea Street</item>
+    <item>217 - Quincy Ctr. Sta. Ashmont Sta. via Beale St., Wollaston, &amp; E. Milton Sq.</item>
+    <item>220 - Quincy Ctr. Sta. Hingham Ctr. via Fore River Bridge</item>
+    <item>221 - Quincy Ctr. Sta. Fort Point via Bicknell Squ.</item>
+    <item>222 - Quincy Ctr. Sta. East Weymouth via Bicknell Squ.</item>
+    <item>225 - Quincy Ctr. Weymouth Landing via Quincy Ave. &amp; Shaw St. or Desmoines Road</item>
+    <item>230 - Quincy Ctr. Sta. Montello Commuter Rail Sta. via Holbrook &amp; Braintree Sta.</item>
+    <item>236 - Quincy Ctr. Sta. S. Shore Plaza via E. Braintree &amp; Braintree Sta.</item>
+    <item>238 - Quincy Ctr. Sta. Holbrook/Randolph Commuter Rail Sta.</item>
+    <item>240 - Avon Squ. or Holbrook/Randolph Commuter Rail Sta. Ashmont Sta. via Crawford Sq., Randolph</item>
+    <item>245 - Quincy Ctr. Sta. Mattapan Sta. via Quincy Hospital &amp; Pleasant St.</item>
+    <item>325 - Elm St., Medford Haymarket Sta. via Fellsway West, Salem St. &amp; I93</item>
+    <item>326 - West Medford Haymarket Sta. via Playstead Rd., High St., Medford &amp; I93</item>
+    <item>350 - N. Burlington Alewife Sta. via Burlington Mall</item>
+    <item>351 - Oak Park/Bedford Woods Alewife Sta. via Middlesex Turnpike</item>
+    <item>352 - Burlington Express Boston via Rte. 128 &amp; I93</item>
+    <item>354 - Woburn Express Boston via Woburn Sq. &amp; I93</item>
+    <item>411 - Malden Ctr. Sta. Revere/Jack Satter House via Granada Highlands and N.gate</item>
+    <item>424 - Eastern Ave. &amp; Essex St. Haymarket Sta. or WonderlandSalem Depot Haymarket Sta. or WonderlandSalem Depot Central ...</item>
+    <item>424W - Eastern Ave. &amp; Essex St. Haymarket Sta. or WonderlandSalem Depot Haymarket Sta. or WonderlandSalem Depot Central...</item>
+    <item>426 - Central Sq., Lynn Haymarket Sta. via Cliftondale</item>
+    <item>426W - Central Sq., Lynn Wonderland Sta. via Cliftondale Squ.</item>
+    <item>428 - Oaklandvale Haymarket Sta. via Granada Highlands</item>
+    <item>429 - N.gate Shopping Ctr. Central Sq., Lynn via Linden Squ. &amp; Squ. One Mall</item>
+    <item>430 - Saugus Ctr. Malden Ctr. Sta. via Squ. One Mall</item>
+    <item>431 - Neptune Towers Central Sq., Lynn via Summer St.</item>
+    <item>434 - Peabody Haymarket EXPRESS via Goodwins Circle</item>
+    <item>435 - Liberty Tree Mall Central Sq., Lynn via Peabody Sq.</item>
+    <item>436 - Liberty Tree Mall Central Sq., Lynn via Goodwins Circle</item>
+    <item>439 - Bass Point, Nahant Central Sq., Lynn</item>
+    <item>441 - Marblehead Wonderland via Central Squ., Lynn &amp; Lynnway</item>
+    <item>442 - Marblehead Wonderland via Central Squ., Lynn &amp; Lynnway</item>
+    <item>448 - Marblehead Downtown Crossing via Paradise Rd.or Humphrey St., Lynnway, &amp; Airport</item>
+    <item>449 - Marblehead Downtown Crossing via Paradise Rd. or Humphrey St., Lynnway, &amp; Airport</item>
+    <item>450 - Eastern Ave. &amp; Essex St. Haymarket Sta. or WonderlandSalem Depot Haymarket Sta. or WonderlandSalem Depot Central ...</item>
+    <item>451 - N. Beverly Salem Depot via Cabot St. or Tozer Rd.</item>
+    <item>455 - Salem Depot Wonderland via Central Sq., Lynn</item>
+    <item>456 - Salem Depot Central Squ., Lynn via Highland Ave</item>
+    <item>459 - Salem Depot Downtown Crossing via Logan Airport &amp; Central Squ., Lynn</item>
+    <item>465 - Salem Depot Liberty Tree Mall via Peabody &amp; Danvers</item>
+    <item>501 - EXPRESS BUS Brighton Ctr. Downtown via Oak Sq., &amp; Mass. Turnpike</item>
+    <item>502 - EXPRESS BUS Watertown Yard Copley Sq. (St. James Ave. at Dartmouth St.) via Newton Corner &amp; Mass. Turnpike</item>
+    <item>503 - EXPRESS BUS Brighton Ctr. Copley Sq. via Oak Sq. &amp; Mass. Turnpike</item>
+    <item>504 - EXPRESS BUS Watertown/Newton Corner Downtown via Mass. Turnpike</item>
+    <item>505 - EXPRESS BUS Central Sq., Waltham Downtown via Moody St. &amp; Mass. Turnpike</item>
+    <item>553 - Roberts Downtown Boston via Newton Corner &amp; Central Sq., Waltham</item>
+    <item>554 - Waverley Squ. Downtown Boston</item>
+    <item>556 - Waltham Highlands Downtown Boston via Newton Corner &amp; Central Sq., Waltham &amp; Newtonville</item>
+    <item>558 - Riverside Downtown Boston via Newton Corner &amp; Turnpike</item>
+    <item>710 - N. Medford Medford Sq, Meadow Glen Mall or Wellington Sta.</item>
+    <item>712 - Point Shirley Orient Heights</item>
+    <item>713 - Point Shirley Orient Heights</item>
+    <item>714 - Pemberton Point, Hull Sta. Street, Hingham</item>
+    <item>716 - Cobbs Corner Mattapan Sta.</item></string-array>
+</resources>
