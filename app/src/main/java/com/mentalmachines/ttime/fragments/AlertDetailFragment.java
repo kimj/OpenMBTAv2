@@ -19,7 +19,6 @@ import java.util.ArrayList;
  * Created by CaptofOuterSpace on 3/20/2016.
  */
 public class AlertDetailFragment extends Fragment {
-    public static final String TAG = "AlertDetailFragment";
     ArrayList<Alert> mStopAlerts;
     public static String TAG = "AlertDetailFragment";
     @Nullable
