@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -12,7 +13,6 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
-import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
@@ -54,7 +54,6 @@ public class AlertsFragment extends Fragment {
         return inflater.inflate(R.layout.alerts_fragment, container, false);
     }
 
-
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
@@ -68,26 +67,26 @@ public class AlertsFragment extends Fragment {
         Bundle arguments = getArguments();
         String alertId = "";
         if (arguments != null){
-            alertId = arguments.getString("alertId");
+            alertId = arguments.getString(DBHelper.KEY_ALERT_ID);
         }
-
-        if (!TextUtils.isEmpty(alertId)){
-            alerts = DBHelper.getAlertsByStopAlertId(alertId);
-        }  else {
-            alerts = DBHelper.getAllAlerts() ;
-        }
-
         alertsListView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> arg0, View arg1, int position, long arg3) {
                 Alert alert = alerts.get(position);
                 AlertDetailFragment alertDetailFragment = new AlertDetailFragment();
                 Bundle arguments = new Bundle();
-                arguments.putString("alertId", alert.alert_id);
+                arguments.putString(DBHelper.KEY_ALERT_ID, alert.alert_id);
                 alertDetailFragment.setArguments(arguments);
-                fragmentManager.beginTransaction().replace(R.id.container, alertDetailFragment, AlertDetailFragment.TAG).commit();
+                fragmentManager.beginTransaction().add(R.id.container, alertDetailFragment).addToBackStack(null).commit();
             }
         });
+
+        if (!TextUtils.isEmpty(alertId)){
+            Log.d(TAG, "alert to show! " + alertId);
+            alerts = DBHelper.getAlertsByStopAlertId(alertId);
+        }  else {
+            alerts = DBHelper.getAllAlerts() ;
+        }
 
         AlertsAdapter alertsAdapter = new AlertsAdapter(getActivity(), R.layout.alert_item_layout, alerts);
         alertsListView.setAdapter(alertsAdapter);

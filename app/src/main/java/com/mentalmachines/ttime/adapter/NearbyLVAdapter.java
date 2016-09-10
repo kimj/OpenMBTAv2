@@ -1,14 +1,17 @@
 package com.mentalmachines.ttime.adapter;
 
+import android.content.Context;
 import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.objects.Utils;
 
 /**
  * Created by emezias on 5/14/16
@@ -20,10 +23,12 @@ import com.mentalmachines.ttime.objects.StopData;
 public class NearbyLVAdapter extends BaseAdapter {
     public static final String TAG = "StopDetailAdapter";
     final StopData[] items;
+    String mNoData, mActual, mSchedule = null;
 
     public NearbyLVAdapter(StopData[] stopList) {
         super();
         items = stopList;
+
     }
 
     @Override
@@ -52,33 +57,29 @@ public class NearbyLVAdapter extends BaseAdapter {
         if(items == null || position >= items.length) {
             return null;
         }
+        final Context ctx = parent.getContext();
+        if(mSchedule == null) {
+            mSchedule = ctx.getString(R.string.scheduled);
+            mNoData = ctx.getString(R.string.stopEmptyString);
+            mActual = ctx.getString(R.string.actual);
+        }
         if(convertView == null) {
-            convertView = LayoutInflater.from(parent.getContext())
+            convertView = LayoutInflater.from(ctx)
                     .inflate(R.layout.t_stop, parent, false);
         }
         final StopData s = items[position];
         ((TextView) convertView.findViewById(R.id.stop_route)).setText(s.stopName);
         //alert header text gets set in the alert field instead of the alert id
-        if(TextUtils.isEmpty(s.schedTimes)) {
-            ((TextView) convertView.findViewById(R.id.stop_desc)).setText("");
-        } else {
-            ((TextView) convertView.findViewById(R.id.stop_desc)).setText(s.schedTimes);
-
-        }
-        if(TextUtils.isEmpty(s.predicTimes)) {
-            ((TextView) convertView.findViewById(R.id.stop_eta)).setText("");
-        } else {
-            ((TextView) convertView.findViewById(R.id.stop_eta)).setText(s.predicTimes);
-        }
+        ((TextView) convertView.findViewById(R.id.stop_desc)).setText(mSchedule + " " + Utils.trimStopTimes(mNoData, s));
+        ((TextView) convertView.findViewById(R.id.stop_eta)).setText(Utils.setPredictions(mActual, s));
 
         //TODO create new layout
-        final View alertBtn = convertView.findViewById(R.id.stop_alert_btn);
-        if(s.stopAlert != null) {
-            alertBtn.setVisibility(View.VISIBLE);
-            alertBtn.setTag(s.stopAlert);
+        final ImageButton alertBtn = (ImageButton) convertView.findViewById(R.id.stop_detail_btn);
+        alertBtn.setTag(s.stopAlert);
+        if(TextUtils.isEmpty(s.stopAlert)) {
+            alertBtn.setImageResource(R.drawable.btn_stop_alert);
         } else {
-            alertBtn.setVisibility(View.GONE);
-            alertBtn.invalidate();
+            alertBtn.setImageResource(R.drawable.btn_stop_detail);
         }
         return convertView;
     }

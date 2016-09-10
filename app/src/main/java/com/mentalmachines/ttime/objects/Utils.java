@@ -4,9 +4,21 @@ import android.content.Context;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.Bundle;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Display;
 import android.view.WindowManager;
+
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.adapter.StopDetailAdapter;
+import com.mentalmachines.ttime.fragments.AlertsFragment;
+import com.mentalmachines.ttime.fragments.RouteFragment;
+import com.mentalmachines.ttime.fragments.StopDetailFragment;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -28,6 +40,59 @@ public class Utils {
     public static String getTime(Calendar cal, String stamp) {
         cal.setTimeInMillis(1000 * Long.valueOf(stamp));
         return timeFormat.format(cal.getTime());
+    }
+
+    /**
+     * Here is the fragment transaction, screen transition
+     * @param ctx Context is needed to create the Fragment Manager
+     * @param oldFragment this is the fragment that needs to hide
+     * @param newFragmentName this is the new fragment, identified by the TAG string
+     * @param dataObject some fragments take an object parameter to newInstance, that's the last parameter
+     * @return the fragment that is now showing
+     */
+    public static Fragment fragmentChange(AppCompatActivity ctx, Fragment oldFragment, String newFragmentName, Object dataObject) {
+        final FragmentManager mgr = ctx.getSupportFragmentManager();
+        final FragmentTransaction tx = mgr.beginTransaction().setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
+        if(oldFragment != null) {
+            tx.hide(oldFragment);
+        }
+        Fragment newFragment = null;
+        switch (newFragmentName) {
+            case RouteFragment.TAG:
+                if(mgr.findFragmentByTag(((Route) dataObject).id) != null) {
+                    newFragment = mgr.findFragmentByTag(((Route) dataObject).id);
+                    tx.show(newFragment);
+                } else {
+                    newFragment = RouteFragment.newInstance((Route) dataObject);
+                    tx.add(R.id.container, newFragment, ((Route) dataObject).id).addToBackStack(((Route) dataObject).id);
+                }
+                break;
+            case StopDetailFragment.TAG:
+                if(mgr.findFragmentByTag(((StopData) dataObject).stopId) != null) {
+                    newFragment = mgr.findFragmentByTag(((StopData) dataObject).stopId);
+                    tx.show(newFragment);
+                } else {
+                    newFragment = StopDetailFragment.newInstance((StopData) dataObject);
+                    tx.add(R.id.container, newFragment, ((StopData) dataObject).stopId).addToBackStack(((StopData) dataObject).stopId);
+                }
+                break;
+            case AlertsFragment.TAG:
+                newFragment = new AlertsFragment();
+                Bundle args = new Bundle();
+                //data object parameter is the alert id, should be set with newInstance instead
+                args.putString(DBHelper.KEY_ALERT_ID, (String) dataObject);
+                newFragment.setArguments(args);
+                tx.add(R.id.container, newFragment).addToBackStack(AlertsFragment.TAG);
+                break;
+            /* TODO newInstance, use this function for alerts too
+            case AlertDetailFragment.TAG:
+                break;
+            */
+        }
+        tx.commit();
+        mgr.executePendingTransactions();
+        return newFragment;
+        //may need to check that newFragment is not null
     }
 
     public static int getScreenWidth(Context ctx) {
@@ -64,5 +129,86 @@ public class Utils {
         final URL url = new URL(urlString);
         final HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
         return urlConnection;
+    }
+
+    /**
+     * This might be called with the schedule times or the predicted times
+     * It checks the times in the String and returns 3 comma separated values
+     * Have to be careful where schedtimes is changed to include the route name?
+     * @param timeField, sched or predic times string
+     * @return human readable upcoming times
+     */
+    final static StringBuilder stringBuilder = new StringBuilder();
+    final static Calendar now = Calendar.getInstance();
+    public static String trimStopTimes(String empty,  StopData s) {
+        //send back 3 that are after the current time
+        //TODO hasten parse by stopping after 3 times are set?
+        //could improve parse times by saving timestamps
+        final int sz;
+        if(s == null || (sz = s.scheduleTimes.size()) < 1) {
+            return empty;
+        }
+        stringBuilder.setLength(0);
+        Log.d(TAG, "number of times? " + sz);
+        int counter = 0;
+        for(int dex = 0; dex < s.scheduleTimes.size(); dex++) {
+
+            now.setTimeInMillis(s.scheduleTimes.get(dex));
+            if(now.getTimeInMillis() > System.currentTimeMillis()) {
+                counter++;
+                stringBuilder.append(Utils.timeFormat.format(now.getTime()));
+                if(counter < 3 && counter < sz-1) {
+                    stringBuilder.append(", ");
+                } else {
+                    return stringBuilder.toString();
+                }
+            } else {
+                Log.d(TAG, "skipping time, #" + dex);
+            }
+        }
+
+        if(counter == 0) {
+            return empty;
+        }
+
+        return stringBuilder.toString();
+    }
+
+    static void addInPrediction(StringBuilder text, int offsetSecs) {
+        text.append("(");
+        if (offsetSecs > 60) {
+            text.append(offsetSecs / 60).append("m ").append(offsetSecs % 60).append("s").append(")\n");
+        } else {
+            text.append(offsetSecs).append("s").append(")\n");
+        }
+    }
+
+    public static String setPredictions(String actual, StopData s) {
+        final int sz;
+        if(s == null || (sz = s.predictionSecs.size()) < 1 || s.predictionTimestamp == 0) {
+            return "";
+        }
+        stringBuilder.setLength(0);
+        Log.d(TAG, "number of times? " + sz);
+        int counter = 0;
+        stringBuilder.append(actual).append(" ");
+        for(int dex = 0; dex < s.predictionSecs.size(); dex++) {
+            now.setTimeInMillis(s.predictionTimestamp + s.predictionSecs.get(dex));
+            if(now.getTimeInMillis() > System.currentTimeMillis()) {
+                counter++;
+                stringBuilder.append(Utils.timeFormat.format(now.getTime()));
+                addInPrediction(stringBuilder, s.predictionSecs.get(dex));
+                if(counter == 3 || counter == sz-1) {
+                    return stringBuilder.toString();
+                }
+            } else {
+                Log.d(TAG, "prd, skipping time, #" + dex);
+            }
+        }
+        if(stringBuilder.length() == StopDetailAdapter.ACTUAL.length()+1) {
+            //string contains only actual:
+            return "";
+        }
+        return stringBuilder.toString();
     }
 }

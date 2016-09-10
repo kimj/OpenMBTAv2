@@ -16,7 +16,7 @@ import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.RouteFragmentStopAdapter;
+import com.mentalmachines.ttime.adapter.RouteStopAdapter;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
@@ -27,11 +27,11 @@ public class RouteFragment extends Fragment {
      * It is displayed in the MainActivity and shows a list of stops to the user
      * There is a FAB to switch directions
 	 */
-    private static final String TAG = "RouteFragment";
+    public static final String TAG = "RouteFragment";
 
     public boolean mInbound = true;
     public RecyclerView mList;
-    public RouteFragmentStopAdapter mListAdapter;
+    public RouteStopAdapter mListAdapter;
     int mWidth = -1;
 
 	/**
@@ -106,7 +106,7 @@ public class RouteFragment extends Fragment {
     }
 
     public void finishList(Route r) {
-        mListAdapter = new RouteFragmentStopAdapter(r, mInbound);
+        mListAdapter = new RouteStopAdapter(r, mInbound);
         if(mListAdapter.isOneWay) {
             //this is a one way route
             Log.w(TAG, "one way route");

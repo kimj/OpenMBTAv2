@@ -18,11 +18,13 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
 import com.mentalmachines.ttime.fragments.AlertDetailFragment;
 import com.mentalmachines.ttime.objects.Favorite;
+import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
@@ -46,7 +48,11 @@ public class StopDetailActivity extends AppCompatActivity {
         final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         if(getSupportActionBar() != null) {
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            final Bundle b = getIntent().getExtras();
+            if(b != null && b.containsKey(Route.TAG)) {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            } //else favorite stop
+            setTitle(R.string.stopDetail);
         }
 
         LocalBroadcastManager.getInstance(this).registerReceiver(mDetailsUpdated,
@@ -89,6 +95,7 @@ public class StopDetailActivity extends AppCompatActivity {
                 return true;
 
             case R.id.menu_favorites:
+                Log.i(TAG, "favorites change called");
                 if(mStopDetail != null)
                 new CheckFavorite(true).execute(mStopDetail.mainStop.stopId);
                 break;
@@ -121,20 +128,13 @@ public class StopDetailActivity extends AppCompatActivity {
         AlertDetailFragment alertsDetailFragment = new AlertDetailFragment();
 
         Bundle args = new Bundle();
-        args.putString("alertId", alertId);
+        args.putString(DBHelper.KEY_ALERT_ID, alertId);
         alertsDetailFragment.setArguments(args);
         fm.beginTransaction().add(R.id.container, alertsDetailFragment).addToBackStack(null).commit();
 
     }
 
     void setList() {
-        if(mStopDetail.mainStop.stopName.contains(" - ")) {
-            setTitle(mStopDetail.mainStop.stopName.substring(0,
-                    mStopDetail.mainStop.stopName.indexOf(" -")));
-        } else {
-            setTitle(mStopDetail.mainStop.stopName);
-        }
-
         final StopData[] adapterList = new StopData[mStopDetail.mStopList.size()];
         mStopDetail.mStopList.toArray(adapterList);
         mList.setAdapter(new StopDetailAdapter(adapterList));
@@ -183,6 +183,7 @@ public class StopDetailActivity extends AppCompatActivity {
             new CheckFavorite(false).execute(mStopDetail.mainStop.stopId);
             Log.d(TAG, mStopDetail.mainStop.stopName +
                     " data check, stop detail list size " + mStopDetail.mStopList.size());
+            ((TextView)findViewById(R.id.stopdetail_name)).setText(mStopDetail.mainStop.stopName);
             setList();
         }
     };

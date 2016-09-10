@@ -1,5 +1,6 @@
 package com.mentalmachines.ttime.adapter;
 
+import android.content.Context;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.util.Log;
@@ -11,6 +12,11 @@ import android.widget.TextView;
 
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.objects.Utils;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 
 /**
  * Created by emezias on 1/20/16.
@@ -20,11 +26,28 @@ import com.mentalmachines.ttime.objects.StopData;
 
 public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.StopViewHolder> {
     public static final String TAG = "StopDetailAdapter";
-    final StopData[] items;
+    StopData[] items;
+    public static String SCHED, ACTUAL, NODATA;
 
     public StopDetailAdapter(StopData[] stopList) {
         super();
-        items = stopList;
+        ArrayList<StopData> itemList = new ArrayList<>();
+        for(StopData s: stopList) {
+            if(!s.scheduleTimes.isEmpty() || !s.predictionSecs.isEmpty()) {
+                //if either one has data, keep it, otherwise drop
+                if(!itemList.contains(s)) {
+                    itemList.add(s);
+                }
+            }
+        }
+        items = new StopData[itemList.size()];
+        items = itemList.toArray(items);
+        Arrays.sort(items, new Comparator<StopData>() {
+            @Override
+            public int compare(StopData o1, StopData o2) {
+                return o1.stopRouteDir.compareTo(o2.stopRouteDir);
+            }
+        });
     }
 
 
@@ -57,31 +80,26 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
         if(items == null || position >= items.length) {
             holder.mStopDescription.setText("");
             holder.mETA.setText("");
-            holder.mAlertBtn.setVisibility(View.GONE);
             Log.w(TAG, "bad stop position: " + position);
         } else {
             final StopData s = items[position];
-            holder.mStopRoutename.setText(s.stopName);
-            //alert header text gets set in the alert field instead of the alert id
-            if(TextUtils.isEmpty(s.schedTimes)) {
-                holder.mStopDescription.setText("");
-            } else {
-                holder.mStopDescription.setText(s.schedTimes);
-
-            }
-            if(TextUtils.isEmpty(s.predicTimes)) {
-                holder.mETA.setText("");
-            } else {
-                holder.mETA.setText(s.predicTimes);
-            }
 
             //TODO create new layout
-            if(TextUtils.isEmpty(s.stopAlert)) {
+            if(!TextUtils.isEmpty(s.stopAlert)) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
                 holder.mAlertBtn.setTag(s.stopAlert);
             } else {
                 holder.mAlertBtn.setVisibility(View.GONE);
                 holder.mAlertBtn.invalidate();
+            }
+            holder.mStopRoutename.setText(s.stopRouteDir);
+            //The utils will report "no schedule data" as needed
+            holder.mStopDescription.setText(SCHED + " " + Utils.trimStopTimes(NODATA, s));
+
+            if(s.predictionSecs.isEmpty()) {
+                holder.mETA.setText("");
+            } else {
+                holder.mETA.setText(Utils.setPredictions(ACTUAL, s));
             }
         }
     }
@@ -98,9 +116,14 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             mStopRoutename = (TextView) itemView.findViewById(R.id.stop_route);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
-            mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_alert_btn);
-            //mStopDescription.setTag(itemView);
-            itemView.findViewById(R.id.stop_mapbtn).setVisibility(View.GONE);
+            mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_detail_btn);
+            mAlertBtn.setImageResource(R.drawable.btn_stop_alert);
+            if(SCHED == null) {
+                final Context ctx = itemView.getContext();
+                SCHED = ctx.getString(R.string.scheduled);
+                ACTUAL = ctx.getString(R.string.actual);
+                NODATA = ctx.getString(R.string.stopEmptyString);
+            }
         }
     }
 }

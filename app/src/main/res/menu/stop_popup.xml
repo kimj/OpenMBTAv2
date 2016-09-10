@@ -15,5 +15,10 @@
         android:id="@+id/stop_location"
         android:title="@string/stopMap"
         app:showAsAction="always"/>
+    <item
+        android:id="@+id/stop_alert"
+        android:title="@string/stopAlert"
+        android:icon="@drawable/btn_stop_alert"
+        app:showAsAction="always"/>
 
 </menu>

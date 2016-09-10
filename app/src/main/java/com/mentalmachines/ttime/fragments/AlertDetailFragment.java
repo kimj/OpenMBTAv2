@@ -19,6 +19,7 @@ import java.util.ArrayList;
  * Created by CaptofOuterSpace on 3/20/2016.
  */
 public class AlertDetailFragment extends Fragment {
+    public static final String TAG = "AlertDetailFragment";
     ArrayList<Alert> mStopAlerts;
     public static String TAG = "AlertDetailFragment";
     @Nullable
@@ -33,7 +34,7 @@ public class AlertDetailFragment extends Fragment {
         TextView textViewEffectStart = (TextView) view.findViewById(R.id.textViewEffectStart);
         TextView textViewEffectEnd = (TextView) view.findViewById(R.id.textViewEffectEnd);
         Bundle b = getArguments();
-        String alertId = b.getString("alertId");
+        String alertId = b.getString(DBHelper.KEY_ALERT_ID);
         if (alertId != null) {}
 
         Alert alert = DBHelper.getAlertById(alertId);
@@ -58,7 +59,7 @@ public class AlertDetailFragment extends Fragment {
         super.onCreate(savedInstanceState);
 
         Bundle arguments = new Bundle();
-        String alertId = arguments.getString("alertId");
+        String alertId = arguments.getString(DBHelper.KEY_ALERT_ID);
 
     }
 

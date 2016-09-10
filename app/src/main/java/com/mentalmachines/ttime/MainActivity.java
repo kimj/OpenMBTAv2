@@ -15,7 +15,6 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
@@ -37,16 +36,17 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.adapter.NavDrawerAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
+import com.mentalmachines.ttime.fragments.StopDetailFragment;
 import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.services.CheckFavorite;
 import com.mentalmachines.ttime.services.GetScheduleService;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
 import com.mentalmachines.ttime.services.NavDrawerTask;
 import com.mentalmachines.ttime.services.SaveFavorites;
-import com.mentalmachines.ttime.services.StopService;
 
 import java.util.Calendar;
 
@@ -59,7 +59,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     //This is set to the expandable adapter mode or to -1 when Alerts are showing
     //TODO create a timeout for late night, intent service can hang
     ProgressDialog mPD = null;
-    MenuItem mFavoritesAction;
+    public MenuItem mFavoritesAction;
     boolean noFaves = true;
     Fragment mFragment;
 
@@ -80,7 +80,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         toggle.syncState();
 
         mDrawerList = (ExpandableListView) findViewById(R.id.routeNavList);
-        mDrawerList.addHeaderView(LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null));
+        final View header = LayoutInflater.from(this).inflate(R.layout.buttons_listheader, null);
+        mDrawerList.addHeaderView(header);
         //shows the subway lines and sets the background on the view as selected
         mDrawerList.setOnGroupCollapseListener(faveSubListener);
         final Intent tnt = new Intent(this, NavDrawerTask.class);
@@ -160,36 +161,34 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 startActivity(act);
                 break;
             case R.id.menu_favorites:
-                final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
-                //TODO move setFavorite to bg thread
-                if(Favorite.setFavorite(r.name, r.id)) {
-                    mFavoritesAction.setChecked(true);
-                    mFavoritesAction.setIcon(android.R.drawable.star_big_on);
-                    noFaves = false;
-                    startService(SaveFavorites.newInstance(this, r));
-                    Log.v(TAG, "saving favorite route schedule: " + r.name);
+                if(mFragment instanceof StopDetailFragment) {
+                    if(((StopDetailFragment)mFragment).mStopDetail != null) {
+                        new CheckFavorite(mFavoritesAction).execute(
+                                this, false, ((StopDetailFragment)mFragment).mStopDetail.mainStop.stopId);
+                    } else {
+                        Log.w(TAG, "don't have stop id to set favorite");
+                    }
+                    return true;
                 } else {
-                    mFavoritesAction.setChecked(false);
-                    mFavoritesAction.setIcon(android.R.drawable.star_big_off);
-                    noFaves = true;
+                    final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
+                    //TODO move setFavorite to bg thread
+                    if(Favorite.setFavorite(r.name, r.id)) {
+                        mFavoritesAction.setChecked(true);
+                        mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                        noFaves = false;
+                        startService(SaveFavorites.newInstance(this, r));
+                        Log.v(TAG, "saving favorite route schedule: " + r.name);
+                    } else {
+                        mFavoritesAction.setChecked(false);
+                        mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                        noFaves = true;
+                    }
+                    return true;
                 }
-                break;
             case R.id.menu_alerts:
                 //This piece will always create a new alert fragment
-                if(mFragment != null) {
-                    //hide the existing fragment, either alert or route fragment
-                    Log.d(TAG, "hide route fragment");
-                    AlertsFragment alertsFragment = new AlertsFragment();
-                    getSupportFragmentManager().beginTransaction().hide(mFragment)
-                            .add(R.id.container, alertsFragment)
-                            .commit();
-                    mFragment = alertsFragment;
-                } else {
-                    mFragment = new AlertsFragment();
-                    getSupportFragmentManager().beginTransaction()
-                            .add(R.id.container, mFragment)
-                            .commit();
-                }
+                mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, null);
+                //TODO handle the case where the mFragment is an AlertsFragment
                 //now a little clean up for a switch from Route to Alerts
                 findViewById(R.id.fab_in_out).setVisibility(View.GONE);
                 setTitle(getString(R.string.action_alerts));
@@ -348,6 +347,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(v.getTag() instanceof StopData) {
             //favorite stop
             showStopDetail((StopData) v.getTag());
+            Log.i(TAG, "show stop click");
         } else {
             final String routeId = (String) v.getTag();
             Log.i(TAG, "show route " + routeId);
@@ -377,21 +377,21 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         This click listener is set on the map button next to the route name */
     /*public void mapRoute(View v) {
         StringBuilder s = new StringBuilder().append("http://maps.google.com/maps?saddr=");
-        StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        StopData stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         s.append(stop.stopLat).append(",").append(stop.stopLong).append("&daddr=");
         Log.d(TAG, "first stop " + stop.stopName);
-        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong);
         Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(s.toString()));
         //intent.setClassName("com.google.android.apps.maps", "com.google.android.maps.MapsActivity");
         startActivity(intent);
         Log.d(TAG, "stop " + stop.stopName);
-        *//*StopData stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
+        *//*StopData stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[0];
         StringBuilder s = new StringBuilder().append("geo:=")
                 .append(stop.stopLat).append(",").append(stop.stopLong).append("?q=");
-        stop = ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
-                ((RouteFragmentStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
+        stop = ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems[
+                ((RouteStopAdapter)mRouteFragment.mList.getAdapter()).mItems.length-1];
         s.append(stop.stopLat).append(",").append(stop.stopLong)*//*;
         startActivity(new Intent(android.content.Intent.ACTION_VIEW,
                 Uri.parse(s.toString())));
@@ -402,7 +402,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
      * It finds the stop on a map, the Stop Data is set as a tag on the view
      * @param v
      */
-    public void openMap(View v) {
+    public void openMenu(View v) {
         PopupMenu popup = new PopupMenu(v.getContext(), v);
         popup.inflate(R.menu.stop_popup);
         popup.setOnMenuItemClickListener(this);
@@ -415,24 +415,15 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public void openAlerts(View v) {
         //click listener in the route fragment recycler view
         final StopData stop = (StopData) ((ViewGroup) v.getParent()).getTag();
-        Toast.makeText(this, "open alert main activity" + stop.stopAlert, Toast.LENGTH_SHORT).show();
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        AlertsFragment alertsFragment = (AlertsFragment) fragmentManager.findFragmentByTag(AlertsFragment.TAG);
-        if (alertsFragment != null) {
-            //found the alerts fragment, show it and hide the showing fragment
-            alertsFragment.updateAlertsListView(stop.stopAlert);
-            fragmentManager.beginTransaction().hide(mFragment).show(alertsFragment).commit();
-        } else {
-            //hide the fragment that is showing and add a new alerts fragment
-            Bundle alertFragmentArguments = new Bundle();
-            alertsFragment = new AlertsFragment();
-            alertFragmentArguments.putString("alertId", stop.stopAlert);
-            alertsFragment.setArguments(alertFragmentArguments);
-            fragmentManager.beginTransaction().hide(mFragment).add(R.id.container, alertsFragment, AlertsFragment.TAG).commit();
-        }
-
+        showStopAlert(stop);
         //geo:0,0?q=lat,lng(label)
         //Uri uri = Uri.parse("geo:" + stop.stopLat + "," + stop.stopLong + "?z=16");
+        //old code trying to show stop on the map
+    }
+
+    void showStopAlert(StopData stop) {
+        Toast.makeText(this, "open alert main activity" + stop.stopAlert, Toast.LENGTH_SHORT).show();
+        mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, stop.stopAlert);
     }
 
     /**
@@ -467,6 +458,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 mPD.dismiss();
             }
             Log.d(TAG, "times returned");
+
             //quick callbacks error check, is everything here
             if(MainActivity.this.isFinishing()) {
                 return;
@@ -476,6 +468,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //Error check, service returns data
                 return;
             }
+
+            if(!(mFragment instanceof RouteFragment)) {
+                //this call back must display a route fragment
+
+            }
+
             if((b.containsKey(TAG) && b.getParcelable(TAG) == null) ||
                     (b.containsKey(GetTimesForRoute.TAG) && b.getBoolean(GetTimesForRoute.TAG))) {
                 //error conditions, no route object, true boolean
@@ -491,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             Log.i(TAG, "good route!");
 
             final String title = getSupportActionBar().getTitle().toString();
-            if(mFavoritesAction.isVisible() && Route.readableName(context, r.name).equals(title)) {
+            if(Route.readableName(context, r.name).equals(title)) {
                 //route fragment is already up! Reset route includes animation
                 Log.d(TAG, "reset Route");
                 ((RouteFragment) mFragment).resetRoute(r);
@@ -504,34 +502,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     mFavoritesAction.setChecked(false);
                 }
                 setTitle(Route.readableName(context, r.name));
-
-                final FragmentManager mgr = getSupportFragmentManager();
-                if(mgr.findFragmentByTag(r.name) != null) {
-                    Log.d(TAG, "fragment found");
-                    RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(r.name);
-                    if(mFragment == frag) {
-                        ((RouteFragment) mFragment).resetRoute(r);
-                    } else if(mFragment == null) {
-                        mgr.beginTransaction().show(frag).commit();
-                        mFragment = frag;
-                    } else {
-                        mgr.beginTransaction().hide(mFragment).show(frag).commit();
-                        frag.resetRoute(r);
-                        mFragment = frag;
-                    }
-
-                } else {
-                    Log.d(TAG, "new fragment");
-                    if(mFragment == null) {
-                        mFragment = RouteFragment.newInstance(r);
-                        mgr.beginTransaction().add(R.id.container, mFragment, r.name).commit();
-                    } else {
-                        RouteFragment frag = RouteFragment.newInstance(r);
-                        mgr.beginTransaction().hide(mFragment).add(R.id.container, frag, r.name).commit();
-                        mFragment = frag;
-                    }
-                }
-
+                mFragment = Utils.fragmentChange(MainActivity.this, mFragment, RouteFragment.TAG, r);
             }
 
             if(Favorite.checkFavoriteRoute(r.name)) {
@@ -635,7 +606,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 break;
             case R.id.stop_detail:
                 showStopDetail(stop);
-                //stop detail activity registers a receiver to get the stopDetail object it needs
                 break;
             case R.id.stop_location:
                 //Log.d(TAG, "stop " + stop.stopName);
@@ -644,6 +614,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final Uri uri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "("
                         + Uri.encode(stop.stopName) + ")");
                 startActivity(new Intent(Intent.ACTION_VIEW, uri));
+                break;
+            case R.id.stop_alert:
+                showStopAlert(stop);
                 break;
         }
         return false;
@@ -654,17 +627,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if(mFragment instanceof RouteFragment) {
             final String mainStopRoute = Route.readableName(this, ((RouteFragment)mFragment).mListAdapter.mRoute.name) + " " +
                     (((RouteFragment)mFragment).mListAdapter.mDirectionId == 0? getString(R.string.outbound): getString(R.string.inbound));
-            if(stop.schedTimes == null) {
+            /*if(stop.schedTimes == null) {
                 stop.schedTimes = mainStopRoute;
             } else {
                 stop.schedTimes = mainStopRoute + stop.schedTimes;
             }
-        }
 
-        Intent tnt = new Intent(this, StopService.class);
-        tnt.putExtra(StopService.TAG, stop);
-        startActivity(new Intent(this, StopDetailActivity.class));
-        startService(tnt);
+            TODO what's this again?*/
+        }
+        Log.i(TAG, "show stop detail " + stop.readableStopName());
+        mFragment = Utils.fragmentChange(this, mFragment, StopDetailFragment.TAG, stop);
     }
 
     class CheckFavesTable extends AsyncTask <Void, Void, Void> {

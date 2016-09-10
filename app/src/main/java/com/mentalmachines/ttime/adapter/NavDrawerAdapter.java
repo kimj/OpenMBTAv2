@@ -221,7 +221,7 @@ public class NavDrawerAdapter extends BaseExpandableListAdapter {
                             //((TextView) convertView).setTextColor(Color.BLACK);
                             //Log.d(TAG, "stop name set here " + stops[childPosition].stopName);
                             convertView.setBackgroundColor(Color.TRANSPARENT);
-                            ((TextView) convertView).setText(stops[childPosition].stopName);
+                            ((TextView) convertView).setText(stops[childPosition].readableStopName());
                             convertView.setTag(stops[childPosition]);
                         } else if(rtNames != null && rtNames.length > 0) {
                             colorView((TextView) convertView, rtNames[childPosition]);
