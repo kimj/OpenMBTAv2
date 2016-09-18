@@ -1,9 +1,13 @@
 package com.mentalmachines.ttime.objects;
 
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
+
+import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
 
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -48,6 +52,28 @@ public class StopData implements Parcelable {
         stopLat = c.getString(2);
         stopLong = c.getString(3);
         stopAlert = c.getString(4);
+    }
+
+    public static StopData getStopFromId(String stopID) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        StopData stopFound = null;
+        Cursor c  = db.query(DBHelper.STOPS_INB_TABLE, Favorite.stopsProjection,
+                Favorite.STOP_ID_WHERE + stopID + "'", null, null, null, null);
+        if (c.moveToFirst()) {
+            Log.d(TAG, "inbound stop ? " + stopID);
+            stopFound = new StopData(c);
+        } else {
+            c  = db.query(DBHelper.STOPS_OUT_TABLE, Favorite.stopsProjection,
+                    Favorite.STOP_ID_WHERE + stopID + "'", null, null, null, null);
+            if (c.moveToFirst()) {
+                Log.d(TAG, "inbound stop ? " + stopID);
+                stopFound = new  StopData(c);
+            }
+        }
+        if(!c.isClosed()) {
+            c.close();
+        }
+        return stopFound;
     }
     /*
     KEY_STOPID, KEY_STOPNM, KEY_STOPLT, KEY_STOPLN, KEY_ALERT_ID

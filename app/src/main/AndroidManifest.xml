@@ -49,7 +49,7 @@
         <service android:name=".services.GetTimesForRoute"/>
         <service android:name=".services.GetScheduleService" />
         <service android:name=".services.StopService"/>
-        <service android:name=".services.SaveFavorites" />
+        <service android:name=".services.SaveFavoriteSchedule" />
         <service android:name=".services.GetMBTARequestService"/>
         <service android:name=".services.DBCreateStopsRoutes"/>
         <service android:name=".services.CopyDBService"/>

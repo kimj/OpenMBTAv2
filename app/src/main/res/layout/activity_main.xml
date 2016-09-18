@@ -33,10 +33,11 @@
             app:layout_behavior="@string/appbar_scrolling_view_behavior" />
 
         <android.support.design.widget.FloatingActionButton
-            android:id="@+id/fab_in_out"
+            android:id="@+id/favorites_fab"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:visibility="gone"
+            android:background="@drawable/btn_direction"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/def_margin"
             android:src="@drawable/ic_menu_back" />

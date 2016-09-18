@@ -33,6 +33,9 @@
     <string name="nearby">Nearby Stops</string>
     <string name="action_nearby">Get Nearby Stops</string>
     <string name="stopEmptyString">Sorry, no timing for this stop</string>
+    <string name="one_way">Express</string>
+
+
     <string name="mac_map_dbgkey">AIzaSyByV2xh1lLMrEUNZL2P92JIEQtMYJ4SyTI</string>
 
     <string-array name="transit_methods">

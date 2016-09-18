@@ -10,11 +10,6 @@
         app:showAsAction="always"/>
      -->
     <item
-        android:id="@+id/menu_favorites"
-        android:title="@string/favorites"
-        android:icon="@android:drawable/btn_star"
-        app:showAsAction="always"/>
-    <item
         android:id="@+id/menu_alerts"
         android:title="@string/action_alerts"
         android:icon="@android:drawable/ic_dialog_alert"

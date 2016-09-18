@@ -21,7 +21,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String DB_ROUTE_TABLE = "route_table";
     public static final String STOPS_INB_TABLE = "stops_inbound";
     public static final String STOPS_OUT_TABLE = "stops_outbound";
-    public static final String FAVS_TABLE = "favorites_table";
+    public static final String FAVE_ROUTES = "favorites_table";
     public static final String FAVESTOPS_TABLE = "favorites_stops";
 
     public static final String BRAINTREE = "Braintree";
@@ -66,11 +66,11 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static final String TABLE_PREFIX = "create table if not exists ";
 
-    String CREATE_FAVS_TABLE  = TABLE_PREFIX + FAVS_TABLE + "("
+    String CREATE_FAVS_TABLE  = TABLE_PREFIX + FAVE_ROUTES + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_ROUTE_ID + " TEXT unique not null, "
             + KEY_ROUTE_NAME + " TEXT unique not null);";
-    private static final String ROUTE_FAVS_DEX = "CREATE UNIQUE INDEX ROUTE_FAVS_DEX ON " + FAVS_TABLE + "("
+    private static final String ROUTE_FAVS_DEX = "CREATE UNIQUE INDEX ROUTE_FAVS_DEX ON " + FAVE_ROUTES + "("
             + KEY_ROUTE_NAME + ");";
 
     String CREATE_FAVESTOPS_TABLE  = TABLE_PREFIX + FAVESTOPS_TABLE + "("

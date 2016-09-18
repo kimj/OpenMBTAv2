@@ -9,6 +9,7 @@ import android.util.Log;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.TTimeApp;
 
 import java.util.ArrayList;
 
@@ -49,6 +50,27 @@ public class Route implements Parcelable {
         if (!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
+    }
+
+    public boolean isOneWay() {
+        return (mInboundStops == null || mInboundStops.isEmpty() || mOutboundStops == null || mOutboundStops.isEmpty());
+    }
+
+    public static String getRouteName(Context ctx, String routeID) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
+        final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE,
+                new String[] { DBHelper.KEY_ROUTE_NAME }, routeStopsWhereClause + "'" + routeID + "'",
+                null, null, null, null);
+        final String routeName;
+        if(c.moveToFirst()) {
+            routeName = c.getString(0);
+        } else {
+            routeName = null;
+        }
+        if(!c.isClosed()) {
+            c.close();
+        }
+        return routeName;
     }
 
     /**

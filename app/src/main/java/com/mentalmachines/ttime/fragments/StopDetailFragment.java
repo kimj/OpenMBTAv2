@@ -7,6 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
@@ -18,13 +19,13 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
+import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.CheckFavorite;
+import com.mentalmachines.ttime.services.FavoritesAction;
 import com.mentalmachines.ttime.services.StopService;
 
 public class StopDetailFragment extends Fragment {
@@ -71,6 +72,13 @@ public class StopDetailFragment extends Fragment {
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
         mProgress = ProgressDialog.show(getContext(), "", getString(R.string.getting_data), true, true);
+    }
+
+    @Override
+    public void onResume() {
+        super.onResume();
+        FavoritesAction.setFavoriteButton((FloatingActionButton) getActivity().findViewById(R.id.favorites_fab),
+                Favorite.isStopFavorite(mStopDetail.mainStop.stopId));
     }
 
     @Override
@@ -135,8 +143,7 @@ public class StopDetailFragment extends Fragment {
             mStopDetail = intent.getParcelableExtra(StopService.TAG);
             Log.i(TAG, "favorites change called");
 
-            new CheckFavorite(((MainActivity)getActivity()).mFavoritesAction).execute(
-                    getContext(), false, mStopDetail.mainStop.stopId);
+            FavoritesAction.setFavoriteButton((FloatingActionButton) getActivity().findViewById(R.id.favorites_fab), Favorite.isStopFavorite(mStopDetail.mainStop.stopId));
             Log.d(TAG, mStopDetail.mainStop.stopName +
                     " data check, stop detail list size " + mStopDetail.mStopList.size());
             ((TextView)getView().findViewById(R.id.stopdetail_name)).setText(mStopDetail.mainStop.stopName);

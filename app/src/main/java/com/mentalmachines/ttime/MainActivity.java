@@ -13,7 +13,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
-import android.support.design.widget.Snackbar;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
@@ -42,11 +42,10 @@ import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.CheckFavorite;
+import com.mentalmachines.ttime.services.FavoritesAction;
 import com.mentalmachines.ttime.services.GetScheduleService;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
 import com.mentalmachines.ttime.services.NavDrawerTask;
-import com.mentalmachines.ttime.services.SaveFavorites;
 
 import java.util.Calendar;
 
@@ -59,16 +58,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     //This is set to the expandable adapter mode or to -1 when Alerts are showing
     //TODO create a timeout for late night, intent service can hang
     ProgressDialog mPD = null;
-    public MenuItem mFavoritesAction;
     boolean noFaves = true;
-    Fragment mFragment;
+    public Fragment mFragment;
 
 	@Override
 	protected void onCreate(Bundle b) {
 		super.onCreate(b);
 		setContentView(R.layout.activity_main);
-        new CheckFavesTable().execute();
-        //this task sets the noFaves boolean
 
 		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
 		setSupportActionBar(toolbar);
@@ -105,23 +101,17 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
-        mgr.registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
 	}
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mTimesReady);
         LocalBroadcastManager.getInstance(this).unregisterReceiver(mNavDataReady);
     }
 
     @Override
 	public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main, menu);
-        if(menu != null) {
-            mFavoritesAction = menu.getItem(0);
-            mFavoritesAction.setVisible(false);
-        }
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -160,39 +150,14 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //Toast.makeText(this, "Starting service, activity", Toast.LENGTH_SHORT).show();
                 startActivity(act);
                 break;
-            case R.id.menu_favorites:
-                if(mFragment instanceof StopDetailFragment) {
-                    if(((StopDetailFragment)mFragment).mStopDetail != null) {
-                        new CheckFavorite(mFavoritesAction).execute(
-                                this, false, ((StopDetailFragment)mFragment).mStopDetail.mainStop.stopId);
-                    } else {
-                        Log.w(TAG, "don't have stop id to set favorite");
-                    }
-                    return true;
-                } else {
-                    final Route r = ((RouteFragment) mFragment).mListAdapter.mRoute;
-                    //TODO move setFavorite to bg thread
-                    if(Favorite.setFavorite(r.name, r.id)) {
-                        mFavoritesAction.setChecked(true);
-                        mFavoritesAction.setIcon(android.R.drawable.star_big_on);
-                        noFaves = false;
-                        startService(SaveFavorites.newInstance(this, r));
-                        Log.v(TAG, "saving favorite route schedule: " + r.name);
-                    } else {
-                        mFavoritesAction.setChecked(false);
-                        mFavoritesAction.setIcon(android.R.drawable.star_big_off);
-                        noFaves = true;
-                    }
-                    return true;
-                }
             case R.id.menu_alerts:
                 //This piece will always create a new alert fragment
-                mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, null);
+                mFragment = Utils.fragmentChange(this, AlertsFragment.TAG, null);
                 //TODO handle the case where the mFragment is an AlertsFragment
                 //now a little clean up for a switch from Route to Alerts
-                findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                findViewById(R.id.favorites_fab).setVisibility(View.GONE);
                 setTitle(getString(R.string.action_alerts));
-                mFavoritesAction.setVisible(false);
+                //mFavoritesAction.setVisible(false);
                 mCurrentSelection = -1;
                 Log.d(TAG, "reset selection here! " + mCurrentSelection);
                 if(mDrawerList.getTag() != null) {
@@ -233,44 +198,46 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
         }
         //persist the view
-        //save the route ID in order to call the route prediction times again when user gets back
-        if(mCurrentSelection > 0) {
-            if (mDrawerList.getTag() != null) {
-                View v = (View) mDrawerList.getTag();
-                final String routeId = (String) v.getTag();
+        //save the route ID  or stopid in order to call the route prediction times again when user gets back
+        if(mFragment instanceof RouteFragment) {
+            if(mFragment.getArguments().containsKey(RouteFragment.TAG)) {
+                final Route r = mFragment.getArguments().getParcelable(TAG);
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-                mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).commit();
-            } else if(mFragment != null && ((RouteFragment)mFragment).mListAdapter != null &&
-                    ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
-                mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-                mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
-                        ((RouteFragment) mFragment).mListAdapter.mRoute.id).commit();
+                mPrefs.edit().remove(DBHelper.KEY_STOPID).putString(DBHelper.KEY_ROUTE_ID, r.id).apply();
             }
-        } //ELSE do something about alerts that are onscreen
+        } else if(mFragment instanceof StopDetailFragment) {
+            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+            mPrefs.edit().remove(DBHelper.KEY_ROUTE_ID).putString(DBHelper.KEY_STOPID,
+                    ((StopDetailFragment)mFragment).mStopDetail.mainStop.stopId).apply();
+        }
+
     }
 
     @Override
     protected void onResume() {
         super.onResume();
+        new CheckFavesTable().execute();
+        //this task sets the noFaves boolean
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
         if(mFragment == null) {
-            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-            //no fragment showing, no preference from last route shown, display toast
-            if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+            //read the preference for what was last shown and show it again
+            if(mPrefs.contains(DBHelper.KEY_STOPID)) {
+                Utils.fragmentChange(this, StopDetailFragment.TAG,
+                        StopData.getStopFromId(mPrefs.getString(DBHelper.KEY_STOPID, null)));
+            } else if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+                //no fragment showing, no preference from last route shown, display toast
                 Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             } else {
                 final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
                 getTimesFromService(mRouteId, "");
             }
         } else {
-            /*if(mFragment.isHidden()) {
-                getSupportFragmentManager().beginTransaction().show(mFragment).commit();
-                Log.d(TAG, "showing hidden fragment?");
-                //TODO this seems wrong
-            }*/
-            if(mCurrentSelection > 0 && mFragment instanceof RouteFragment) {
+            if(mFragment instanceof StopDetailFragment) {
+                ((StopDetailFragment)mFragment).reloadTimes();
+            } else if(mFragment instanceof RouteFragment) {
                 //this is a route fragment, get the latest times
                 ((RouteFragment)mFragment).reloadTimes();
-                new CheckFavesTable().execute();
+                //mCurrentSelection > 0 &&
             }
         }
     }
@@ -340,35 +307,37 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
     /**
      * This is a click listener on the nav drawer. Chooses a route, shows it in a RouteFragment
+     * Opens a favorite route or stop
      * @param v
      */
     public void childClick(View v) {
         //click listener set on the child view in the nav drawer
-        if(v.getTag() instanceof StopData) {
+        final Object tag = v.getTag();
+        final SharedPreferences.Editor ed = mPrefs.edit();
+        if(tag instanceof StopData) {
             //favorite stop
-            showStopDetail((StopData) v.getTag());
+            showStopDetail((StopData) tag);
+            ed.remove(DBHelper.KEY_ROUTE_ID).putString(DBHelper.KEY_STOPID, ((StopData) tag).stopId).apply();
             Log.i(TAG, "show stop click");
         } else {
-            final String routeId = (String) v.getTag();
-            Log.i(TAG, "show route " + routeId);
-            mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).apply();
+            Log.i(TAG, "show route " + tag);
+            ed.remove(DBHelper.KEY_STOPID).putString(DBHelper.KEY_ROUTE_ID, (String) tag).apply();
             final String routeName = (String) v.getTag(R.layout.child_view);
             setTitle(Route.readableName(this, routeName));
-            v.setSelected(true);
-            if(mDrawerList.getTag() != null) {
-                ((View)mDrawerList.getTag()).setSelected(false);
-            }
+
             if(Utils.checkNetwork(this)) {
-                getTimesFromService(routeId, routeName);
-                Log.i(TAG, "starting get times service with id: " + routeId);
+                getTimesFromService((String) tag, routeName);
+                Log.i(TAG, "starting get times service with id: " + tag);
             } else {
                 Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
             }
-            mDrawerList.setTag(v);
-            //Fab is to switch between inbound and outbound
-            findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
         }
-
+        v.setSelected(true);
+        //deselect the route or branch that was shown before
+        if(mDrawerList.getTag() != null) {
+            ((View)mDrawerList.getTag()).setSelected(false);
+        }
+        mDrawerList.setTag(v);
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
     }
@@ -423,7 +392,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
     void showStopAlert(StopData stop) {
         Toast.makeText(this, "open alert main activity" + stop.stopAlert, Toast.LENGTH_SHORT).show();
-        mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, stop.stopAlert);
+        mFragment = Utils.fragmentChange(this, AlertsFragment.TAG, stop.stopAlert);
     }
 
     /**
@@ -444,76 +413,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             } //don't collapse favorites or subways
         }
 
-    };
-
-    /**
-     * This receiver gets the Route object back from the GetTimesForRoute IntentService class
-     * Either creates a new RouteFragment or resets the data in the recycler view of the fragment
-     */
-    BroadcastReceiver mTimesReady = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //the route times are ready. set up the adapter
-            if(mPD != null && mPD.isShowing()) {
-                mPD.dismiss();
-            }
-            Log.d(TAG, "times returned");
-
-            //quick callbacks error check, is everything here
-            if(MainActivity.this.isFinishing()) {
-                return;
-            }
-            final Bundle b = intent.getExtras();
-            if(b == null) {
-                //Error check, service returns data
-                return;
-            }
-
-            if(!(mFragment instanceof RouteFragment)) {
-                //this call back must display a route fragment
-
-            }
-
-            if((b.containsKey(TAG) && b.getParcelable(TAG) == null) ||
-                    (b.containsKey(GetTimesForRoute.TAG) && b.getBoolean(GetTimesForRoute.TAG))) {
-                //error conditions, no route object, true boolean
-                Snackbar.make(findViewById(R.id.container),
-                        getString(R.string.schedSvcErr), Snackbar.LENGTH_LONG).show();
-
-            }
-            //exception from predictions but route and schedule times are good
-            if(b.containsKey(TAG) && b.getParcelable(TAG) == null) {
-                return;
-            }
-            final Route r = intent.getExtras().getParcelable(TAG);
-            Log.i(TAG, "good route!");
-
-            final String title = getSupportActionBar().getTitle().toString();
-            if(Route.readableName(context, r.name).equals(title)) {
-                //route fragment is already up! Reset route includes animation
-                Log.d(TAG, "reset Route");
-                ((RouteFragment) mFragment).resetRoute(r);
-            } else {
-                mFavoritesAction.setVisible(true);
-                mFavoritesAction.setCheckable(true);
-                if(Favorite.checkFavoriteRoute(r.name)) {
-                    mFavoritesAction.setChecked(true);
-                } else {
-                    mFavoritesAction.setChecked(false);
-                }
-                setTitle(Route.readableName(context, r.name));
-                mFragment = Utils.fragmentChange(MainActivity.this, mFragment, RouteFragment.TAG, r);
-            }
-
-            if(Favorite.checkFavoriteRoute(r.name)) {
-                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
-                Log.d(TAG, "is a favorite");
-            } else {
-                Log.d(TAG, "not favorited");
-                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
-            }
-            mFavoritesAction.getIcon().invalidateSelf();
-        }
     };
 
     /**
@@ -587,22 +486,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final StopData stop = (StopData) findViewById(R.id.container).getTag();
         switch (menuItem.getItemId()) {
             case R.id.stop_fav:
-                LocalBroadcastManager.getInstance(this).registerReceiver(
-                        new BroadcastReceiver() {
-                            @Override
-                            public void onReceive(Context context, Intent intent) {
-                                if(!intent.getBooleanExtra(SaveFavorites.TAG, false)) {
-                                    Log.e(TAG, "error setting stop as favorite");
-                                    if(MainActivity.this.hasWindowFocus()) {
-                                        Toast.makeText(MainActivity.this, "error setting stop as favorite", Toast.LENGTH_SHORT).show();
-                                    }
-                                }
-                                LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(this);
-                            }
-                        }, new IntentFilter(NavDrawerTask.TAG));
-                startService(SaveFavorites.newInstance(this, stop.stopId,
-                        ((RouteFragment)mFragment).mListAdapter.mDirectionId));
-                //favorites service
+                if(Favorite.isStopFavorite(stop.stopId)) //TODO change menu to say drop/add
+                new FavoritesAction((FloatingActionButton) findViewById(R.id.favorites_fab)).execute(this, true, stop.stopId);
+                //favorites Task
                 break;
             case R.id.stop_detail:
                 showStopDetail(stop);
@@ -636,7 +522,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             TODO what's this again?*/
         }
         Log.i(TAG, "show stop detail " + stop.readableStopName());
-        mFragment = Utils.fragmentChange(this, mFragment, StopDetailFragment.TAG, stop);
+        mFragment = Utils.fragmentChange(this, StopDetailFragment.TAG, stop);
     }
 
     class CheckFavesTable extends AsyncTask <Void, Void, Void> {
@@ -644,7 +530,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         @Override
         protected Void doInBackground(Void... voids) {
             final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-            if(DatabaseUtils.queryNumEntries(db, DBHelper.FAVS_TABLE) == 0 &&
+            if(DatabaseUtils.queryNumEntries(db, DBHelper.FAVE_ROUTES) == 0 &&
                     DatabaseUtils.queryNumEntries(db, DBHelper.FAVESTOPS_TABLE) == 0) {
                 Log.i(TAG, "no favorites");
                 noFaves = true;
@@ -654,24 +540,4 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             return null;
         }
     }
-
-    /*public void switchFragment(String fragmentTag){
-        FragmentManager fm = getSupportFragmentManager();
-        FragmentTransaction ft = fm.beginTransaction();
-
-
-        if(fm.findFragmentByTag() != null) {
-            RouteFragment frag = (RouteFragment) mgr.findFragmentByTag(fragmentTah);
-            if(mFragment == frag) {
-                ((RouteFragment) mFragment).resetRoute(r);
-            } else if(mFragment == null) {
-                ft.show(frag).commit();
-                mFragment = frag;
-            } else {
-                ft.hide(mFragment).show(frag).commit();
-                frag.resetRoute(r);
-                mFragment = frag;
-            }
-        }
-    }*/
 }

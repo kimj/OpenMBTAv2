@@ -26,18 +26,26 @@ public class Favorite {
     public static final String STOP_ID_WHERE = DBHelper.KEY_STOPID + " like '";
     public static final String STOP_FAV_CHK = DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_DIR_ID + "=?";
 
-    public static boolean checkFavoriteRoute(String routeNm) {
+    public static boolean isFavoriteRoute(String routeNm) {
         final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        final boolean isFavorite = checkFavoriteRoute(db, routeNm);
+        final boolean isFavorite = isFavoriteRoute(db, routeNm);
         return isFavorite;
     }
 
-    public static boolean checkFavoriteRoute(SQLiteDatabase db, String routeNm) {
-        final Cursor c = db.query(DBHelper.FAVS_TABLE, null, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
+    public static boolean isFavoriteRoute(SQLiteDatabase db, String routeNm) {
+        final Cursor c = db.query(DBHelper.FAVE_ROUTES, null, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         final boolean returnVal;
         returnVal = c.getCount() != 0;
         if(!c.isClosed()) c.close();
         return returnVal;
+    }
+
+    public static boolean dropFavoriteRoute(String routeId) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
+        if(db.delete(DBHelper.FAVE_ROUTES, DBHelper.KEY_ROUTE_NAME + " like '" + routeId + "'", null) == 1) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -46,21 +54,21 @@ public class Favorite {
      * @param routeId
      * @return true means success
      */
-    public static boolean setFavorite(String routeNm, String routeId) {
+    public static boolean setFavoriteRoute(String routeNm, String routeId) {
         final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
         final boolean isFavorite;
-        final Cursor c = db.query(DBHelper.FAVS_TABLE, null, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
+        final Cursor c = db.query(DBHelper.FAVE_ROUTES, null, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null, null, null, null);
         if(c.getCount() > 0) {
             //not a favorite and found in the table
             Log.i(TAG, "dropping favorite " + routeNm + db.delete(
-                    DBHelper.FAVS_TABLE, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
+                    DBHelper.FAVE_ROUTES, DBHelper.KEY_ROUTE_NAME + " like '" + routeNm + "'", null));
             isFavorite = false;
         } else {
             final ContentValues cv = new ContentValues();
             cv.put(DBHelper.KEY_ROUTE_NAME, routeNm);
             cv.put(DBHelper.KEY_ROUTE_ID, routeId);
             Log.i(DBHelper.TAG, "adding favorite " + routeNm + " row:" + db.insert(
-                    DBHelper.FAVS_TABLE, "_id", cv));
+                    DBHelper.FAVE_ROUTES, "_id", cv));
             cv.clear();
             isFavorite = true;
         }
@@ -73,11 +81,12 @@ public class Favorite {
      * The favorites button now has two groups, routes and stops
      * This method sets a stop as a favorite for easy access from the drawer
      * @param stopId
-     * @param direction_id
      * @return whether or not the boolean is a saved favorite
      */
-    public static boolean setFavorite(String stopId, int direction_id) {
+    public static boolean setFavoriteStop(String stopId) {
         final SQLiteDatabase db = TTimeApp.sHelper.getWritableDatabase();
+        final int direction_id = getStopDirection(db, stopId);
+
         boolean isFavorite = false;
         String[] args = new String[] { stopId, direction_id+""};
         Cursor c = db.query(DBHelper.FAVESTOPS_TABLE, null,
@@ -86,7 +95,7 @@ public class Favorite {
         if(c.getCount() > 0) {
             //not a favorite and found in the table
             Log.i(TAG, "dropping favorite stop " + stopId + db.delete(
-                    DBHelper.FAVS_TABLE, DBHelper.KEY_STOPID + " like ? AND " + DBHelper.KEY_DIR_ID + "=?", args));
+                    DBHelper.FAVE_ROUTES, DBHelper.KEY_STOPID + " like ? AND " + DBHelper.KEY_DIR_ID + "=?", args));
         } else {
             final ContentValues cv = new ContentValues();
             cv.put(DBHelper.KEY_STOPID, stopId);

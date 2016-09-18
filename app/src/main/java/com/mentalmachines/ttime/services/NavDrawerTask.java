@@ -40,7 +40,7 @@ public class NavDrawerTask extends IntentService {
             //favorites selected
             tnt.putExtra(DBHelper.STOP, new StopList(null, Favorite.getFavoriteStops()));
             //tnt.putExtra(DBHelper.STOP, Favorite.getFavoriteStops());
-            c = db.query(DBHelper.FAVS_TABLE,
+            c = db.query(DBHelper.FAVE_ROUTES,
                     mRouteProjection,
                     null, null, null, null, null);
             Log.i(TAG, "selecting faves");
@@ -83,7 +83,7 @@ public class NavDrawerTask extends IntentService {
             mDB = new DBHelper(ctx).getReadableDatabase();
         }
         //select all, table only has one column
-        return mDB.query(DBHelper.FAVS_TABLE,
+        return mDB.query(DBHelper.FAVE_ROUTES,
                 mFavProjection, null, null, null, null, null);
     }
      */

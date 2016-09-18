@@ -28,7 +28,6 @@ import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.StopList;
 import com.mentalmachines.ttime.objects.Utils;
-import com.mentalmachines.ttime.services.SaveFavorites;
 import com.mentalmachines.ttime.services.StopService;
 
 public class StopDetailActivity extends AppCompatActivity {
@@ -211,10 +210,10 @@ public class StopDetailActivity extends AppCompatActivity {
                    //remove favorite stop from table
                    Favorite.dropFavoriteStop(params[0]);
                } else {
-                   //start Intent service to save stop to the faves table
-                   final Intent tnt = SaveFavorites.newInstance(
+                   //start Task to save stop to the faves table
+                   /*final Intent tnt = SaveFavoriteSchedule.newInstance(
                            StopDetailActivity.this, mStopDetail.mainStop.stopId);
-                   startService(tnt);
+                   startService(tnt);*/
                }
                 return !menuCall;
             }
