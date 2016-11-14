@@ -14,6 +14,7 @@ import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
@@ -29,6 +30,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ExpandableListView;
 import android.widget.PopupMenu;
 import android.widget.Toast;
@@ -60,6 +62,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     ProgressDialog mPD = null;
     boolean noFaves = true;
     public Fragment mFragment;
+    Button mLeftButton;
+    Button mRightButton;
+    boolean setFavoriteButton = false;
 
 	@Override
 	protected void onCreate(Bundle b) {
@@ -92,9 +97,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         }
         final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
         mgr.registerReceiver(mNavDataReady, new IntentFilter(NavDrawerTask.TAG));
+        mgr.registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
         startService(tnt);
         Log.d(TAG, "starting service");
-
+        mLeftButton = (Button) findViewById(R.id.route_leftButton);
+        mRightButton = (Button) findViewById(R.id.route_rightButton);
         /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
 				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
 		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
@@ -106,7 +113,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        LocalBroadcastManager.getInstance(this).unregisterReceiver(mNavDataReady);
+        final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
+        mgr.unregisterReceiver(mNavDataReady);
+        mgr.unregisterReceiver(mTimesReady);
     }
 
     @Override
@@ -203,7 +212,9 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             if(mFragment.getArguments().containsKey(RouteFragment.TAG)) {
                 final Route r = mFragment.getArguments().getParcelable(TAG);
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-                mPrefs.edit().remove(DBHelper.KEY_STOPID).putString(DBHelper.KEY_ROUTE_ID, r.id).apply();
+                if(r != null && !TextUtils.isEmpty(r.id)) {
+                    mPrefs.edit().remove(DBHelper.KEY_STOPID).putString(DBHelper.KEY_ROUTE_ID, r.id).apply();
+                }
             }
         } else if(mFragment instanceof StopDetailFragment) {
             mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
@@ -224,12 +235,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             if(mPrefs.contains(DBHelper.KEY_STOPID)) {
                 Utils.fragmentChange(this, StopDetailFragment.TAG,
                         StopData.getStopFromId(mPrefs.getString(DBHelper.KEY_STOPID, null)));
-            } else if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+            } else if(mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
                 //no fragment showing, no preference from last route shown, display toast
-                Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
-            } else {
                 final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
                 getTimesFromService(mRouteId, "");
+            } else {
+                Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
             }
         } else {
             if(mFragment instanceof StopDetailFragment) {
@@ -251,6 +262,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             return;
         }
         mPD = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+        Log.d(TAG, "call times from main activity");
         final Intent tnt = new Intent(this, GetTimesForRoute.class);
         if(!TextUtils.isEmpty(routeName)) {
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, routeName);
@@ -321,6 +333,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             Log.i(TAG, "show stop click");
         } else {
             Log.i(TAG, "show route " + tag);
+            setFavoriteButton = true;
             ed.remove(DBHelper.KEY_STOPID).putString(DBHelper.KEY_ROUTE_ID, (String) tag).apply();
             final String routeName = (String) v.getTag(R.layout.child_view);
             setTitle(Route.readableName(this, routeName));
@@ -525,7 +538,53 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mFragment = Utils.fragmentChange(this, StopDetailFragment.TAG, stop);
     }
 
-    class CheckFavesTable extends AsyncTask <Void, Void, Void> {
+    /**
+     * This receiver gets the Route object back from the GetTimesForRoute IntentService class
+     * MainActivity waits and creates a new RouteFragment here
+     */
+    BroadcastReceiver mTimesReady = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            //the route times are ready. set up the adapter
+            Log.d(TAG, "times returned to Main");
+            final Bundle b = intent.getExtras();
+            if(b == null) {
+                //Error check, service returns data
+                Log.w(TAG, "no data returned");
+                return;
+            }
+
+            if((b.containsKey(RouteFragment.TAG) && b.getParcelable(RouteFragment.TAG) == null) ||
+                    (b.containsKey(GetTimesForRoute.TAG) && b.getBoolean(GetTimesForRoute.TAG))) {
+                //error conditions, no route object, true boolean
+                Snackbar.make(findViewById(R.id.container),
+                        getString(R.string.schedSvcErr), Snackbar.LENGTH_LONG).show();
+
+            }
+            //exception from predictions but route and schedule times are good
+            final Route r = b.getParcelable(RouteFragment.TAG);
+            //name problem?
+            Log.d(TAG, "Main got the route: " + (r == null? "null" : r.name));
+            if(mLeftButton != null && r.mInboundStops != null && r.mInboundStops.size() > 1) {
+                mLeftButton.setText(r.mInboundStops.get(0).readableStopName());
+            }
+            if(mRightButton != null && r.mOutboundStops != null && r.mOutboundStops.size() > 1) {
+                mRightButton.setText(r.mOutboundStops.get(0).readableStopName());
+            }
+            mFragment = Utils.fragmentChange(MainActivity.this, RouteFragment.TAG, r);
+            Log.d(TAG, "Main is creating the route fragment " + mFragment.isVisible());
+            if(mPD != null && mPD.isShowing()) {
+                mPD.dismiss();
+            }
+            if(setFavoriteButton) {
+                FavoritesAction.setFavoriteButton((FloatingActionButton)findViewById(R.id.favorites_fab),
+                        Favorite.isFavoriteRoute(r.id));
+                setFavoriteButton = false;
+            }
+        }
+    };
+
+            class CheckFavesTable extends AsyncTask <Void, Void, Void> {
 
         @Override
         protected Void doInBackground(Void... voids) {

@@ -77,7 +77,7 @@ public class StopDetailFragment extends Fragment {
     @Override
     public void onResume() {
         super.onResume();
-        FavoritesAction.setFavoriteButton((FloatingActionButton) getActivity().findViewById(R.id.favorites_fab),
+        if(mStopDetail != null) FavoritesAction.setFavoriteButton((FloatingActionButton) getActivity().findViewById(R.id.favorites_fab),
                 Favorite.isStopFavorite(mStopDetail.mainStop.stopId));
     }
 

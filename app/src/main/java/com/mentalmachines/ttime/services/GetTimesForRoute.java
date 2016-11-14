@@ -13,8 +13,8 @@ import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
 import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.objects.Utils;
@@ -205,7 +205,7 @@ public class GetTimesForRoute extends IntentService {
                                             Log.w(TAG, "skipping prediction time field");
                                         } else {
                                             stop.scheduleTimes.add(1000 * Long.valueOf(value));
-                                            Log.d(TAG, "adding time: " + 1000 * Long.valueOf(value));
+                                            //Log.d(TAG, "adding time: " + 1000 * Long.valueOf(value));
                                         }
                                         //This time will go into the stop field below with the pre away key to put min/sec with the time
                                     } else if (JsonToken.FIELD_NAME.equals(token) && DBHelper.KEY_PREAWAY.equals(parser.getCurrentName())) {
@@ -216,7 +216,7 @@ public class GetTimesForRoute extends IntentService {
                                             //this is not possible... pred time always has the away key
                                         } else {
                                             stop.predictionSecs.add(Integer.valueOf(value));
-                                            Log.d(TAG, "adding prediction time: " + value);
+                                            //Log.d(TAG, "adding prediction time: " + value);
                                             //risky? proper order?
                                         }
                                     }
@@ -239,7 +239,7 @@ public class GetTimesForRoute extends IntentService {
 
     public static void endService(boolean hasError, Route route, Context ctx) {
         final Intent returnResults = new Intent(TAG);
-        returnResults.putExtra(MainActivity.TAG, route);
+        returnResults.putExtra(RouteFragment.TAG, route);
         returnResults.putExtra(TAG, hasError);
         LocalBroadcastManager.getInstance(ctx).sendBroadcast(returnResults);
     }

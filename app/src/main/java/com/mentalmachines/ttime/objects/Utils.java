@@ -55,28 +55,41 @@ public class Utils {
     public static Fragment fragmentChange(AppCompatActivity ctx, String newFragmentName, Object dataObject) {
         if(ctx.isFinishing() || !ctx.getSupportActionBar().isShowing()) {
             //what's the best way to know the Activity is still alive?
+            Log.e(TAG, "dead activity, no change");
             return null;
         }
         final FragmentManager mgr = ctx.getSupportFragmentManager();
         final FragmentTransaction tx = mgr.beginTransaction().setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
-        if(((MainActivity)ctx).mFragment != null) {
-            tx.hide(((MainActivity)ctx).mFragment);
-        }
+
         Fragment newFragment = null;
         switch (newFragmentName) {
             case RouteFragment.TAG:
-                ((FloatingActionButton)ctx.findViewById(R.id.favorites_fab)).show();
-                FavoritesAction.setFavoriteButton((FloatingActionButton) ctx.findViewById(R.id.favorites_fab),
-                        Favorite.isFavoriteRoute(((Route) dataObject).name));
-                if(mgr.findFragmentByTag(((Route) dataObject).id) != null) {
-                    newFragment = mgr.findFragmentByTag(((Route) dataObject).id);
-                    tx.show(newFragment);
-                } else {
-                    newFragment = RouteFragment.newInstance((Route) dataObject);
-                    tx.add(R.id.container, newFragment, ((Route) dataObject).id).addToBackStack(((Route) dataObject).id);
+                if(((MainActivity)ctx).mFragment != null && !(((MainActivity)ctx).mFragment instanceof RouteFragment)) {
+                    tx.hide(((MainActivity)ctx).mFragment);
+                    Log.d(TAG, "hiding");
                 }
+                ((FloatingActionButton)ctx.findViewById(R.id.favorites_fab)).show();
+                if(dataObject != null) {
+                    FavoritesAction.setFavoriteButton((FloatingActionButton) ctx.findViewById(R.id.favorites_fab),
+                            Favorite.isFavoriteRoute(((Route) dataObject).name));
+                    if(mgr.findFragmentByTag(((Route) dataObject).id) != null) {
+                        newFragment = mgr.findFragmentByTag(((Route) dataObject).id);
+                        tx.show(newFragment);
+                    } else {
+                        newFragment = RouteFragment.newInstance((Route) dataObject);
+                        tx.add(R.id.container, newFragment, ((Route) dataObject).id).addToBackStack(((Route) dataObject).id);
+                    }
+                } else {
+                    Log.e(TAG, "route data missing, fragment is not set");
+                    return null;
+                }
+
                 break;
             case StopDetailFragment.TAG:
+                if(((MainActivity)ctx).mFragment != null) {
+                    tx.hide(((MainActivity)ctx).mFragment);
+                    Log.d(TAG, "hiding");
+                }
                 ((FloatingActionButton)ctx.findViewById(R.id.favorites_fab)).show();
                 FavoritesAction.setFavoriteButton((FloatingActionButton) ctx.findViewById(R.id.favorites_fab),
                         Favorite.isStopFavorite(((StopData) dataObject).stopId));
@@ -90,6 +103,10 @@ public class Utils {
                 }
                 break;
             case AlertsFragment.TAG:
+                if(((MainActivity)ctx).mFragment != null) {
+                    tx.hide(((MainActivity)ctx).mFragment);
+                    Log.d(TAG, "hiding");
+                }
                 ((FloatingActionButton)ctx.findViewById(R.id.favorites_fab)).hide();
                 newFragment = new AlertsFragment();
                 Bundle args = new Bundle();

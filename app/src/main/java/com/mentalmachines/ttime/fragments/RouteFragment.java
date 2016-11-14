@@ -1,16 +1,12 @@
 package com.mentalmachines.ttime.fragments;
 
 import android.animation.ObjectAnimator;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -22,7 +18,6 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.RouteStopAdapter;
-import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.FavoritesAction;
@@ -61,13 +56,14 @@ public class RouteFragment extends Fragment {
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container,
 			Bundle savedInstanceState) {
+        Log.d(TAG, "create view");
+        //LocalBroadcastManager.getInstance(getContext()).registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
         return inflater.inflate(R.layout.route_vp, container, false);
 	}
 
     @Override
     public void onViewCreated(View rootView, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(rootView, savedInstanceState);
-        LocalBroadcastManager.getInstance(getContext()).registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
         mList = (RecyclerView) rootView.findViewById(R.id.route_list);
         mSwipeLayout = (SwipeRefreshLayout) rootView.findViewById(R.id.route_swipe);
         mSwipeLayout.setOnRefreshListener(refreshList);
@@ -94,11 +90,11 @@ public class RouteFragment extends Fragment {
         }
     }
 
-    @Override
+    /*@Override
     public void onDestroy() {
         super.onDestroy();
         LocalBroadcastManager.getInstance(getContext()).unregisterReceiver(mTimesReady);
-    }
+    }*/
 
     SwipeRefreshLayout.OnRefreshListener refreshList = new SwipeRefreshLayout.OnRefreshListener() {
 
@@ -148,6 +144,7 @@ public class RouteFragment extends Fragment {
             tnt.putExtra(DBHelper.KEY_ROUTE_NAME, mListAdapter.mRoute.name);
             tnt.putExtra(DBHelper.KEY_ROUTE_ID, mListAdapter.mRoute.id);
             ctx.startService(tnt);
+            Log.d(TAG, "call times from route fragment");
         } else {
             Toast.makeText(ctx, "check network", Toast.LENGTH_SHORT).show();
             getActivity().findViewById(R.id.favorites_fab).setEnabled(true);
@@ -188,14 +185,14 @@ public class RouteFragment extends Fragment {
      * This receiver gets the Route object back from the GetTimesForRoute IntentService class
      * Either creates a new RouteFragment or resets the data in the recycler view of the fragment
      */
-    BroadcastReceiver mTimesReady = new BroadcastReceiver() {
+    /*BroadcastReceiver mTimesReady = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             //the route times are ready. set up the adapter
             Log.d(TAG, "times returned");
 
             //quick callbacks error check, is everything here
-            if(getActivity() == null || !isVisible()) {
+            if(getActivity() == null || !isAdded()) {
                 return;
             }
             final Bundle b = intent.getExtras();
@@ -205,7 +202,7 @@ public class RouteFragment extends Fragment {
                 return;
             }
 
-            if((b.containsKey(TAG) && b.getParcelable(TAG) == null) ||
+            if((b.containsKey(TAG) && b.getParcelable(RouteFragment.TAG) == null) ||
                     (b.containsKey(GetTimesForRoute.TAG) && b.getBoolean(GetTimesForRoute.TAG))) {
                 //error conditions, no route object, true boolean
                 Snackbar.make(getActivity().findViewById(R.id.container),
@@ -226,11 +223,15 @@ public class RouteFragment extends Fragment {
             } else {
                 getActivity().setTitle(Route.readableName(context, r.name));
             }
-            FavoritesAction.setFavoriteButton((FloatingActionButton)getActivity().findViewById(R.id.favorites_fab),
-                    Favorite.isFavoriteRoute(r.id));
+            if(!viewCreated) {
+                FavoritesAction.setFavoriteButton((FloatingActionButton)getActivity().findViewById(R.id.favorites_fab),
+                        Favorite.isFavoriteRoute(r.id));
+                viewCreated = true;
+            }
+
             mSwipeLayout.setRefreshing(false);
         }
-    };
+    };*/
 
     /*  REMINDER
     gesture detector does not play nicely with a scrolling list
