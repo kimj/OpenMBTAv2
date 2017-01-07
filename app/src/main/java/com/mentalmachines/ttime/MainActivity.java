@@ -489,7 +489,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             Log.i(TAG, "good route!");
 
             final String title = getSupportActionBar().getTitle().toString();
-            if(Route.readableName(context, r.name).equals(title)) {
+            if(mFragment !=null && Route.readableName(context, r.name).equals(title)) {
                 //route fragment is already up! Reset route includes animation
                 Log.d(TAG, "reset Route");
                 ((RouteFragment) mFragment).resetRoute(r);
