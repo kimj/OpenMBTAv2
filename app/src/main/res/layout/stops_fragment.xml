@@ -5,16 +5,6 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <TextView
-        android:id="@+id/stopdetail_name"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_margin="8dp"
-        android:fontFamily="bold"
-        android:gravity="center"
-        android:textColor="@android:color/black"
-        android:textSize="18dp" />
-
     <android.support.v4.widget.SwipeRefreshLayout
         android:id="@+id/stopdetail_swipe"
         android:layout_width="match_parent"

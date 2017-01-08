@@ -80,7 +80,7 @@ public class RouteFragment extends Fragment {
         } else {
             //there is a route
             mRoute = getArguments().getParcelable(TAG);
-            ((MainActivity)getActivity()).mToolbar.setTitle(mRoute.name);
+            ((MainActivity)getActivity()).mToolbar.setTitle(Route.readableName(getContext(), mRoute.name));
             mList.setVisibility(View.VISIBLE);
             finishList(mRoute);
             //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
@@ -105,7 +105,7 @@ public class RouteFragment extends Fragment {
             ObjectAnimator.ofFloat(mList, "translationX", mWidth, 0).start();
         }
         getActivity().findViewById(R.id.fab_in_out).setEnabled(true);
-        ((SwipeRefreshLayout)getActivity().findViewById(R.id.route_swipe)).setRefreshing(false);
+        ((SwipeRefreshLayout)getView().findViewById(R.id.route_swipe)).setRefreshing(false);
     }
 
     public void finishList(Route r) {

@@ -194,7 +194,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 //TODO handle the case where the mFragment is an AlertsFragment
                 //now a little clean up for a switch from Route to Alerts
                 mFab.setVisibility(View.GONE);
-                setTitle(getString(R.string.action_alerts));
+                mToolbar.setTitle(getString(R.string.action_alerts));
                 mFavoritesAction.setVisible(false);
                 mCurrentSelection = -1;
                 Log.d(TAG, "reset selection here! " + mCurrentSelection);
@@ -357,14 +357,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             final String routeId = (String) v.getTag();
             Log.i(TAG, "show route " + routeId);
             mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).apply();
-            final String routeName = (String) v.getTag(R.layout.child_view);
-            setTitle(Route.readableName(this, routeName));
+            //final String routeName = (String) v.getTag(R.layout.child_view);
             v.setSelected(true);
             if(mDrawerList.getTag() != null) {
                 ((View)mDrawerList.getTag()).setSelected(false);
             }
             if(Utils.checkNetwork(this)) {
-                getTimesFromService(routeId, routeName);
+                getTimesFromService(routeId, (String) v.getTag(R.layout.child_view));
                 Log.i(TAG, "starting get times service with id: " + routeId);
             } else {
                 Toast.makeText(this, "check network", Toast.LENGTH_SHORT).show();
@@ -373,7 +372,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             //Fab is to switch between inbound and outbound
             mFab.setVisibility(View.VISIBLE);
         }
-
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
         ((DrawerLayout) findViewById(R.id.drawer_layout)).closeDrawer(GravityCompat.START);
     }
@@ -506,7 +504,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 } else {
                     mFavoritesAction.setChecked(false);
                 }
-                setTitle(Route.readableName(context, r.name));
+                mToolbar.setTitle(Route.readableName(context, r.name));
                 mFragment = Utils.fragmentChange(MainActivity.this, mFragment, RouteFragment.TAG, r);
             }
 
