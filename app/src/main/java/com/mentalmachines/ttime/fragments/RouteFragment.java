@@ -15,6 +15,7 @@ import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.RouteStopAdapter;
 import com.mentalmachines.ttime.objects.Route;
@@ -32,6 +33,7 @@ public class RouteFragment extends Fragment {
     public boolean mInbound = true;
     public RecyclerView mList;
     public RouteStopAdapter mListAdapter;
+    public Route mRoute;
     int mWidth = -1;
 
 	/**
@@ -77,9 +79,10 @@ public class RouteFragment extends Fragment {
             Log.w(TAG, "no stops");
         } else {
             //there is a route
-            final Route r = getArguments().getParcelable(TAG);
+            mRoute = getArguments().getParcelable(TAG);
+            ((MainActivity)getActivity()).mToolbar.setTitle(mRoute.name);
             mList.setVisibility(View.VISIBLE);
-            finishList(r);
+            finishList(mRoute);
             //TODO wire up inbound and outbound based on the time and the last time this fragment was shown
         }
     }

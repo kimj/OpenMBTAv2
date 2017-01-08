@@ -13,6 +13,7 @@ import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.LocalBroadcastManager;
@@ -36,7 +37,7 @@ import android.widget.Toast;
 import com.mentalmachines.ttime.adapter.NavDrawerAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
-import com.mentalmachines.ttime.fragments.StopDetailFragment;
+import com.mentalmachines.ttime.fragments.StopFragment;
 import com.mentalmachines.ttime.objects.Favorite;
 import com.mentalmachines.ttime.objects.Route;
 import com.mentalmachines.ttime.objects.StopData;
@@ -55,6 +56,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public static final String TAG = "MainActivity";
     SharedPreferences mPrefs;
     ExpandableListView mDrawerList;
+    public FloatingActionButton mFab;
     int mCurrentSelection = -1;
     //This is set to the expandable adapter mode or to -1 when Alerts are showing
     //TODO create a timeout for late night, intent service can hang
@@ -62,6 +64,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public MenuItem mFavoritesAction;
     boolean noFaves = true;
     Fragment mFragment;
+    public Toolbar mToolbar;
 
 	@Override
 	protected void onCreate(Bundle b) {
@@ -69,13 +72,12 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 		setContentView(R.layout.activity_main);
         new CheckFavesTable().execute();
         //this task sets the noFaves boolean
-
-		final Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-		setSupportActionBar(toolbar);
+		mToolbar = (Toolbar) findViewById(R.id.toolbar);
+		setSupportActionBar(mToolbar);
 
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
         final ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
+                this, drawer, mToolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
 
@@ -106,7 +108,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 		
 		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
         mgr.registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
-	}
+        mFab = (FloatingActionButton) findViewById(R.id.fab_in_out);
+    }
 
     @Override
     protected void onDestroy() {
@@ -161,10 +164,10 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 startActivity(act);
                 break;
             case R.id.menu_favorites:
-                if(mFragment instanceof StopDetailFragment) {
-                    if(((StopDetailFragment)mFragment).mStopDetail != null) {
+                if(mFragment instanceof StopFragment) {
+                    if(((StopFragment)mFragment).mStopDetail != null) {
                         new CheckFavorite(mFavoritesAction).execute(
-                                this, false, ((StopDetailFragment)mFragment).mStopDetail.mainStop.stopId);
+                                this, false, ((StopFragment)mFragment).mStopDetail.mainStop.stopId);
                     } else {
                         Log.w(TAG, "don't have stop id to set favorite");
                     }
@@ -190,7 +193,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, null);
                 //TODO handle the case where the mFragment is an AlertsFragment
                 //now a little clean up for a switch from Route to Alerts
-                findViewById(R.id.fab_in_out).setVisibility(View.GONE);
+                mFab.setVisibility(View.GONE);
                 setTitle(getString(R.string.action_alerts));
                 mFavoritesAction.setVisible(false);
                 mCurrentSelection = -1;
@@ -216,6 +219,8 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             drawer.closeDrawer(GravityCompat.START);
         } else {
             super.onBackPressed();
+            mFragment = getSupportFragmentManager().findFragmentById(R.id.container);
+            if (mFragment != null) mFragment.onResume();
         }
     }
 
@@ -240,7 +245,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 final String routeId = (String) v.getTag();
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
                 mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID, routeId).commit();
-            } else if(mFragment != null && ((RouteFragment)mFragment).mListAdapter != null &&
+            } else if(mFragment != null && mFragment instanceof RouteFragment && ((RouteFragment)mFragment).mListAdapter != null &&
                     ((RouteFragment)mFragment).mListAdapter.mRoute != null) {
                 mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
                 mPrefs.edit().putString(DBHelper.KEY_ROUTE_ID,
@@ -366,7 +371,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
             mDrawerList.setTag(v);
             //Fab is to switch between inbound and outbound
-            findViewById(R.id.fab_in_out).setVisibility(View.VISIBLE);
+            mFab.setVisibility(View.VISIBLE);
         }
 
         //Toast.makeText(this, R.string.app_name, Toast.LENGTH_SHORT).show();
@@ -489,7 +494,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             Log.i(TAG, "good route!");
 
             final String title = getSupportActionBar().getTitle().toString();
-            if(mFragment !=null && Route.readableName(context, r.name).equals(title)) {
+            if(mFragment !=null && mFragment instanceof RouteFragment && Route.readableName(context, r.name).equals(title)) {
                 //route fragment is already up! Reset route includes animation
                 Log.d(TAG, "reset Route");
                 ((RouteFragment) mFragment).resetRoute(r);
@@ -636,7 +641,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             TODO what's this again?*/
         }
         Log.i(TAG, "show stop detail " + stop.readableStopName());
-        mFragment = Utils.fragmentChange(this, mFragment, StopDetailFragment.TAG, stop);
+        mFragment = Utils.fragmentChange(this, mFragment, StopFragment.TAG, stop);
     }
 
     class CheckFavesTable extends AsyncTask <Void, Void, Void> {

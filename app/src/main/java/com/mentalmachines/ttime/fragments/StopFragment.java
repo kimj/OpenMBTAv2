@@ -13,9 +13,10 @@ import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.MainActivity;
@@ -27,24 +28,40 @@ import com.mentalmachines.ttime.objects.Utils;
 import com.mentalmachines.ttime.services.CheckFavorite;
 import com.mentalmachines.ttime.services.StopService;
 
-public class StopDetailFragment extends Fragment {
+public class StopFragment extends Fragment {
 	/**
 	 * A fragment representing a stop, favorite or detailed from a route
 	 */
-    public static final String TAG = "StopDetailFragment";
+    public static final String TAG = "StopFragment";
     public RecyclerView mList;
+    public StopData mStop;
     public StopList mStopDetail;
     static ProgressDialog mProgress = null;
 
     //required empty constructor
-    public StopDetailFragment() {}
+    public StopFragment() {}
 
-    public static final StopDetailFragment newInstance(StopData stopToShow) {
-        StopDetailFragment fragment = new StopDetailFragment();
+    public static final StopFragment newInstance(StopData stopToShow) {
+        StopFragment fragment = new StopFragment();
         final Bundle args = new Bundle();
         args.putParcelable(StopService.TAG, stopToShow);
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setHasOptionsMenu(true);
+    }
+
+    @Override
+    public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
+        // TODO Add your menu entries here
+        super.onCreateOptionsMenu(menu, inflater);
+        menu.removeItem(R.id.menu_nearby);
+        menu.removeItem(R.id.menu_favorites);
+        menu.removeItem(R.id.menu_schedule);
     }
 
     @Nullable
@@ -53,7 +70,8 @@ public class StopDetailFragment extends Fragment {
         super.onCreateView(inflater, container, savedInstanceState);
         final Context ctx = getContext();
         final Intent tnt = new Intent(ctx, StopService.class);
-        tnt.putExtra(StopService.TAG, getArguments().getParcelable(StopService.TAG));
+        mStop = getArguments().getParcelable(StopService.TAG);
+        tnt.putExtra(StopService.TAG, mStop);
         ctx.startService(tnt);
         //start the service, register the receiver
         LocalBroadcastManager.getInstance(ctx).registerReceiver(mDetailsUpdated,
@@ -64,7 +82,11 @@ public class StopDetailFragment extends Fragment {
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-
+        if (mStop.stopName.contains("-")) {
+            ((MainActivity)getActivity()).mToolbar.setTitle(mStop.stopName.substring(0, (mStop.stopName.indexOf("-") -1)));
+        } else {
+            ((MainActivity)getActivity()).mToolbar.setTitle(mStop.stopName);
+        }
         mList = (RecyclerView) view.findViewById(R.id.stopdetail_list);
         final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)view.findViewById(R.id.stopdetail_swipe);
         swipeViewGroup.setOnRefreshListener(refreshList);
@@ -139,8 +161,8 @@ public class StopDetailFragment extends Fragment {
                     getContext(), false, mStopDetail.mainStop.stopId);
             Log.d(TAG, mStopDetail.mainStop.stopName +
                     " data check, stop detail list size " + mStopDetail.mStopList.size());
-            ((TextView)getView().findViewById(R.id.stopdetail_name)).setText(mStopDetail.mainStop.stopName);
-            StopDetailFragment.this.setList();
+            //((TextView)getView().findViewById(R.id.stopdetail_name)).setText(mStopDetail.mainStop.stopName);
+            StopFragment.this.setList();
         }
     };
 

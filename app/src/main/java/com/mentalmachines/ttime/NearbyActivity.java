@@ -18,12 +18,6 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.OnMapReadyCallback;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.MarkerOptions;
 import com.mentalmachines.ttime.adapter.NearbyLVAdapter;
 import com.mentalmachines.ttime.fragments.AlertDetailFragment;
 import com.mentalmachines.ttime.objects.StopData;
@@ -31,7 +25,7 @@ import com.mentalmachines.ttime.services.StopService;
 
 import java.util.ArrayList;
 
-public class NearbyActivity extends AppCompatActivity implements OnMapReadyCallback {
+public class NearbyActivity extends AppCompatActivity {
 	/**
 	 * An activity showing a stop or list of stops selected from a route
 	 */
@@ -41,7 +35,7 @@ public class NearbyActivity extends AppCompatActivity implements OnMapReadyCallb
 
     public ListView mStopList;
     ProgressDialog mProgress = null;
-    private GoogleMap mMap;
+    //private GoogleMap mMap;
     private Location mLocation;
 
 
@@ -58,15 +52,11 @@ public class NearbyActivity extends AppCompatActivity implements OnMapReadyCallb
         /*LocalBroadcastManager.getInstance(this).registerReceiver(mDetailsUpdated,
                 new IntentFilter(StopService.TAG));*/
         mStopList = (ListView) findViewById(R.id.nr_stoplist);
-        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)findViewById(R.id.route_swipe);
+        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)findViewById(R.id.nr_swipe);
         swipeViewGroup.setOnRefreshListener(refreshList);
         swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
         //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
         mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
-
-        MapFragment mapFragment = (MapFragment) getFragmentManager()
-                .findFragmentById(R.id.nr_mapview);
-        mapFragment.getMapAsync(this);
 
         mLocation = TTimeApp.getPhoneLocation((TTimeApp)getApplication());
         if(mLocation == null) {
@@ -135,7 +125,7 @@ public class NearbyActivity extends AppCompatActivity implements OnMapReadyCallb
         }
     };
 
-    @Override
+    /*@Override
     public void onMapReady(GoogleMap googleMap) {
         LatLng boston = new LatLng(BOSTON_LAT, BOSTON_LNG);
 

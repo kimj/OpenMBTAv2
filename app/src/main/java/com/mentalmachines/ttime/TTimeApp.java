@@ -181,7 +181,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
     public static Location getPhoneLocation(TTimeApp ctx) {
         if(sLastLocation != null && isLocationFresh(sLastLocation)) {
             //fastest, first choice
-            LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
+            //LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
             return sLastLocation;
         }
 
@@ -192,6 +192,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
                 if(tmp != null && isLocationFresh(tmp)) {
                     sLastLocation = tmp;
                     Log.v(TAG, "sLastLocation set");
+                    LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
                     return sLastLocation;
                 } else {
                     requestLocation(ctx);

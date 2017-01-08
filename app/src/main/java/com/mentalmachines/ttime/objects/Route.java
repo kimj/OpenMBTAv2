@@ -22,7 +22,7 @@ public class Route implements Parcelable {
 
     public final static String[] mStopProjection = new String[]{
             DBHelper.KEY_STOPNM, DBHelper.KEY_STOPID,
-            DBHelper.KEY_STOPLN, DBHelper.KEY_STOPLT, DBHelper.KEY_ALERT_ID
+            DBHelper.KEY_STOPLT, DBHelper.KEY_STOPLN, DBHelper.KEY_ALERT_ID
     };
     public final static String routeStopsWhereClause = DBHelper.KEY_ROUTE_ID + " like ";
 

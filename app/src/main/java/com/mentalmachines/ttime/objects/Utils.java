@@ -8,17 +8,18 @@ import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.Display;
+import android.view.View;
 import android.view.WindowManager;
 
 import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.adapter.StopDetailAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
-import com.mentalmachines.ttime.fragments.StopDetailFragment;
+import com.mentalmachines.ttime.fragments.StopFragment;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -50,7 +51,7 @@ public class Utils {
      * @param dataObject some fragments take an object parameter to newInstance, that's the last parameter
      * @return the fragment that is now showing
      */
-    public static Fragment fragmentChange(AppCompatActivity ctx, Fragment oldFragment, String newFragmentName, Object dataObject) {
+    public static Fragment fragmentChange(MainActivity ctx, Fragment oldFragment, String newFragmentName, Object dataObject) {
         final FragmentManager mgr = ctx.getSupportFragmentManager();
         final FragmentTransaction tx = mgr.beginTransaction().setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out);
         if(oldFragment != null) {
@@ -66,15 +67,17 @@ public class Utils {
                     newFragment = RouteFragment.newInstance((Route) dataObject);
                     tx.add(R.id.container, newFragment, ((Route) dataObject).id).addToBackStack(((Route) dataObject).id);
                 }
+                ctx.mFab.setVisibility(View.VISIBLE);
                 break;
-            case StopDetailFragment.TAG:
+            case StopFragment.TAG:
                 if(mgr.findFragmentByTag(((StopData) dataObject).stopId) != null) {
                     newFragment = mgr.findFragmentByTag(((StopData) dataObject).stopId);
                     tx.show(newFragment);
                 } else {
-                    newFragment = StopDetailFragment.newInstance((StopData) dataObject);
+                    newFragment = StopFragment.newInstance((StopData) dataObject);
                     tx.add(R.id.container, newFragment, ((StopData) dataObject).stopId).addToBackStack(((StopData) dataObject).stopId);
                 }
+                ctx.mFab.setVisibility(View.INVISIBLE);
                 break;
             case AlertsFragment.TAG:
                 newFragment = new AlertsFragment();
@@ -83,6 +86,7 @@ public class Utils {
                 args.putString(DBHelper.KEY_ALERT_ID, (String) dataObject);
                 newFragment.setArguments(args);
                 tx.add(R.id.container, newFragment).addToBackStack(AlertsFragment.TAG);
+                ctx.mFab.setVisibility(View.INVISIBLE);
                 break;
             /* TODO newInstance, use this function for alerts too
             case AlertDetailFragment.TAG:
