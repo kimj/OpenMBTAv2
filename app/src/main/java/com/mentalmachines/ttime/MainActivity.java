@@ -603,8 +603,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                                 LocalBroadcastManager.getInstance(MainActivity.this).unregisterReceiver(this);
                             }
                         }, new IntentFilter(NavDrawerTask.TAG));
-                startService(SaveFavorites.newInstance(this, stop.stopId,
-                        ((RouteFragment)mFragment).mListAdapter.mDirectionId));
+                startService(SaveFavorites.newInstance(this, stop.stopId));
                 //favorites service
                 break;
             case R.id.stop_detail:

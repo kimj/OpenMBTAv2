@@ -51,13 +51,6 @@ public class SaveFavorites extends IntentService {
         return tnt;
     }
 
-    public static Intent newInstance(Context ctx, String stopId, int dirId) {
-        final Intent tnt = new Intent(ctx, SaveFavorites.class);
-        tnt.putExtra(DBHelper.STOP, stopId);
-        tnt.putExtra(DBHelper.KEY_DIR, dirId);
-        return tnt;
-    }
-
     public static Intent newInstance(Context ctx, String stopId) {
         final Intent tnt = new Intent(ctx, SaveFavorites.class);
         tnt.putExtra(DBHelper.STOP, stopId);
@@ -81,22 +74,10 @@ public class SaveFavorites extends IntentService {
             return;
         }
         //is it a stop?
-        if(b.containsKey(DBHelper.KEY_DIR)) {
-            final boolean result = Favorite.setFavorite(
-                    b.getString(DBHelper.STOP, null),
-                    b.getInt(DBHelper.KEY_DIR));
-            sendSignal(result);
-            return;
-        } else if(b.containsKey(DBHelper.STOP)) {
+        if(b.containsKey(DBHelper.STOP)) {
             final String stopid = b.getString(DBHelper.STOP, null);
-            final int dir = Favorite.getStopDirection(stopid);
-            final boolean result;
-            if(dir < 0) {
-                result = true; //has error
-            } else {
-                result = Favorite.setFavorite(
-                        b.getString(DBHelper.STOP, null), dir);
-            }
+            final boolean result = Favorite.setFavoriteStop(
+                    b.getString(DBHelper.STOP, null));
             sendSignal(result);
             return;
         }

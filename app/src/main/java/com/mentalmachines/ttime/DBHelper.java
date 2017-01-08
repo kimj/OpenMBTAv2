@@ -75,11 +75,10 @@ public class DBHelper extends SQLiteOpenHelper {
 
     String CREATE_FAVESTOPS_TABLE  = TABLE_PREFIX + FAVESTOPS_TABLE + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
-            + KEY_STOPID + " TEXT not null, "
-            + KEY_DIR_ID + " NUMERIC not null);";
+            + KEY_STOPID + " TEXT not null);";
 
     private static final String FAVESTOPS_DEX = "CREATE UNIQUE INDEX FAVESTOPS_DEX ON " + FAVESTOPS_TABLE + "("
-            + KEY_STOPID + ", " + KEY_DIR_ID + ");";
+            + KEY_STOPID + ");";
 
     String CREATE_DB_TABLE_ROUTE  = TABLE_PREFIX + DB_ROUTE_TABLE + "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
