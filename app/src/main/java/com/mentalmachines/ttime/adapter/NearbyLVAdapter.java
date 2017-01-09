@@ -25,10 +25,12 @@ public class NearbyLVAdapter extends BaseAdapter {
     final StopData[] items;
     String mNoData, mActual, mSchedule = null;
 
-    public NearbyLVAdapter(StopData[] stopList) {
+    public NearbyLVAdapter(Context ctx, StopData[] stopList) {
         super();
         items = stopList;
-
+        mSchedule = ctx.getString(R.string.scheduled);
+        mNoData = ctx.getString(R.string.stopEmptyString);
+        mActual = ctx.getString(R.string.actual);
     }
 
     @Override
@@ -58,28 +60,38 @@ public class NearbyLVAdapter extends BaseAdapter {
             return null;
         }
         final Context ctx = parent.getContext();
-        if(mSchedule == null) {
-            mSchedule = ctx.getString(R.string.scheduled);
-            mNoData = ctx.getString(R.string.stopEmptyString);
-            mActual = ctx.getString(R.string.actual);
-        }
+
         if(convertView == null) {
             convertView = LayoutInflater.from(ctx)
-                    .inflate(R.layout.t_stop, parent, false);
+                    .inflate(R.layout.nearby_stop, parent, false);
+            convertView.setTag(convertView.findViewById(R.id.nr_prediction));
         }
         final StopData s = items[position];
-        ((TextView) convertView.findViewById(R.id.stop_route)).setText(s.stopName);
-        //alert header text gets set in the alert field instead of the alert id
-        ((TextView) convertView.findViewById(R.id.stop_desc)).setText(mSchedule + " " + Utils.trimStopTimes(mNoData, s));
-        ((TextView) convertView.findViewById(R.id.stop_eta)).setText(Utils.setPredictions(mActual, s));
+        if (s == null) {
+            return null;
+        }
 
-        //TODO create new layout
-        final ImageButton alertBtn = (ImageButton) convertView.findViewById(R.id.stop_detail_btn);
-        alertBtn.setTag(s.stopAlert);
-        if(TextUtils.isEmpty(s.stopAlert)) {
-            alertBtn.setImageResource(R.drawable.btn_stop_alert);
+        ((TextView) convertView.findViewById(R.id.nr_name_route)).setText(s.stopName + "\n" + s.stopRouteDir);
+        //alert header text gets set in the alert field instead of the alert id
+        ((TextView) convertView.findViewById(R.id.nr_schedule)).setText(mSchedule + " " + Utils.nearbyTimes(mNoData, s));
+        final TextView tv = (TextView) convertView.getTag();
+        tv.setText(Utils.setPredictions(mActual, s));
+        if (TextUtils.isEmpty(tv.getText().toString())) {
+            tv.setVisibility(View.GONE);
         } else {
-            alertBtn.setImageResource(R.drawable.btn_stop_detail);
+            tv.setVisibility(View.VISIBLE);
+        }
+
+        final ImageButton alertBtn = (ImageButton) convertView.findViewById(R.id.nr_alert);
+        if (TextUtils.isEmpty(s.stopAlert)) {
+            alertBtn.setVisibility(View.GONE);
+        } else {
+            alertBtn.setTag(s.stopAlert);
+            alertBtn.setVisibility(View.VISIBLE);
+        }
+        if (position == 0) {
+            convertView.findViewById(R.id.divider).setVisibility(View.GONE);
+            //alertBtn.setImageResource(android.R.drawable.ic_menu_directions);
         }
         return convertView;
     }

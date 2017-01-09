@@ -134,6 +134,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
                     mLocationClient, mLocationRequest, getListener(ctx));
             Log.v(TAG, "request location updates");
         } catch (SecurityException e) {
+            //TODO
             Log.e(TAG, "Location permission error");
             //error shows in Main Activity and exits app
         }
@@ -167,7 +168,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
                 }
             }
 
-        }, 60000); //cancel location request after 60s?
+        }, 360000); //cancel location request after 3m, if not sooner?
 
     }
 
@@ -180,8 +181,7 @@ public class TTimeApp extends Application implements GoogleApiClient.ConnectionC
 
     public static Location getPhoneLocation(TTimeApp ctx) {
         if(sLastLocation != null && isLocationFresh(sLastLocation)) {
-            //fastest, first choice
-            //LocalBroadcastManager.getInstance(ctx).sendBroadcast(new Intent(TAG));
+            //fastest, first choice, no need to broadcast from here
             return sLastLocation;
         }
 

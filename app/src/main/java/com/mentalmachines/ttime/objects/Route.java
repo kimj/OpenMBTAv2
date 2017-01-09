@@ -11,6 +11,7 @@ import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 public class Route implements Parcelable {
     public static final String TAG = "Route";
@@ -53,7 +54,6 @@ public class Route implements Parcelable {
 
     /**
      * This method will help instantiate the route fragment from a db query of the route name
-     *
      * @return the list of stop data to be displayed
      */
     public static ArrayList<StopData> makeStops(Cursor stopNameCursor) {
@@ -71,6 +71,30 @@ public class Route implements Parcelable {
                 //Log.d(TAG, data.stopId + " name? " + data.stopName);
             } while (stopNameCursor.moveToNext());
             return stopList;
+        }
+        Log.w(TAG, "empty cursor for route");
+        return null;
+    }
+
+    /**
+     * This method will create a hashmap of all stops from a table cursor
+     * @return the list of stop data to use to identify what is nearby
+     */
+    public static HashMap <String, StopData> makeStops(HashMap <String, StopData> nearby, Cursor stopNameCursor) {
+        if (stopNameCursor.getCount() > 0 && stopNameCursor.moveToFirst()) {
+            //final ArrayList<StopData> stopList = new ArrayList<>(stopNameCursor.getCount());
+            StopData data;
+            do {
+                data = new StopData();
+                data.stopName = stopNameCursor.getString(0);
+                data.stopId = stopNameCursor.getString(1);
+                data.stopLong = stopNameCursor.getString(2);
+                data.stopLat = stopNameCursor.getString(3);
+                data.stopAlert = stopNameCursor.getString(4);
+                nearby.put(data.stopId, data);
+                //Log.d(TAG, data.stopId + " name? " + data.stopName);
+            } while (stopNameCursor.moveToNext());
+            return nearby;
         }
         Log.w(TAG, "empty cursor for route");
         return null;

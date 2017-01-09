@@ -16,7 +16,6 @@ import android.view.WindowManager;
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.StopDetailAdapter;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.fragments.StopFragment;
@@ -143,7 +142,7 @@ public class Utils {
      * @return human readable upcoming times
      */
     final static StringBuilder stringBuilder = new StringBuilder();
-    final static Calendar now = Calendar.getInstance();
+    static Calendar now = Calendar.getInstance();
     public static String trimStopTimes(String empty,  StopData s) {
         //send back 3 that are after the current time
         //TODO hasten parse by stopping after 3 times are set?
@@ -178,12 +177,50 @@ public class Utils {
         return stringBuilder.toString();
     }
 
+    public static String nearbyTimes(String empty,  StopData s) {
+        //send back 3 that are after the current time
+        //TODO hasten parse by stopping after 3 times are set?
+        //could improve parse times by saving timestamps
+        final int sz;
+        if(s == null || (sz = s.scheduleTimes.size()) < 1) {
+            return empty;
+        }
+        stringBuilder.setLength(0);
+        Log.d(TAG, "number of times? " + sz);
+        int counter = 0;
+        //counter helps to manage if some of the schedule times are in the past
+        for(int dex = 0; dex < sz; dex++) {
+            now.setTimeInMillis(s.scheduleTimes.get(dex));
+            if(now.getTimeInMillis() > System.currentTimeMillis()) {
+                counter++;
+                stringBuilder.append(Utils.timeFormat.format(now.getTime()));
+                if(counter < 3 && counter < sz-1) {
+                    stringBuilder.append("\n          ");
+                } else {
+                    break;
+                }
+            } else {
+                Log.d(TAG, "skipping time, #" + dex);
+            }
+        }
+
+        if(counter == 0) {
+            return empty;
+        }
+        return stringBuilder.toString();
+    }
+
     static void addInPrediction(StringBuilder text, int offsetSecs) {
-        text.append("(");
+
         if (offsetSecs > 60) {
-            text.append(offsetSecs / 60).append("m ").append(offsetSecs % 60).append("s").append(")\n");
+            now.set(Calendar.MINUTE, (now.get(Calendar.MINUTE) + (offsetSecs/60)));
+            now.set(Calendar.SECOND, (now.get(Calendar.SECOND) + (offsetSecs % 60)));
+            text.append(Utils.timeFormat.format(now.getTime())).append(" (");
+            text.append(offsetSecs / 60).append("m ").append(offsetSecs % 60).append("s").append(")");
         } else {
-            text.append(offsetSecs).append("s").append(")\n");
+            now.set(Calendar.SECOND, offsetSecs);
+            text.append(Utils.timeFormat.format(now.getTime())).append(" (");
+            text.append(offsetSecs).append("s").append(")");
         }
     }
 
@@ -193,23 +230,31 @@ public class Utils {
             return "";
         }
         stringBuilder.setLength(0);
-        Log.d(TAG, "number of times? " + sz);
+        now.setTimeInMillis(System.currentTimeMillis());
+        Log.d(TAG, "Current time is :" + now.getTime());
         int counter = 0;
+
+        long timeToSet;
         stringBuilder.append(actual).append(" ");
         for(int dex = 0; dex < s.predictionSecs.size(); dex++) {
-            now.setTimeInMillis(s.predictionTimestamp + s.predictionSecs.get(dex));
+            timeToSet = s.predictionTimestamp + s.predictionSecs.get(dex);
+            //now.setTimeInMillis(timeToSet);
+            now.setTimeInMillis(timeToSet);
+            Log.d(TAG, "Current time is :" + now.getTime());
             if(now.getTimeInMillis() > System.currentTimeMillis()) {
                 counter++;
-                stringBuilder.append(Utils.timeFormat.format(now.getTime()));
+                //stringBuilder.append(Utils.timeFormat.format(now.getTime()));
                 addInPrediction(stringBuilder, s.predictionSecs.get(dex));
                 if(counter == 3 || counter == sz-1) {
                     return stringBuilder.toString();
+                } else {
+                    stringBuilder.append("\n");
                 }
             } else {
                 Log.d(TAG, "prd, skipping time, #" + dex);
             }
         }
-        if(stringBuilder.length() == StopDetailAdapter.ACTUAL.length()+1) {
+        if(stringBuilder.length() == actual.length()+1) {
             //string contains only actual:
             return "";
         }

@@ -99,16 +99,25 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         final LocalBroadcastManager mgr = LocalBroadcastManager.getInstance(this);
         mgr.registerReceiver(mNavDataReady, new IntentFilter(NavDrawerTask.TAG));
         startService(tnt);
-        Log.d(TAG, "starting service");
+        Log.d(TAG, "starting drawer adapter service");
 
-        /*mTransitMethodNavigationDrawerFragment = (TransitMethodNavigationDrawerFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.transit_method_navigation_drawer_fragment);
-		mRouteSelectDrawerFragment = (RouteSelectNavigationDrawerFragment) getSupportFragmentManager()
-				.findFragmentById(R.id.route_select_navigation_drawer_fragment);*/
-		
-		// mTransitMethodDrawerList = (ListView) findViewById(R.id.transit_method_navigation_drawer_fragment);
         mgr.registerReceiver(mTimesReady, new IntentFilter(GetTimesForRoute.TAG));
         mFab = (FloatingActionButton) findViewById(R.id.fab_in_out);
+        //read extra, show alerts - if appropriate
+        final Bundle extras = getIntent().getExtras();
+        if (extras != null && extras.containsKey(NearbyActivity.TAG)) {
+            mFragment = Utils.fragmentChange(this, null, AlertsFragment.TAG, null);
+            //TODO handle the case where the mFragment is an AlertsFragment
+            //now a little clean up for a switch from Route to Alerts
+            mFab.setVisibility(View.GONE);
+            mToolbar.setTitle(getString(R.string.action_alerts));
+            mCurrentSelection = -1;
+            Log.d(TAG, "reset selection here! " + mCurrentSelection);
+            if(mDrawerList.getTag() != null) {
+                ((View)mDrawerList.getTag()).setSelected(false);
+                mDrawerList.setTag(null);
+            }
+        }
     }
 
     @Override
@@ -215,12 +224,22 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     @Override
     public void onBackPressed() {
         final DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_layout);
+        //Log.d(TAG, getSupportFragmentManager().getBackStackEntryCount() + " bs count");
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
+        } else if (getSupportFragmentManager().getBackStackEntryCount() == 1) {
+            // to avoid looping below on initScreen
+            super.onBackPressed();
+            finish();
         } else {
             super.onBackPressed();
             mFragment = getSupportFragmentManager().findFragmentById(R.id.container);
-            if (mFragment != null) mFragment.onResume();
+            if (mFragment != null) {
+                mFragment.onResume();
+            } else {
+                //like onCreate...
+                initScreen();
+            }
         }
     }
 
@@ -258,14 +277,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     protected void onResume() {
         super.onResume();
         if(mFragment == null) {
-            mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
-            //no fragment showing, no preference from last route shown, display toast
-            if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
-                Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
-            } else {
-                final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
-                getTimesFromService(mRouteId, "");
-            }
+            initScreen();
         } else {
             /*if(mFragment.isHidden()) {
                 getSupportFragmentManager().beginTransaction().show(mFragment).commit();
@@ -277,6 +289,17 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 ((RouteFragment)mFragment).reloadTimes();
                 new CheckFavesTable().execute();
             }
+        }
+    }
+
+    void initScreen() {
+        mPrefs = PreferenceManager.getDefaultSharedPreferences(this);
+        //no fragment showing, no preference from last route shown, display toast
+        if(!mPrefs.contains(DBHelper.KEY_ROUTE_ID)) {
+            Toast.makeText(this, getString(R.string.def_text), Toast.LENGTH_SHORT).show();
+        } else {
+            final String mRouteId = mPrefs.getString(DBHelper.KEY_ROUTE_ID, "");
+            getTimesFromService(mRouteId, "");
         }
     }
 
@@ -470,11 +493,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             if(b == null) {
                 //Error check, service returns data
                 return;
-            }
-
-            if(!(mFragment instanceof RouteFragment)) {
-                //this call back must display a route fragment
-
             }
 
             if((b.containsKey(TAG) && b.getParcelable(TAG) == null) ||

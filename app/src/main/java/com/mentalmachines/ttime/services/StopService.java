@@ -1,6 +1,7 @@
 package com.mentalmachines.ttime.services;
 
 import android.app.IntentService;
+import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
@@ -78,7 +79,7 @@ public class StopService extends IntentService {
             for(int dex = 0; dex < returnList.size(); dex++) {
                 stop = returnList.get(dex);
                 Log.i(TAG, "for loop stop: " + stop.readableStopName());
-                parseStop(stop, returnList);
+                parseStop(this, stop, returnList);
                 parseStopPredictions(stop);
             }
             //This part wraps things up and sends a message back to the activity with data for the stop detail
@@ -96,58 +97,80 @@ public class StopService extends IntentService {
                             String stopCode, Double mainLong, Double mainLat) {
         float[] results = new float[1];
         for(StopData stop: stopList) {
-
             if(!stop.stopId.equals(stopCode)) {
                 Location.distanceBetween(mainLat, mainLong,
                         Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
                 //find other stops within ~100ft of the mainStop, 35 meters
-                if(results[0] < 50f) {
+                //Log.i(TAG, "for loop stop: " + stop.readableStopName());
+                if(results[0] < 50.0f) {
                     nearby.put(stop.stopId, stop);
-                    Log.i(TAG, "for loop stop: " + stop.readableStopName());
                 }
-
             } else {
                 Log.d(TAG, "same stop: " + stop.stopId);
             }
         }
     }
 
-    public static ArrayList<StopData> createStopList(Location findNearHere) {
-        final HashMap<String, StopData> nearby = new HashMap<>();
+    public static ArrayList<StopData> createNearbyStopList(Context ctx, Location findNearHere) {
+        HashMap<String, StopData> nearby = new HashMap<>();
 
         final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         Cursor stopNameCursor = db.query(true, DBHelper.STOPS_INB_TABLE, Route.mStopProjection,
                 null, null, null, null, null, null);
-        ArrayList<StopData> stopList = Route.makeStops(stopNameCursor);
-
-        //Log.d(TAG, "inbound total stops " + stopList.size());
-        runStopLoop(stopList, nearby, "", findNearHere.getLongitude(), findNearHere.getLatitude());
-        stopList.clear();
+        nearby = Route.makeStops(nearby, stopNameCursor);
+        //Hash map eliminates duplicates, creates one list and one pass through the distance check
+        Log.d(TAG, "inbound stops " + nearby.values().size());
         //Log.d(TAG, "inbound stops? " + nearby.size());
         stopNameCursor = db.query(true, DBHelper.STOPS_OUT_TABLE, Route.mStopProjection,
                 null, null, null, null, null, null);
-        stopList = Route.makeStops(stopNameCursor);
+        nearby = Route.makeStops(nearby, stopNameCursor);
         //Log.d(TAG, "outbound total stops " + stopList.size());
-        runStopLoop(stopList, nearby, "", findNearHere.getLongitude(), findNearHere.getLatitude());
-
-        //Log.d(TAG, "total nearby stops" + nearby.size());
-        //now have list of stop ids within 25 meters of the stop passed in
+        float[] results = new float[4];
+        final double mainLat = findNearHere.getLatitude();
+        final double mainLong = findNearHere.getLongitude();
+        final ArrayList<StopData> stopList = new ArrayList<>(9); //default size, can trim
+        for(StopData stop: nearby.values()) {
+            Location.distanceBetween(mainLat, mainLong,
+                    Double.valueOf(stop.stopLat), Double.valueOf(stop.stopLong), results);
+            //find other stops within ~1000ft of the phone location
+            //Log.i(TAG, "for loop stop: " + stop.readableStopName());
+            if(results[0] < 310.0f) {
+                if (!stopList.contains(stop)) {
+                    stopList.add(stop);
+                }
+            }
+        }
+        Log.d(TAG, "+ final stops " + stopList.size());
+        //now have a list of stops... the next step is to
         //call the server for each id and parse the schedule/predictions
         if(!stopNameCursor.isClosed()) {
             stopNameCursor.close();
         }
-        stopList.clear();
-        stopList.addAll(nearby.values());
-        //Log.d(TAG, "total stops, hashmap values " + stopList.size());
 
+        //Log.d(TAG, "sorted and ready to return, total stops " + stopList.size());
+        try {
+            Log.d(TAG, "predictions? " + stopList.size());
+            //for(StopData stop: returnList) {
+            StopData stop;
+            for(int dex = 0; dex < stopList.size(); dex++) {
+                stop = stopList.get(dex);
+                Log.i(TAG, "for loop stop: " + stop.readableStopName() +  " id " + stop.stopId);
+                parseStop(ctx, stop, stopList);
+                parseStopPredictions(stop);
+            }
+            //This part wraps things up and sends a message back to the activity with data for the stop detail
+
+        } catch (IOException e) {
+            Log.e(TAG, "problem with stop service " + e.getMessage());
+            e.printStackTrace();
+        }
+        stopList.trimToSize(); //send back the smallest possible, sort it for display in the activity
         Collections.sort(stopList, new Comparator<StopData>() {
             @Override
             public int compare(final StopData object1, final StopData object2) {
                 return object1.stopName.compareTo(object2.stopName);
             }
         });
-        //Log.d(TAG, "sorted and ready to return, total stops " + stopList.size());
-
         return stopList;
     }
 
@@ -310,7 +333,7 @@ public class StopService extends IntentService {
         Log.i(TAG, "parser closed, prediction parsing complete");
     }
 
-    void parseStop(StopData stop, ArrayList<StopData> listdata) throws IOException {
+    static void parseStop(Context ctx, StopData stop, ArrayList<StopData> listdata) throws IOException {
         //add schedule times and direction to the stops
         String routeName = "", directionNm = "", tmp;
         long schTime = 0;
@@ -393,7 +416,7 @@ public class StopService extends IntentService {
                                                 //put the scheduled time into the string builder
                                             } else if(JsonToken.END_OBJECT.equals(token)) {
                                                 //end of the trip
-                                                tmp = Route.readableName(this, routeName) + " " + directionNm;
+                                                tmp = Route.readableName(ctx, routeName) + " " + directionNm;
                                                 if(stop.stopRouteDir.isEmpty()) {
                                                     //Log.d(TAG, "new routename: " + tmp);
                                                     stop.stopRouteDir = tmp;
@@ -437,6 +460,8 @@ public class StopService extends IntentService {
                 } //end mode array, end array token
             } //array following stop name inside here
         } //parser is closed
+
+        //clear prediction text, as needed
         //TODO select alerts and set ids into StopData, as needed
     }
 

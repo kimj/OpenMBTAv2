@@ -8,7 +8,6 @@ import android.content.IntentFilter;
 import android.location.Location;
 import android.os.AsyncTask;
 import android.os.Bundle;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.widget.SwipeRefreshLayout;
 import android.support.v7.app.AppCompatActivity;
@@ -19,25 +18,20 @@ import android.widget.ListView;
 import android.widget.Toast;
 
 import com.mentalmachines.ttime.adapter.NearbyLVAdapter;
-import com.mentalmachines.ttime.fragments.AlertDetailFragment;
 import com.mentalmachines.ttime.objects.StopData;
 import com.mentalmachines.ttime.services.StopService;
 
 import java.util.ArrayList;
 
 public class NearbyActivity extends AppCompatActivity {
-	/**
-	 * An activity showing a stop or list of stops selected from a route
-	 */
-    private static final String TAG = "NearbyActivity";
-    public static final Double BOSTON_LAT = 42.3601;
-    public static final Double BOSTON_LNG = -71.0589;
+    public static final String TAG = "NearbyActivity";
+    /*public static final Double BOSTON_LAT = 42.3601;
+    public static final Double BOSTON_LNG = -71.0589;*/
 
     public ListView mStopList;
-    ProgressDialog mProgress = null;
-    //private GoogleMap mMap;
+    SwipeRefreshLayout mRefreshLayout;
     private Location mLocation;
-
+    ProgressDialog mPD;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,138 +39,98 @@ public class NearbyActivity extends AppCompatActivity {
         setContentView(R.layout.activity_nearby);
         final Toolbar toolbar = (Toolbar) findViewById(R.id.nr_toolbar);
         setSupportActionBar(toolbar);
-        if(getSupportActionBar() != null) {
+        if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            getSupportActionBar().setTitle(getString(R.string.action_nearby));
         }
-
-        /*LocalBroadcastManager.getInstance(this).registerReceiver(mDetailsUpdated,
-                new IntentFilter(StopService.TAG));*/
         mStopList = (ListView) findViewById(R.id.nr_stoplist);
-        final SwipeRefreshLayout swipeViewGroup = (SwipeRefreshLayout)findViewById(R.id.nr_swipe);
-        swipeViewGroup.setOnRefreshListener(refreshList);
-        swipeViewGroup.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
-        //show a progress dialog when the list is empty and the user is waiting, refreshing doesn't work here
-        mProgress = ProgressDialog.show(this, "", getString(R.string.getting_data), true, true);
+        mRefreshLayout = (SwipeRefreshLayout) findViewById(R.id.nr_swipe);
+        mRefreshLayout.setOnRefreshListener(refreshList);
+        mRefreshLayout.setColorSchemeColors(R.color.colorPrimary, R.color.colorPrimaryDark);
+    }
 
-        mLocation = TTimeApp.getPhoneLocation((TTimeApp)getApplication());
-        if(mLocation == null) {
-            LocalBroadcastManager.getInstance(this).registerReceiver(gotLocation,
-                    new IntentFilter(TTimeApp.TAG));
-        } else {
-            new PopMap().execute();
-        }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        setupList();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        if(mProgress != null && mProgress.isShowing()) {
-            mProgress.cancel();
+        if (mRefreshLayout.isRefreshing()) {
+            mRefreshLayout.setRefreshing(false);
+            LocalBroadcastManager.getInstance(this).unregisterReceiver(gotLocation);
         }
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        //LocalBroadcastManager.getInstance(this).unregisterReceiver(mDetailsUpdated);
+    void setupList() {
+        mRefreshLayout.setEnabled(false);
+        mLocation = TTimeApp.getPhoneLocation((TTimeApp) getApplication());
+        if (mLocation == null) {
+            Log.d(TAG, "wait for broadcast location");
+            LocalBroadcastManager.getInstance(this).registerReceiver(gotLocation,
+                    new IntentFilter(TTimeApp.TAG));
+            mRefreshLayout.setRefreshing(true);
+        } else {
+            new PopMap().execute();
+            Log.d(TAG, "calling pop map");
+        }
     }
 
-    //very much like the Main activity, TODO open alert activity to the alert in the tag
+    // TODO open specific alert
+
+    /**
+     * return to the main activity and show the alerts fragment
+     * @param v, the alert button with the specific alert id on it
+     */
     public void openAlerts(View v) {
-        //click listener in the t_stop layout
+        //click listener in the layout
         final String alertId = (String) v.getTag();
         Log.d(TAG, "open alert " + alertId);
         Toast.makeText(this, "open alert stop detail" + alertId, Toast.LENGTH_SHORT).show();
 
-        FragmentManager fm = getSupportFragmentManager();
-        AlertDetailFragment alertsDetailFragment = new AlertDetailFragment();
-
-        Bundle args = new Bundle();
-        args.putString(DBHelper.KEY_ALERT_ID, alertId);
-        alertsDetailFragment.setArguments(args);
-        fm.beginTransaction().add(R.id.container, alertsDetailFragment).addToBackStack(null).commit();
-
+        final Intent tnt = new Intent(this, MainActivity.class);
+        tnt.putExtra(TAG, alertId);
+        startActivity(tnt);
     }
-
 
     SwipeRefreshLayout.OnRefreshListener refreshList = new SwipeRefreshLayout.OnRefreshListener() {
 
         @Override
         public void onRefresh() {
             Log.d(TAG, "on refresh");
-            //reloadTimes();
+            setupList();
         }
     };
 
     BroadcastReceiver gotLocation = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
-            mLocation = TTimeApp.getPhoneLocation((TTimeApp)getApplication());
-            if(mLocation == null) {
-                Log.e(TAG, "no location after TTime broadcast");
-                //TODO show error to user
-                if(mProgress != null && mProgress.isShowing()) mProgress.cancel();
+            mLocation = TTimeApp.getPhoneLocation((TTimeApp) getApplication());
+
+            if (mLocation == null) {
+                Log.e(TAG, "no location after TTime broadcast?");
+                //show error to user?
                 Toast.makeText(context, "Cannot find your location", Toast.LENGTH_LONG).show();
-                finish();
+                //finish();
+                if (mRefreshLayout.isRefreshing()) mRefreshLayout.setRefreshing(false);
             } else {
-                //TODO use location data to create list
+                // use location data to create list
                 new PopMap().execute();
+                Log.d(TAG, "got broadcast, create list with location");
+                LocalBroadcastManager.getInstance(context).unregisterReceiver(gotLocation);
             }
         }
     };
 
-    /*@Override
-    public void onMapReady(GoogleMap googleMap) {
-        LatLng boston = new LatLng(BOSTON_LAT, BOSTON_LNG);
-
-        //mMap.setMyLocationEnabled(true);
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(
-                boston, 13));
-
-        mMap.addMarker(new MarkerOptions()
-                .title(getString(R.string.boston))
-                .position(boston));
-    }
-
-    /*public void reloadTimes() {
-        Log.d(TAG, "reload times");
-        if(Utils.checkNetwork(this)) {
-            ((SwipeRefreshLayout)findViewById(R.id.route_swipe)).setRefreshing(true);
-            //the main activity broadcast receiver will reload the data into the adapter and list
-            final Intent tnt = new Intent(this, StopService.class);
-            tnt.putExtra(StopService.TAG, mStopDetail.mainStop);
-            startService(tnt);
-
-        } else {
-            Toast.makeText(this, getString(R.string.chkNet), Toast.LENGTH_SHORT).show();
-        }
-    }*/
-
-    /*BroadcastReceiver mDetailsUpdated = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            Log.d(TAG, "service completed");
-            if(mProgress != null && mProgress.isShowing()) {
-                mProgress.cancel();
-            }
-            if(intent.getExtras() == null) {
-                //error broadcast, no extras
-                Toast.makeText(NearbyActivity.this,
-                        getString(R.string.schedSvcErr), Toast.LENGTH_SHORT).show();
-                return;
-            }
-            mStopDetail = intent.getParcelableExtra(StopService.TAG);
-            new PopMap(false).execute(mStopDetail.mainStop.stopId);
-            Log.d(TAG, mStopDetail.mainStop.stopName +
-                    " data check, stop detail list size " + mStopDetail.mStopList.size());
-            setList();
-        }
-    };*/
-
-    /**
-     *
-     */
     class PopMap extends AsyncTask<Void, Void, StopData[]> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            mPD = ProgressDialog.show(NearbyActivity.this, "", getString(R.string.getting_data), true, true);
+        }
 
         /**
          * pushing the db I/O into a background thread
@@ -186,8 +140,10 @@ public class NearbyActivity extends AppCompatActivity {
             if(mLocation == null) {
                 Log.e(TAG, "location require to display activity");
                 return null;
+            } else {
+                Log.i(TAG, "got location");
             }
-            ArrayList<StopData> stopData = StopService.createStopList(mLocation);
+            ArrayList<StopData> stopData = StopService.createNearbyStopList(NearbyActivity.this, mLocation);
             final StopData[] adapterList = new StopData[stopData.size()];
             stopData.toArray(adapterList);
             return adapterList;
@@ -196,8 +152,10 @@ public class NearbyActivity extends AppCompatActivity {
         @Override
         protected void onPostExecute(StopData[] stopDatas) {
             super.onPostExecute(stopDatas);
-            if(mProgress != null && mProgress.isShowing()) mProgress.cancel();
-            mStopList.setAdapter(new NearbyLVAdapter(stopDatas));
+            if (mRefreshLayout.isRefreshing()) mRefreshLayout.setRefreshing(false);
+            mStopList.setAdapter(new NearbyLVAdapter(getApplicationContext(), stopDatas));
+            mPD.dismiss();
+            mRefreshLayout.setEnabled(true);
         }
     }
 
