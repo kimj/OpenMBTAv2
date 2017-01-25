@@ -69,12 +69,30 @@ public class NearbyLVAdapter extends BaseAdapter {
         final StopData s = items[position];
         if (s == null) {
             return null;
+        } else {
+            convertView.setTag(R.layout.nearby_stop, s);
         }
 
-        ((TextView) convertView.findViewById(R.id.nr_name_route)).setText(s.stopName + "\n" + s.stopRouteDir);
+        TextView tv = (TextView) convertView.findViewById(R.id.nr_name_route);
+        tv.setText(s.stopName + "\n" + s.stopRouteDir);
+        if (s.stopRouteDir.contains("Silver")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.silverlineBG));
+        } else if (s.stopRouteDir.contains("Bus")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.busYellowBG));
+        } else if (s.stopRouteDir.contains("Green")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.greenlineBG));
+        } else if (s.stopRouteDir.contains("Blue")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.bluelineBG));
+        } else if (s.stopRouteDir.contains("Orange")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.orangelineBG));
+        } else if (s.stopRouteDir.contains("Red")) {
+            tv.setBackgroundColor(ctx.getResources().getColor(R.color.redlineBG));
+        }
+
         //alert header text gets set in the alert field instead of the alert id
         ((TextView) convertView.findViewById(R.id.nr_schedule)).setText(mSchedule + " " + Utils.nearbyTimes(mNoData, s));
-        final TextView tv = (TextView) convertView.getTag();
+
+        tv = (TextView) convertView.getTag();
         tv.setText(Utils.setPredictions(mActual, s));
         if (TextUtils.isEmpty(tv.getText().toString())) {
             tv.setVisibility(View.GONE);

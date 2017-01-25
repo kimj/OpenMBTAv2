@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.location.Location;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
@@ -93,6 +94,31 @@ public class NearbyActivity extends AppCompatActivity {
         final Intent tnt = new Intent(this, MainActivity.class);
         tnt.putExtra(TAG, alertId);
         startActivity(tnt);
+    }
+
+    public void mapIt(View v) {
+        //click listener in the layout
+        final StopData stop = (StopData) ((View) v.getParent()).getTag(R.layout.nearby_stop);
+        Uri gmmIntentUri;
+        Intent mapIntent = null;
+        switch (v.getId()) {
+            case R.id.nr_map:
+                // Creates an Intent that will load a map of the stop
+                gmmIntentUri = Uri.parse("geo:0,0?q=" + stop.stopLat + "," + stop.stopLong + "(" + stop.stopName + ")");
+                //geo:0,0?q=latitude,longitude(label)
+                mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                break;
+            case R.id.nr_directions:
+                //Uri gmmIntentUri = Uri.parse("google.navigation:q=Taronga+Zoo,+Sydney+Australia&mode=b");
+                // Creates an Intent that will load a map of the stop
+                gmmIntentUri = Uri.parse("google.navigation:q=" + stop.stopLat + "," + stop.stopLong + "&mode=w");
+                //geo:0,0?q=latitude,longitude(label)
+                mapIntent = new Intent(Intent.ACTION_VIEW, gmmIntentUri);
+                break;
+        }
+
+        mapIntent.setPackage("com.google.android.apps.maps");
+        startActivity(mapIntent);
     }
 
     SwipeRefreshLayout.OnRefreshListener refreshList = new SwipeRefreshLayout.OnRefreshListener() {
