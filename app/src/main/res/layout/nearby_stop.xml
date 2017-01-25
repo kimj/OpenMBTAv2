@@ -42,6 +42,31 @@
         android:background="@android:color/transparent"
         android:fontFamily="bold"
         android:textSize="20dp" />
+    <!-- actions for the stop -->
+    <ImageButton android:id="@+id/nr_map"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignParentTop="true"
+        android:paddingTop="10dip"
+        android:layout_marginRight="18dp"
+        android:gravity="right|center_vertical"
+        android:src="@android:drawable/ic_menu_directions"
+        android:scaleType="fitCenter"
+        android:onClick="mapIt"
+        android:background="@android:color/transparent" />
+
+    <ImageButton android:id="@+id/nr_directions"
+        android:layout_width="32dp"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@id/nr_map"
+        android:paddingTop="10dip"
+        android:layout_marginRight="18dp"
+        android:gravity="right|center_vertical"
+        android:src="@android:drawable/ic_menu_mapmode"
+        android:onClick="mapIt"
+        android:background="@android:color/transparent" />
 
     <ImageButton android:id="@+id/nr_alert"
         android:layout_width="32dp"
