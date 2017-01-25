@@ -104,7 +104,7 @@ public class GetTimesForRoute extends IntentService {
         int dex = -1;
         boolean skiptrip = false;
         if(mRedLineSpecial) {
-            value = GETROUTEPREDTIMES + "Red";
+            value = GETROUTEPREDTIMES + DBHelper.REDLINE;
         } else {
             value = GETROUTEPREDTIMES + searchRoute.id;
         }
@@ -253,7 +253,7 @@ public class GetTimesForRoute extends IntentService {
         String tmp;
         boolean skiptrip = false;
         if(mRedLineSpecial) {
-            tmp = GETROUTESCHEDTIMES + "Red" + DATETIMEPARAM + dirID;
+            tmp = GETROUTESCHEDTIMES + DBHelper.REDLINE + DATETIMEPARAM + dirID;
         } else {
             tmp = GETROUTESCHEDTIMES + searchRoute.id + DATETIMEPARAM + dirID;
         }

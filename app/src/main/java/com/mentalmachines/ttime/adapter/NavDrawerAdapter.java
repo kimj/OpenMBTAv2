@@ -253,19 +253,19 @@ public class NavDrawerAdapter extends BaseExpandableListAdapter {
      */
     public static void colorView(TextView tv, String routeNm) {
         tv.setTag(R.layout.child_view, routeNm);
-        if(routeNm.contains("Green")) {
+        if(routeNm.contains(DBHelper.GREENLINE)) {
             tv.setBackgroundResource(R.drawable.bg_greenroute);
             tv.setText(routeNm);
-        } else if(routeNm.contains("Blue")) {
+        } else if(routeNm.contains(DBHelper.BLUELINE)) {
             tv.setBackgroundResource(R.drawable.bg_blueroute);
             tv.setText(routeNm);
-        } else if(routeNm.contains("Orange")) {
+        } else if(routeNm.contains(DBHelper.ORNG_LINE)) {
             tv.setBackgroundResource(R.drawable.bg_orangeroute);
             tv.setText(routeNm);
-        } else if(routeNm.contains("Red") || routeNm.contains("Ashmont") || routeNm.contains("Braintree")) {
+        } else if(routeNm.contains(DBHelper.REDLINE) || routeNm.contains("Ashmont") || routeNm.contains("Braintree")) {
             tv.setBackgroundResource(R.drawable.bg_redroute);
             tv.setText(routeNm);
-        } else if(routeNm.contains("Silver")) {
+        } else if(routeNm.contains(DBHelper.SILVERLLINE)) {
             tv.setBackgroundResource(R.drawable.bg_silverroute);
             tv.setText(routeNm);
         } else if(routeNm.contains("Mattapan")) {

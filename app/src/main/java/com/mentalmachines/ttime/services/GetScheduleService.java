@@ -157,7 +157,7 @@ public class GetScheduleService extends IntentService {
         cal.setTimeInMillis(Long.valueOf(stamp)*1000);
         Log.d(TAG, "day with stamp: " + cal.get(Calendar.DAY_OF_WEEK)); //Utils.timeFormat.format(cal.getTime()));
         if(mRedLineSpecial) {
-            url = GetScheduleService.GETSCHEDULE + "Red" +
+            url = GetScheduleService.GETSCHEDULE + DBHelper.REDLINE +
                     GetScheduleService.DATETIMEPARAM + stamp +
                     GetScheduleService.TIME_PARAM + duration;
         } else {

@@ -352,4 +352,12 @@ public class DBHelper extends SQLiteOpenHelper {
         }
         return alerts;
     }
+
+    //Constants for setting colors, comparing to route names
+    public static final String SILVERLLINE = "Silver";
+    public static final String BUS_YELLOW = "Bus";
+    public static final String GREENLINE = "Green";
+    public static final String BLUELINE = "Blue";
+    public static final String ORNG_LINE = "Orange";
+    public static final String REDLINE= "Red";
 }

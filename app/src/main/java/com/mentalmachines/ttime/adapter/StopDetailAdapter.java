@@ -83,7 +83,11 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             Log.w(TAG, "bad stop position: " + position);
         } else {
             final StopData s = items[position];
-
+            if (position == 0) {
+                holder.mDivider.setVisibility(View.GONE);
+            } else {
+                holder.mDivider.setVisibility(View.VISIBLE);
+            }
             //TODO create new layout
             if(!TextUtils.isEmpty(s.stopAlert)) {
                 holder.mAlertBtn.setVisibility(View.VISIBLE);
@@ -93,6 +97,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
                 holder.mAlertBtn.invalidate();
             }
             holder.mStopRoutename.setText(s.stopRouteDir);
+            NearbyLVAdapter.colorView(holder.mStopRoutename.getResources(), holder.mStopRoutename, s.stopRouteDir);
             //The utils will report "no schedule data" as needed
             holder.mStopDescription.setText(SCHED + " " + Utils.trimStopTimes(NODATA, s));
 
@@ -109,6 +114,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
         public final TextView mStopDescription;
         public final TextView mETA;
         public final ImageButton mAlertBtn;
+        public final View mDivider;
         //public final View mCompass;
         //set a tag on the parent view for the two buttons to read
         public StopViewHolder(View itemView) {
@@ -118,6 +124,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_detail_btn);
             mAlertBtn.setImageResource(R.drawable.btn_stop_alert);
+            mDivider = itemView.findViewById(R.id.divider);
             if(SCHED == null) {
                 final Context ctx = itemView.getContext();
                 SCHED = ctx.getString(R.string.scheduled);

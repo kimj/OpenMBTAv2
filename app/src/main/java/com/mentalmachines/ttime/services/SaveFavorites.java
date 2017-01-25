@@ -114,7 +114,7 @@ public class SaveFavorites extends IntentService {
         //time set to collect 24hr schedule for tomorrow
         final String url;
         if(mRedLineSpecial) {
-            url = GetScheduleService.GETSCHEDULE + "Red" +
+            url = GetScheduleService.GETSCHEDULE + DBHelper.REDLINE +
                     GetScheduleService.DATETIMEPARAM + Long.valueOf(c.getTimeInMillis()/1000).intValue() +
                     GetScheduleService.TIME_PARAM + duration;
         } else {

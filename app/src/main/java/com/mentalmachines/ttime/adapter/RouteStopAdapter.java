@@ -64,6 +64,7 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
     public StopViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
         final View view = LayoutInflater.from(parent.getContext())
                 .inflate(R.layout.t_stop, parent, false);
+        NearbyLVAdapter.colorView(parent.getResources(), view.findViewById(R.id.divider), mRoute.name);
         return new StopViewHolder(view);
     }
 
@@ -86,6 +87,8 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
         ((View) holder.mStopDescription.getTag()).setTag(s);
         //put the stop object on the view as a tag for onClick methods to use
         setView(holder, s, position);
+        if (position == 0) holder.mDivider.setVisibility(View.GONE);
+        else holder.mDivider.setVisibility(View.VISIBLE);
     }
 
     void setView(StopViewHolder holder, StopData s, int position) {
@@ -95,13 +98,11 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
             holder.mETA.setText("");
             holder.mStopDetail.setVisibility(View.GONE);
         } else {
-            final Context ctx = holder.mStopDetail.getContext();
             if(TextUtils.isEmpty(s.stopAlert)) {
                 holder.mStopDetail.setImageResource(android.R.drawable.ic_menu_compass);
             } else {
                 holder.mStopDetail.setImageResource(R.drawable.btn_stop_alert);
             }
-            //holder.mStopDetail.invalidate();
             holder.mStopDescription.setText(s.stopName + "\n" + SCHED + " "
                     + Utils.trimStopTimes(NODATA, s));
             holder.mETA.setText(Utils.setPredictions(ACTUAL, s));
@@ -113,10 +114,12 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
         public final TextView mStopDescription;
         public final TextView mETA;
         public final ImageButton mStopDetail;
+        public final View mDivider;
         //public final View mCompass;
         //set a tag on the parent view for the two buttons to read
         public StopViewHolder(View itemView) {
             super(itemView);
+            mDivider = itemView.findViewById(R.id.divider);
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             //mCompass = itemView.findViewById(R.id.stop_detail_btn);
