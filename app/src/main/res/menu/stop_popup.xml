@@ -5,7 +5,7 @@
     <item
         android:id="@+id/stop_fav"
         android:title="@string/stops_make_fave"
-        android:icon="@android:drawable/btn_star"
+        android:icon="@drawable/ic_star_light"
         app:showAsAction="always"/>
     <item
         android:id="@+id/stop_detail"
@@ -18,7 +18,7 @@
     <item
         android:id="@+id/stop_alert"
         android:title="@string/stopAlert"
-        android:icon="@drawable/btn_stop_alert"
+        android:icon="@drawable/ic_alert_light"
         app:showAsAction="always"/>
 
 </menu>

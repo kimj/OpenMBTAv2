@@ -123,7 +123,7 @@ public class StopDetailAdapter extends RecyclerView.Adapter<StopDetailAdapter.St
             mStopDescription = (TextView) itemView.findViewById(R.id.stop_desc);
             mETA = (TextView) itemView.findViewById(R.id.stop_eta);
             mAlertBtn = (ImageButton) itemView.findViewById(R.id.stop_detail_btn);
-            mAlertBtn.setImageResource(R.drawable.btn_stop_alert);
+            mAlertBtn.setImageResource(R.drawable.ic_alert_light);
             mDivider = itemView.findViewById(R.id.divider);
             if(SCHED == null) {
                 final Context ctx = itemView.getContext();

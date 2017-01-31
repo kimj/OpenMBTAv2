@@ -186,13 +186,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                     //TODO move setFavorite to bg thread
                     if(Favorite.setFavorite(r.name, r.id)) {
                         mFavoritesAction.setChecked(true);
-                        mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                        mFavoritesAction.setIcon(R.drawable.ic_star_light);
                         noFaves = false;
                         startService(SaveFavorites.newInstance(this, r));
                         Log.v(TAG, "saving favorite route schedule: " + r.name);
                     } else {
                         mFavoritesAction.setChecked(false);
-                        mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                        mFavoritesAction.setIcon(R.drawable.ic_star_border_light);
                         noFaves = true;
                     }
                     return true;
@@ -527,11 +527,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
             }
 
             if(Favorite.checkFavoriteRoute(r.name)) {
-                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                mFavoritesAction.setIcon(R.drawable.ic_star_light);
                 Log.d(TAG, "is a favorite");
             } else {
                 Log.d(TAG, "not favorited");
-                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                mFavoritesAction.setIcon(R.drawable.ic_star_border_light);
             }
             mFavoritesAction.getIcon().invalidateSelf();
         }

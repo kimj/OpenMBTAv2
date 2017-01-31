@@ -14,7 +14,7 @@
             android:id="@+id/imageViewSeverityIcon"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:src="@drawable/alert_btn_prs"
+            android:src="@drawable/ic_alert_dark"
             android:padding="1dp" />
 
         <TextView
@@ -39,7 +39,7 @@
             android:layout_marginRight="16dp"
             android:ellipsize="end"
             android:lines="1"
-            android:text="effcts"
+            android:text="effects"
             android:textStyle="bold" />
 
         <TextView

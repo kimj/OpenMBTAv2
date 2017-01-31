@@ -181,7 +181,7 @@ public class ScheduleActivity extends AppCompatActivity {
         if(((ScheduleAdapter) mList.getAdapter()).switchDirection()) {
             ObjectAnimator.ofFloat(view, "rotation", 540f).start();
             //mItems = getArguments().getStringArray(IN_STOPS_LIST);
-            ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+            ((FloatingActionButton)view).setImageResource(R.drawable.ic_arrow_forward_white_48px);
             set.play(ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * width))
                     .before(ObjectAnimator.ofFloat(mList, "translationX", -width, 0));
         } else {

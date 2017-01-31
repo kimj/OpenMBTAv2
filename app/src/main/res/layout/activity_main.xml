@@ -39,7 +39,7 @@
             android:visibility="gone"
             android:layout_gravity="bottom|end"
             android:layout_margin="@dimen/def_margin"
-            android:src="@drawable/ic_menu_back" />
+            android:src="@drawable/ic_arrow_back_white_48px" />
         <!--action button is to switch between inbound and outbound -->
 
     </android.support.design.widget.CoordinatorLayout>

@@ -17,7 +17,7 @@
     <item
         android:id="@+id/menu_alerts"
         android:title="@string/action_alerts"
-        android:icon="@android:drawable/ic_dialog_alert"
+        android:icon="@drawable/ic_alert_light"
         app:showAsAction="ifRoom"/>
     <item
         android:id="@+id/menu_schedule"
