@@ -2,7 +2,7 @@
 <resources>
     <color name="colorPrimary">#658BA3</color>
     <color name="colorPrimaryDark">#517488</color>
-    <color name="colorAccent">#4c12ea</color>
+    <color name="colorAccent">#F9A825</color>
 
     <!-- TODO selected color in Nav drawer-->
     <color name="solidBlueline">#2a70a4</color>

@@ -6,6 +6,7 @@ import android.os.AsyncTask;
 import android.util.Log;
 import android.view.MenuItem;
 
+import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Favorite;
 
 import java.lang.ref.WeakReference;
@@ -57,10 +58,10 @@ public class CheckFavorite extends AsyncTask<Object, Void, Boolean> {
             final MenuItem star = mFavoritesAction.get();
             if(o) {
                 star.setChecked(true);
-                star.setIcon(android.R.drawable.star_big_on);
+                star.setIcon(R.drawable.ic_star_light);
             } else {
                 star.setChecked(false);
-                star.setIcon(android.R.drawable.star_big_off);
+                star.setIcon(R.drawable.ic_star_border_light);
             }
             star.setVisible(false);
             star.setVisible(true);

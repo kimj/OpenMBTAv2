@@ -12,7 +12,7 @@
     <item
         android:id="@+id/menu_favorites"
         android:title="@string/favorites"
-        android:icon="@android:drawable/btn_star"
+        android:icon="@drawable/ic_star_light"
         app:showAsAction="always"/>
     <item
         android:id="@+id/menu_showmap"
@@ -21,7 +21,7 @@
     <item
         android:id="@+id/menu_alerts"
         android:title="@string/action_alerts"
-        android:icon="@android:drawable/ic_dialog_alert"
+        android:icon="@drawable/ic_alert_light"
         app:showAsAction="ifRoom"/>
 
 </menu>

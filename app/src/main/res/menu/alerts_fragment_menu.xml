@@ -12,7 +12,7 @@
     <item
         android:id="@+id/menu_favorites"
         android:title="@string/action_alerts"
-        android:icon="@android:drawable/btn_star"
+        android:icon="@drawable/ic_star_border_light"
         app:showAsAction="always"/>
     <item
         android:id="@+id/menu_settings"

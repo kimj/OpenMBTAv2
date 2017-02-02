@@ -101,7 +101,7 @@ public class RouteStopAdapter extends RecyclerView.Adapter<RouteStopAdapter.Stop
             if(TextUtils.isEmpty(s.stopAlert)) {
                 holder.mStopDetail.setImageResource(android.R.drawable.ic_menu_compass);
             } else {
-                holder.mStopDetail.setImageResource(R.drawable.btn_stop_alert);
+                holder.mStopDetail.setImageResource(R.drawable.ic_alert_light);
             }
             holder.mStopDescription.setText(s.stopName + "\n" + SCHED + " "
                     + Utils.trimStopTimes(NODATA, s));

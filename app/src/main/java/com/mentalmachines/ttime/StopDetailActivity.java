@@ -226,10 +226,10 @@ public class StopDetailActivity extends AppCompatActivity {
             super.onPostExecute(o);
             if(o) {
                 mFavoritesAction.setChecked(true);
-                mFavoritesAction.setIcon(android.R.drawable.star_big_on);
+                mFavoritesAction.setIcon(R.drawable.ic_star_dark);
             } else {
                 mFavoritesAction.setChecked(false);
-                mFavoritesAction.setIcon(android.R.drawable.star_big_off);
+                mFavoritesAction.setIcon(R.drawable.ic_star_border_dark);
             }
         }
     }

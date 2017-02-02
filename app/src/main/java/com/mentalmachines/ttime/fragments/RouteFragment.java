@@ -152,12 +152,12 @@ public class RouteFragment extends Fragment {
             if(mInbound) {
                 ObjectAnimator.ofFloat(view, "rotation", 540f).start();
                 //mItems = getArguments().getStringArray(IN_STOPS_LIST);
-                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_forward);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_arrow_forward_white_48px);
                 ObjectAnimator.ofFloat(mList, "translationX", 0, 2 * mWidth).start();
             } else {
                 ObjectAnimator.ofFloat(view, "rotation", -540f).start();
                 //TODO -> call the schedule service to get the latest times
-                ((FloatingActionButton)view).setImageResource(R.drawable.ic_menu_back);
+                ((FloatingActionButton)view).setImageResource(R.drawable.ic_arrow_back_white_48px);
                 ObjectAnimator.ofFloat(mList, "translationX", 0, -mWidth).start();
             }
         }
