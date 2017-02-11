@@ -3,77 +3,63 @@ package com.mentalmachines.ttime.fragments;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
 import com.mentalmachines.ttime.objects.Alert;
 
-import java.util.ArrayList;
-
 /**
  * Created by CaptofOuterSpace on 3/20/2016.
  */
 public class AlertDetailFragment extends Fragment {
-    ArrayList<Alert> mStopAlerts;
-    public static String TAG = "AlertDetailFragment";
+    public static final String TAG = "AlertDetailFragment";
+
+    public AlertDetailFragment() { } //req'd empty constructor
+
+    public static AlertDetailFragment newInstance(String AlertID) {
+        Bundle args = new Bundle();
+        args.putString(DBHelper.KEY_ALERT_ID, AlertID);
+        AlertDetailFragment fragment = new AlertDetailFragment();
+        fragment.setArguments(args);
+        return fragment;
+    }
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.alert_detail_fragment, container);
-        ImageView imageViewSeverityIcon = (ImageView) view.findViewById(R.id.imageViewSeverityIcon);
-        TextView textViewEffect = (TextView) view.findViewById(R.id.textViewEffect);
-        TextView textViewCause = (TextView) view.findViewById(R.id.textViewCause);
-        TextView textViewDescriptionText = (TextView) view.findViewById(R.id.textViewDescriptionText);
-        TextView textViewSeverity = (TextView) view.findViewById(R.id.textViewSeverity);
-        TextView textViewEffectStart = (TextView) view.findViewById(R.id.textViewEffectStart);
-        TextView textViewEffectEnd = (TextView) view.findViewById(R.id.textViewEffectEnd);
-        Bundle b = getArguments();
-        String alertId = b.getString(DBHelper.KEY_ALERT_ID);
-        if (alertId != null) {}
-
-        Alert alert = DBHelper.getAlertById(alertId);
-        if (alert != null){
-            textViewEffect.setText(alert.effect);
-            textViewCause.setText(alert.cause);
-            textViewDescriptionText.setText(alert.description_text);
-            textViewSeverity.setText(alert.severity);
-            textViewEffectStart.setText(alert.effect_start);
-            textViewEffectEnd.setText(alert.effect_end);
-        }
-        return view;
+        return inflater.inflate(R.layout.alert_detail_fragment, container, false);
     }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
+        Bundle b = getArguments();
+        String alertId = b.getString(DBHelper.KEY_ALERT_ID);
+        if (TextUtils.isEmpty(alertId)) {
+            Toast.makeText(getContext(), "Error finding that alert", Toast.LENGTH_SHORT).show();
+            getActivity().onBackPressed();
+            return;
+        }
+
+        Alert alert = DBHelper.getAlertById(alertId);
+        showAlert(alert);
     }
 
-    @Override
-    public void onCreate(@Nullable Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-
-        Bundle arguments = new Bundle();
-        String alertId = arguments.getString(DBHelper.KEY_ALERT_ID);
-
+    public void showAlert(Alert alert) {
+        final View view = getView();
+        //ImageView imageViewSeverityIcon = (ImageView) view.findViewById(R.id.imageViewSeverityIcon);
+        ((TextView) view.findViewById(R.id.textViewEffect)).setText(alert.effect);
+        ((TextView) view.findViewById(R.id.textViewCause)).setText(alert.cause);
+        ((TextView) view.findViewById(R.id.textViewDescriptionText)).setText(alert.description_text);
+        ((TextView) view.findViewById(R.id.textViewSeverity)).setText(alert.severity);
+        ((TextView) view.findViewById(R.id.textViewEffectStart)).setText(alert.effect_start);
+        ((TextView) view.findViewById(R.id.textViewEffectEnd)).setText(alert.effect_end);
     }
 
-    @Override
-    public void onPause() {
-        super.onPause();
-    }
-
-    @Override
-    public void onSaveInstanceState(Bundle outState) {
-        super.onSaveInstanceState(outState);
-    }
-
-    @Override
-    public void onResume() {
-        super.onResume();
-    }
 }

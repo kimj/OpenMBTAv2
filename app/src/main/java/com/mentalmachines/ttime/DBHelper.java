@@ -302,7 +302,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static Alert getAlertById(String alertId){
         SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
         Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
-                "KEY_ALERT_ID = ?", new String[]{ alertId }, null, null, null, null);
+                KEY_ALERT_ID + " like ?", new String[]{ alertId }, null, null, null, null);
 
         Alert alert = new Alert();
         if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {

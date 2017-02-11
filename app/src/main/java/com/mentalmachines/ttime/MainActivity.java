@@ -452,6 +452,10 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, stop.stopAlert);
     }
 
+    public void showStopAlert(String alertID) {
+        mFragment = Utils.fragmentChange(this, mFragment, AlertsFragment.TAG, alertID);
+    }
+
     /**
      * The favorites and subway have only one group
      * That group is not allowed to collapse

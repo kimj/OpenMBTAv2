@@ -4,7 +4,6 @@ import android.content.Context;
 import android.graphics.Point;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
-import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
@@ -12,10 +11,12 @@ import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Toast;
 
 import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.MainActivity;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.fragments.AlertDetailFragment;
 import com.mentalmachines.ttime.fragments.AlertsFragment;
 import com.mentalmachines.ttime.fragments.RouteFragment;
 import com.mentalmachines.ttime.fragments.StopFragment;
@@ -79,21 +80,37 @@ public class Utils {
                 ctx.mFab.setVisibility(View.INVISIBLE);
                 break;
             case AlertsFragment.TAG:
-                newFragment = new AlertsFragment();
-                Bundle args = new Bundle();
+                //if there is no data, show all alerts, otherwise open specific alert
+                if (dataObject == null) {
+                    newFragment = mgr.findFragmentByTag(AlertsFragment.TAG);
+                    if (newFragment == null) {
+                        newFragment = new AlertsFragment();
+                        tx.add(R.id.container, newFragment).addToBackStack(AlertsFragment.TAG);
+                    } else {
+                        ((AlertsFragment)newFragment).updateAlertsListView(null);
+                        tx.show(newFragment);
+                    }
+                    //finished with list of all alerts - TODO route alert list
+                } else {
+                    newFragment = mgr.findFragmentByTag(AlertDetailFragment.TAG);
+                    if (newFragment != null) {
+                        final Alert alert = DBHelper.getAlertById((String) dataObject);
+                        if (alert == null) {
+                            Toast.makeText(ctx, "Error finding that alert", Toast.LENGTH_SHORT).show();
+                            return oldFragment;
+                        }
+                        ((AlertDetailFragment) newFragment).showAlert(alert);
+                    } else {
+                        newFragment = AlertDetailFragment.newInstance((String) dataObject);
+                        tx.add(R.id.container, newFragment).addToBackStack(AlertDetailFragment.TAG);
+                    }
+                }
                 //data object parameter is the alert id, should be set with newInstance instead
-                args.putString(DBHelper.KEY_ALERT_ID, (String) dataObject);
-                newFragment.setArguments(args);
-                tx.add(R.id.container, newFragment).addToBackStack(AlertsFragment.TAG);
                 ctx.mFab.setVisibility(View.INVISIBLE);
                 break;
-            /* TODO newInstance, use this function for alerts too
-            case AlertDetailFragment.TAG:
-                break;
-            */
         }
         tx.commit();
-        mgr.executePendingTransactions();
+        //mgr.executePendingTransactions();
         return newFragment;
         //may need to check that newFragment is not null
     }
