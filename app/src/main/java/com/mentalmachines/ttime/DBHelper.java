@@ -326,7 +326,7 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static ArrayList<Alert> getAlertsByStopAlertId(String alertId){
         SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-
+        //what about outbound stops? this is going to miss data where inbound and outbound stops are not the same
         String sqlString = "SELECT * FROM alerts WHERE alert_id IN (SELECT DISTINCT alert_id FROM stops_inbound WHERE alert_id IS NOT NULL AND route_id = (SELECT route_id FROM stops_inbound WHERE alert_id = ?));";
         Cursor alertsCursor = db.rawQuery(sqlString, new String[] {alertId});
         ArrayList<Alert> alerts = new ArrayList<Alert>();
