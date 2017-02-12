@@ -275,17 +275,20 @@ public class GetMBTARequestService extends IntentService {
             cv.put(DBHelper.KEY_ALERT_ID, setStop.alert_id);
             //stop id may or may not be in both tables, check before updating any row
             if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_INB_TABLE, whereClause, selectArgs) > 0) {
-                Log.i(TAG, "setting alertid on INB stop: " + alert.alert_id +
+                Log.d(TAG, "setting alertid on INB stop: " + setStop.svc_stop_id + ", " + setStop.svc_route_id +
                         mDB.update(DBHelper.STOPS_INB_TABLE, cv, whereClause, selectArgs));
             }
             if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_OUT_TABLE, whereClause, selectArgs) > 0) {
-                Log.i(TAG, "setting alertid on INB stop: " + alert.alert_id +
+                Log.d(TAG, "setting alertid on OUTB stop: " + setStop.svc_stop_id + ", " + setStop.svc_route_id +
                         mDB.update(DBHelper.STOPS_OUT_TABLE, cv, whereClause, selectArgs));
             }
 
             cv.put(DBHelper.KEY_ROUTE_ID, setStop.svc_route_id);
             cv.put(DBHelper.KEY_STOPID, setStop.svc_stop_id);
-            Log.i(TAG, "adding detail row " + mDB.insert(DBHelper.DB_ALERT_RT_STP_TABLE, "_id", cv));
+            //int id = (int) yourdb.insertWithOnConflict("your_table", null, initialValues,
+
+            Log.i(TAG, "adding detail row " +
+                    mDB.insertWithOnConflict(DBHelper.DB_ALERT_RT_STP_TABLE, "_id", cv, SQLiteDatabase.CONFLICT_IGNORE));
             cv.clear();
         } //end stops list, alerts entered for display in the Route Fragment
         //Now any remaining alerts in the alertsInTable ArrayList have to be deleted from the table
