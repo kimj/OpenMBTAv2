@@ -4,9 +4,9 @@ import android.app.IntentService;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.database.Cursor;
+import android.database.DatabaseUtils;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
-import android.text.format.Time;
 import android.util.Log;
 
 import com.fasterxml.jackson.core.JsonFactory;
@@ -263,27 +263,33 @@ public class GetMBTARequestService extends IntentService {
             }
         } //parser closed, now set the alerts into the stops table
         cv.clear();
-        String[] selectArgs;
+
+        if(!mDB.isOpen()) TTimeApp.sHelper.getWritableDatabase();
+        final String whereClause = DBHelper.KEY_STOPID + " like ? AND " + DBHelper.KEY_ROUTE_ID + " like ?";
 
         for(ServiceData setStop: stopsList) {
             //putting alert id into stops table, most recent will be there if there is more than one
             if(setStop.svc_stop_id == null) break;
             //alerts can affect an entire route, TODO - handle this
-            selectArgs = new String[]{ setStop.svc_stop_id, setStop.svc_route_id};
+            final String[] selectArgs = new String[]{ setStop.svc_stop_id, setStop.svc_route_id};
             cv.put(DBHelper.KEY_ALERT_ID, setStop.alert_id);
-            if(!mDB.isOpen()) TTimeApp.sHelper.getReadableDatabase();
-            c = mDB.query(DBHelper.STOPS_INB_TABLE,
-                    new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs,
-                    null, null, null);
-            if(c.getCount() == 0) {
-                //not inbound
-                Log.i(TAG, "setting alertid on stop: " + alert.alert_id +
-                        mDB.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
-            } else {
-                Log.i(TAG, "setting alertid on stop: " + alert.alert_id +
-                        mDB.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_STOPID + "=? AND " + DBHelper.KEY_ROUTE_ID + "=?", selectArgs));
-
+            //stop id may or may not be in both tables, check before updating any row
+            if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_INB_TABLE, whereClause, selectArgs) > 0) {
+                Log.d(TAG, "setting alertid on INB stop: " + setStop.svc_stop_id + ", " + setStop.svc_route_id +
+                        mDB.update(DBHelper.STOPS_INB_TABLE, cv, whereClause, selectArgs));
             }
+            if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_OUT_TABLE, whereClause, selectArgs) > 0) {
+                Log.d(TAG, "setting alertid on OUTB stop: " + setStop.svc_stop_id + ", " + setStop.svc_route_id +
+                        mDB.update(DBHelper.STOPS_OUT_TABLE, cv, whereClause, selectArgs));
+            }
+
+            cv.put(DBHelper.KEY_ROUTE_ID, setStop.svc_route_id);
+            cv.put(DBHelper.KEY_STOPID, setStop.svc_stop_id);
+            //int id = (int) yourdb.insertWithOnConflict("your_table", null, initialValues,
+
+            Log.i(TAG, "adding detail row " +
+                    mDB.insertWithOnConflict(DBHelper.DB_ALERT_RT_STP_TABLE, "_id", cv, SQLiteDatabase.CONFLICT_IGNORE));
+            cv.clear();
         } //end stops list, alerts entered for display in the Route Fragment
         //Now any remaining alerts in the alertsInTable ArrayList have to be deleted from the table
         if(alertsInTable.size() > 0) {
@@ -298,22 +304,23 @@ public class GetMBTARequestService extends IntentService {
          * This code is crashing if it is still running at launch when the user changes directions on the displayed route
          */
         Log.i(TAG, "clearing old alert from stops table " + alertId);
-        c = mDB.query(DBHelper.STOPS_INB_TABLE,
-                new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
-                null, null, null, null);
+        final String[] args = new String[] { alertId };
+        final String whereClause = DBHelper.KEY_ALERT_ID + " like ?";
+
         final ContentValues cv = new ContentValues();
         cv.put(DBHelper.KEY_ALERT_ID, "");
-        if(c.moveToFirst()) {
-            mDB.update(DBHelper.STOPS_INB_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
+        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_INB_TABLE, whereClause, args) > 0) {
+            mDB.update(DBHelper.STOPS_INB_TABLE, cv, whereClause, args);
         }
-        c = mDB.query(DBHelper.STOPS_OUT_TABLE,
-                new String[] { DBHelper.KEY_STOPID }, DBHelper.KEY_ALERT_ID + " like " + alertId,
-                null, null, null, null);
-        if(c.moveToFirst()) {
+        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.STOPS_OUT_TABLE, whereClause, args) > 0) {
+            mDB.update(DBHelper.STOPS_OUT_TABLE, cv, whereClause, args);
+        }
+        if(DatabaseUtils.queryNumEntries(mDB, DBHelper.DB_ALERT_RT_STP_TABLE, whereClause, args) > 0) {
+            mDB.delete(DBHelper.DB_ALERT_RT_STP_TABLE, whereClause, args);
+        }
 
-            mDB.update(DBHelper.STOPS_OUT_TABLE, cv, DBHelper.KEY_ALERT_ID + " like " + alertId, null);
-        }
-        Log.i(TAG, "deleting from Alerts table: " + mDB.delete(DBHelper.DB_ALERTS_TABLE, DBHelper.KEY_ALERT_ID + " like " + alertId, null));
+        Log.i(TAG, "deleting from Alerts table: " +
+                mDB.delete(DBHelper.DB_ALERTS_TABLE, whereClause, args));
     }
 
     ArrayList<AlertHolder> selectAlerts() {
@@ -341,32 +348,10 @@ public class GetMBTARequestService extends IntentService {
         public String alert_id;
     }
 
-    public class ServiceData {
+    public static class ServiceData {
         public String svc_route_id;
         public String svc_stop_id;
         public String alert_id;
-    }
-
-    //utility methods to format times when making a call for prediction data
-    public String getTime (Time t) {
-        strBuild.append(hourHandle(t.hour)).append(":").append(pad(t.minute));
-        if(t.hour >= 12) {
-            strBuild.append("PM");
-        } else {
-            strBuild.append("AM");
-        }
-        return strBuild.toString();
-    }
-
-    public static String pad(int c) {
-        if (c >= 10) return String.valueOf(c);
-        else return ("0" + String.valueOf(c));
-    }
-
-    public static String hourHandle(int c) {
-        if (c > 12) return String.valueOf(c-12);
-        else if (c == 0) return String.valueOf(12);
-        return String.valueOf(c);
     }
 
 }//end class
