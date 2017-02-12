@@ -23,6 +23,7 @@ public class DBHelper extends SQLiteOpenHelper {
     public static final String STOPS_OUT_TABLE = "stops_outbound";
     public static final String FAVS_TABLE = "favorites_table";
     public static final String FAVESTOPS_TABLE = "favorites_stops";
+    public static final String DB_ALERT_RT_STP_TABLE = "alertsmatch";
 
     public static final String BRAINTREE = "Braintree";
     public static final String ASHMONT = "Ashmont";
@@ -125,6 +126,8 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
     private static final String STOP_OUT_DEX = "CREATE UNIQUE INDEX STOP_OUT_DEX ON " + STOPS_OUT_TABLE + "("
             + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
+    private static final String ALERTDETAILINDEX = "CREATE INDEX ALERTDETAILINDEX ON " + DB_ALERT_RT_STP_TABLE + "("
+            + KEY_ROUTE_ID + "," + KEY_STOPID + ");";
 
     public static final String KEY_ALERTS= "alerts";
     public static final String KEY_ALERT_ID = "alert_id";
@@ -165,6 +168,12 @@ public class DBHelper extends SQLiteOpenHelper {
             + KEY_EFFECT_PERIOD_START + " TEXT,"
             + KEY_EFFECT_PERIOD_END + " TEXT);";
 
+    public static final String ALERT_RT_STOP_COLS = "("
+            + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
+            + KEY_ROUTE_ID + " TEXT not null,"
+            + KEY_STOPID + " TEXT not null,"
+            + KEY_ALERT_ID + " NUMERIC);";
+
     public static final String STOPS_COLS = "("
             + "_id INTEGER PRIMARY KEY AUTOINCREMENT,"
             + KEY_ROUTE_ID + " TEXT not null,"
@@ -180,7 +189,6 @@ public class DBHelper extends SQLiteOpenHelper {
     //Scheduled arrival time at the stop for the trip, in epoch time
     //Example: “1361989260”
     public static final String PRED_TIME = "pre_dt";
-
 
     // alert ids are saved to the stop table
     // parse alerts in reverse chron order, save alert id to stop table
@@ -203,11 +211,13 @@ public class DBHelper extends SQLiteOpenHelper {
 
         db.execSQL(TABLE_PREFIX + STOPS_INB_TABLE + STOPS_COLS);
         db.execSQL(TABLE_PREFIX + STOPS_OUT_TABLE + STOPS_COLS);
+        db.execSQL(TABLE_PREFIX + DB_ALERT_RT_STP_TABLE + ALERT_RT_STOP_COLS);
         db.execSQL(RTINDEX);
         db.execSQL(STOP_IN_DEX);
         db.execSQL(STOP_OUT_DEX);
         db.execSQL(FAVESTOPS_DEX);
         db.execSQL(ROUTE_FAVS_DEX);
+        db.execSQL(ALERTDETAILINDEX);
     }
 
     public DBHelper(Context context) {
@@ -229,8 +239,20 @@ public class DBHelper extends SQLiteOpenHelper {
     }
 
     public static String getRouteName(SQLiteDatabase db, String routeID) {
-        final Cursor c = db.query(DBHelper.DB_ROUTE_TABLE, new String[]{DBHelper.KEY_ROUTE_NAME},
+        final Cursor c = db.query(DB_ROUTE_TABLE, new String[]{KEY_ROUTE_NAME},
                 Route.routeStopsWhereClause + "'" + routeID + "'", null,
+                null, null, null);
+        if(c.moveToFirst()) {
+            final String name = c.getString(0);
+            c.close();
+            return name;
+        }
+        return null;
+    }
+
+    public static String getStopName(SQLiteDatabase db, String stopId) {
+        final Cursor c = db.query(STOPS_INB_TABLE, new String[]{KEY_STOPID},
+                KEY_STOPID + " like ?", new String[] { stopId }, null,
                 null, null, null);
         if(c.moveToFirst()) {
             final String name = c.getString(0);
@@ -260,38 +282,25 @@ public class DBHelper extends SQLiteOpenHelper {
     }*/
 
     final static String[] mAlertProjection = new String[]{
-                    DBHelper.KEY_ALERT_ID,
-                    DBHelper.KEY_EFFECT_NAME, DBHelper.KEY_EFFECT,
-                    DBHelper.KEY_CAUSE, DBHelper.KEY_SHORT_HEADER_TEXT,
-                    DBHelper.KEY_DESCRIPTION_TEXT, DBHelper.KEY_SEVERITY,
-                    DBHelper.KEY_CREATED_DT, DBHelper.KEY_LAST_MODIFIED_DT,
-                    DBHelper.KEY_TIMEFRAME_TEXT,
-                    DBHelper.KEY_ALERT_LIFECYCLE, DBHelper.KEY_EFFECT_PERIOD_START,
-                    DBHelper.KEY_EFFECT_PERIOD_END
+                    KEY_ALERT_ID,
+                    KEY_EFFECT_NAME, KEY_EFFECT,
+                    KEY_CAUSE, KEY_SHORT_HEADER_TEXT,
+                    KEY_DESCRIPTION_TEXT, KEY_SEVERITY,
+                    KEY_CREATED_DT, KEY_LAST_MODIFIED_DT,
+                    KEY_TIMEFRAME_TEXT,
+                    KEY_ALERT_LIFECYCLE, KEY_EFFECT_PERIOD_START,
+                    KEY_EFFECT_PERIOD_END
             };
-
+    
     public static ArrayList<Alert> getAllAlerts(){
         SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
+        Cursor alertsCursor = db.query(DB_ALERTS_TABLE, mAlertProjection,
                 null, null, null, null, null, null);
 
         ArrayList<Alert> alerts = new ArrayList<Alert>();
         if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
             do {
-                Alert a = new Alert();
-                a.alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
-                a.effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
-                a.effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
-                a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
-                a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
-                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
-                a.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
-                a.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
-                a.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
-                a.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
-                a.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
-                a.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
-                a.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+                Alert a = new Alert(alertsCursor);
                 alerts.add(a);
             } while (alertsCursor.moveToNext());
             alertsCursor.close();
@@ -301,27 +310,74 @@ public class DBHelper extends SQLiteOpenHelper {
 
     public static Alert getAlertById(String alertId){
         SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
-        Cursor alertsCursor = db.query(DBHelper.DB_ALERTS_TABLE, mAlertProjection,
+        Cursor alertsCursor = db.query(DB_ALERTS_TABLE, mAlertProjection,
                 KEY_ALERT_ID + " like ?", new String[]{ alertId }, null, null, null, null);
 
-        Alert alert = new Alert();
-        if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
-            alert .alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
-            alert .effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
-            alert .effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
-            alert.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
-            alert.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
-            alert.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
-            alert.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
-            alert.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
-            alert.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
-            alert.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
-            alert.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
-            alert.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
-            alert.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+        Alert alert = null;
+        if (alertsCursor.moveToFirst()) {
+            alert = new Alert(alertsCursor);
             alertsCursor.close();
         }
         return alert;
+    }
+
+    public static Alert.StopAlertData getAlertsForStop(Context ctx, String stopId) {
+        final SQLiteDatabase db = TTimeApp.sHelper.getReadableDatabase();
+        Cursor alertsCursor = db.query(true, DB_ALERT_RT_STP_TABLE, null,
+                KEY_STOPID + " like ?", new String[]{ stopId }, null, null, null, null);
+        //route id, stop id, alert id
+        final ArrayList<String> alertsList = new ArrayList<>();
+        final ArrayList<String> routeIds = new ArrayList();
+
+        if (alertsCursor.moveToFirst()) {
+            do {
+                routeIds.add(alertsCursor.getString(0));
+                alertsList.add(alertsCursor.getString(2));
+                //duplication of route ids is possible, is okay
+            } while (alertsCursor.moveToNext());
+        } else return null;
+
+        String[] rIDs = new String[routeIds.size()];
+        rIDs = routeIds.toArray(rIDs);
+        routeIds.clear();
+        alertsCursor = db.query(DB_ROUTE_TABLE, new String [] { KEY_ROUTE_ID, KEY_ROUTE_NAME },
+            KEY_ROUTE_ID + " like ?", rIDs, null, null, null, null);
+        String name;
+        if (alertsCursor.moveToFirst()) {
+            for (String route: rIDs) {
+                while (!route.equals(alertsCursor.getString(0))) {
+                    alertsCursor.moveToNext();
+                }
+                //temp debug string
+                name = Route.readableName(ctx, alertsCursor.getString(1));
+                routeIds.add(name);
+                //repopulate with readable names
+                Log.d(TAG, "route name for alert: " + name);
+                alertsCursor.moveToFirst();
+            }
+        }
+        //now select the alerts, load up parallel array list
+        Alert[] alertsResult = null;
+        rIDs = new String[alertsList.size()];
+        rIDs = alertsList.toArray(rIDs);
+        alertsCursor = db.query(DB_ALERTS_TABLE, null,
+                KEY_ALERT_ID + " like ?", rIDs, null, null, null, null);
+        if (alertsCursor.moveToFirst()) {
+            alertsResult = new Alert[alertsCursor.getCount()];
+            int dex = 0;
+            do {
+                Log.d(TAG, "get alert: " + alertsCursor.getString(0));
+                alertsResult[dex++] = new Alert(alertsCursor);
+            } while (alertsCursor.moveToNext());
+        }
+
+        Alert.StopAlertData result = new Alert.StopAlertData();
+        result.routeNames = routeIds.toArray(rIDs);
+        result.alertsForStop = alertsResult;
+        result.stopID = stopId;
+        result.stopName = getStopName(db, stopId);
+        if (!alertsCursor.isClosed()) alertsCursor.close();
+        return result;
     }
 
     public static ArrayList<Alert> getAlertsByStopAlertId(String alertId){
@@ -332,20 +388,7 @@ public class DBHelper extends SQLiteOpenHelper {
         ArrayList<Alert> alerts = new ArrayList<Alert>();
         if (alertsCursor.getCount() > 0 && alertsCursor.moveToFirst()) {
             do {
-                Alert a = new Alert();
-                a.alert_id = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_ID));
-                a.effect_name = alertsCursor.getInt(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_NAME));
-                a.effect = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT));
-                a.cause = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CAUSE));
-                a.description_text = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_DESCRIPTION_TEXT));
-                a.short_header_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SHORT_HEADER_TEXT));
-                a.severity= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_SEVERITY));
-                a.created_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_CREATED_DT));
-                a.last_modified_dt= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_LAST_MODIFIED_DT));
-                a.timeframe_text= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_TIMEFRAME_TEXT));
-                a.alert_lifecycle= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_ALERT_LIFECYCLE));
-                a.effect_start = alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_START));
-                a.effect_end= alertsCursor.getString(alertsCursor.getColumnIndex(DBHelper.KEY_EFFECT_PERIOD_END));
+                Alert a = new Alert(alertsCursor);
                 alerts.add(a);
             } while (alertsCursor.moveToNext());
             alertsCursor.close();
