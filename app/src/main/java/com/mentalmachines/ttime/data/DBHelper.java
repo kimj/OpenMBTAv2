@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.data;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -6,8 +6,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
-import com.mentalmachines.ttime.objects.Alert;
-import com.mentalmachines.ttime.objects.Route;
+import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.data.model.Alert;
+import com.mentalmachines.ttime.data.model.Route;
 
 import java.util.ArrayList;
 

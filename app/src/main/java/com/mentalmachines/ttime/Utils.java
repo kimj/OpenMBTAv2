@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime;
 
 import android.content.Context;
 import android.graphics.Point;
@@ -13,13 +13,16 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.data.model.Alert;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.views.MainActivity;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.fragments.AlertDetailFragment;
-import com.mentalmachines.ttime.fragments.AlertsFragment;
-import com.mentalmachines.ttime.fragments.RouteFragment;
-import com.mentalmachines.ttime.fragments.StopFragment;
+import com.mentalmachines.ttime.views.AlertDetailFragment;
+import com.mentalmachines.ttime.views.AlertsFragment;
+import com.mentalmachines.ttime.views.RouteFragment;
+import com.mentalmachines.ttime.views.StopFragment;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;

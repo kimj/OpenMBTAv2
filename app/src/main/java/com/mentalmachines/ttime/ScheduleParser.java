@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime;
 
 import android.content.ContentValues;
 import android.database.Cursor;
@@ -8,7 +8,9 @@ import android.util.Log;
 import com.bluelinelabs.logansquare.LoganSquare;
 import com.bluelinelabs.logansquare.annotation.JsonField;
 import com.bluelinelabs.logansquare.annotation.JsonObject;
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
 
 import java.io.IOException;
 import java.io.InputStream;

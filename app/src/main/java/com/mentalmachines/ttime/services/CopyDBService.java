@@ -5,7 +5,7 @@ import android.content.Intent;
 import android.os.Environment;
 import android.util.Log;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 
 import java.io.File;
 import java.io.FileInputStream;

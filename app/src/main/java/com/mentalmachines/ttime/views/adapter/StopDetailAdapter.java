@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.adapter;
+package com.mentalmachines.ttime.views.adapter;
 
 import android.content.Context;
 import android.support.v7.widget.RecyclerView;
@@ -11,8 +11,8 @@ import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.Utils;
 
 import java.util.ArrayList;
 import java.util.Arrays;

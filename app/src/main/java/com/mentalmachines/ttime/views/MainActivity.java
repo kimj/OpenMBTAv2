@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.views;
 
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -34,15 +34,14 @@ import android.widget.ExpandableListView;
 import android.widget.PopupMenu;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.NavDrawerAdapter;
-import com.mentalmachines.ttime.fragments.AlertsFragment;
-import com.mentalmachines.ttime.fragments.RouteFragment;
-import com.mentalmachines.ttime.fragments.StopFragment;
-import com.mentalmachines.ttime.objects.Favorite;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.StopList;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.views.adapter.NavDrawerAdapter;
+import com.mentalmachines.ttime.data.model.Favorite;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.data.model.StopList;
+import com.mentalmachines.ttime.Utils;
 import com.mentalmachines.ttime.services.CheckFavorite;
 import com.mentalmachines.ttime.services.GetScheduleService;
 import com.mentalmachines.ttime.services.GetTimesForRoute;

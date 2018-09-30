@@ -1,12 +1,12 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime.data.model;
 
 import android.content.ContentValues;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.util.Log;
 
-import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.data.DBHelper;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.views;
 
 import android.animation.AnimatorSet;
 import android.animation.ObjectAnimator;
@@ -21,9 +21,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.ScheduleAdapter;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.views.adapter.ScheduleAdapter;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.Utils;
 import com.mentalmachines.ttime.services.GetScheduleService;
 
 import java.util.Calendar;

@@ -7,7 +7,7 @@ import android.util.Log;
 import android.view.MenuItem;
 
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.Favorite;
+import com.mentalmachines.ttime.data.model.Favorite;
 
 import java.lang.ref.WeakReference;
 

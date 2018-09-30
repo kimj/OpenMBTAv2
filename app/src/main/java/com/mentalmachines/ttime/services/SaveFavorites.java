@@ -8,12 +8,12 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.objects.Favorite;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.ScheduleParser;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.model.Favorite;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.ScheduleParser;
+import com.mentalmachines.ttime.Utils;
 
 import java.io.IOException;
 import java.io.InputStream;

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.adapter;
+package com.mentalmachines.ttime.views.adapter;
 
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
@@ -8,9 +8,9 @@ import android.view.ViewGroup;
 import android.widget.TextView;
 
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.Utils;
 import com.mentalmachines.ttime.services.GetScheduleService;
 
 import java.util.ArrayList;

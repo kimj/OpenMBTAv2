@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.fragments;
+package com.mentalmachines.ttime.views;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
@@ -11,11 +11,10 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.ListView;
 
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.AlertsAdapter;
-import com.mentalmachines.ttime.objects.Alert;
+import com.mentalmachines.ttime.views.adapter.AlertsAdapter;
+import com.mentalmachines.ttime.data.model.Alert;
 
 import java.util.ArrayList;
 

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.fragments;
+package com.mentalmachines.ttime.views;
 
 import android.animation.ObjectAnimator;
 import android.content.Context;
@@ -14,12 +14,11 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.adapter.RouteStopAdapter;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.views.adapter.RouteStopAdapter;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.Utils;
 import com.mentalmachines.ttime.services.GetTimesForRoute;
 
 public class RouteFragment extends Fragment {

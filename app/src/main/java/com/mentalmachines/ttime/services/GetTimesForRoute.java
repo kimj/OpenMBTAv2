@@ -12,12 +12,12 @@ import android.util.Log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.mentalmachines.ttime.DBHelper;
-import com.mentalmachines.ttime.MainActivity;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.views.MainActivity;
 import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.Utils;
 
 import java.io.IOException;
 import java.net.URL;

@@ -14,7 +14,7 @@
         android:paddingLeft="@dimen/def_padding"
         android:paddingRight="@dimen/def_padding"
         android:paddingTop="@dimen/def_padding"
-        tools:context=".StopDetailActivity">
+        tools:context=".views.StopDetailActivity">
         <!-- To do text appearance large -->
         <android.support.v7.widget.RecyclerView
             android:id="@+id/stopdetail_list"
@@ -23,7 +23,7 @@
             android:padding="4dp"
             app:layoutManager="LinearLayoutManager"
             app:layout_behavior="@string/appbar_scrolling_view_behavior"
-            tools:context="com.mentalmachines.ttime.MainActivity"
+            tools:context="com.mentalmachines.ttime.views.MainActivity"
             tools:listitem="@layout/t_stop" />
         <TextView android:id="@+id/stopdetail_empty"
             android:layout_width="match_parent"

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.views;
 
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -18,8 +18,9 @@ import android.view.View;
 import android.widget.ListView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.NearbyLVAdapter;
-import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.TTimeApp;
+import com.mentalmachines.ttime.views.adapter.NearbyLVAdapter;
+import com.mentalmachines.ttime.data.model.StopData;
 import com.mentalmachines.ttime.services.StopService;
 
 import java.util.ArrayList;

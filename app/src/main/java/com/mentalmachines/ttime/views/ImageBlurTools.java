@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.views;
 
 import android.graphics.Bitmap;
 import android.util.Log;

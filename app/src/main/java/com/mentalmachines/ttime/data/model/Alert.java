@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime.data.model;
 
 /**
  * Created by CaptofOuterSpace on 2/5/2016.

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.adapter;
+package com.mentalmachines.ttime.views.adapter;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -11,9 +11,9 @@ import android.widget.ArrayAdapter;
 import android.widget.ImageView;
 import android.widget.TextView;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.Alert;
+import com.mentalmachines.ttime.data.model.Alert;
 
 import java.util.ArrayList;
 import java.util.Arrays;

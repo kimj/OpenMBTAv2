@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime.data.model;
 
 import android.database.Cursor;
 import android.os.Parcel;

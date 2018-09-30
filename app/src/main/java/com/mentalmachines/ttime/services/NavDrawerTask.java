@@ -8,10 +8,10 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.objects.Favorite;
-import com.mentalmachines.ttime.objects.StopList;
+import com.mentalmachines.ttime.data.model.Favorite;
+import com.mentalmachines.ttime.data.model.StopList;
 
 /**
  * Created by emezias on 2/5/16.

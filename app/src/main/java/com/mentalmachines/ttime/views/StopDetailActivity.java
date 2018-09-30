@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime;
+package com.mentalmachines.ttime.views;
 
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
@@ -21,13 +21,13 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.mentalmachines.ttime.adapter.StopDetailAdapter;
-import com.mentalmachines.ttime.fragments.AlertDetailFragment;
-import com.mentalmachines.ttime.objects.Favorite;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.StopList;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.DBHelper;
+import com.mentalmachines.ttime.views.adapter.StopDetailAdapter;
+import com.mentalmachines.ttime.data.model.Favorite;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.data.model.StopList;
+import com.mentalmachines.ttime.Utils;
 import com.mentalmachines.ttime.services.SaveFavorites;
 import com.mentalmachines.ttime.services.StopService;
 

@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.adapter;
+package com.mentalmachines.ttime.views.adapter;
 
 import android.content.Context;
 import android.content.res.Resources;
@@ -10,10 +10,10 @@ import android.widget.BaseAdapter;
 import android.widget.ImageButton;
 import android.widget.TextView;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.StopData;
-import com.mentalmachines.ttime.objects.Utils;
+import com.mentalmachines.ttime.data.model.StopData;
+import com.mentalmachines.ttime.Utils;
 
 /**
  * Created by emezias on 5/14/16

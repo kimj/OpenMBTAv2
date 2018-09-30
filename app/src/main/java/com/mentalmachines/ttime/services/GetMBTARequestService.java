@@ -12,9 +12,9 @@ import android.util.Log;
 import com.fasterxml.jackson.core.JsonFactory;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonToken;
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.TTimeApp;
-import com.mentalmachines.ttime.objects.Alert;
+import com.mentalmachines.ttime.data.model.Alert;
 
 import java.io.IOException;
 import java.net.URL;

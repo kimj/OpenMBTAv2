@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime.data.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;

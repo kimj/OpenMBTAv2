@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.objects;
+package com.mentalmachines.ttime.data.model;
 
 import android.content.Context;
 import android.database.Cursor;
@@ -7,8 +7,8 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.util.Log;
 
-import com.mentalmachines.ttime.DBHelper;
 import com.mentalmachines.ttime.R;
+import com.mentalmachines.ttime.data.DBHelper;
 
 import java.util.ArrayList;
 import java.util.HashMap;

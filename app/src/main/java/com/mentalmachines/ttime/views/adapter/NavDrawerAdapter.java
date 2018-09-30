@@ -1,4 +1,4 @@
-package com.mentalmachines.ttime.adapter;
+package com.mentalmachines.ttime.views.adapter;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -10,10 +10,10 @@ import android.widget.BaseExpandableListAdapter;
 import android.widget.ExpandableListView;
 import android.widget.TextView;
 
-import com.mentalmachines.ttime.DBHelper;
+import com.mentalmachines.ttime.data.DBHelper;
 import com.mentalmachines.ttime.R;
-import com.mentalmachines.ttime.objects.Route;
-import com.mentalmachines.ttime.objects.StopData;
+import com.mentalmachines.ttime.data.model.Route;
+import com.mentalmachines.ttime.data.model.StopData;
 
 import java.util.ArrayList;
 
